@@ -4,7 +4,7 @@ package gofofa
 type AccountInfo struct {
 	Error  bool   `json:"error"`  // error or not
 	ErrMsg string `json:"errmsg"` // error string message
-	FCoin  int    `json:"fcoin"`  // error string message
+	FCoin  int    `json:"fcoin"`  // fcoin count
 }
 
 // AccountInfo fetch account info from fofa

@@ -18,7 +18,7 @@ fofa client in Go
     - [ ] 输出csv格式
     - [ ] 输出table格式
     - [ ] 输出json格式
-- [ ] 单IP聚合查询
+- [ ] 单IP聚合查询
 - [ ] 完善的版本管理
 - [ ] 完善的Issue管理 
 - [ ] 支持终端颜色
@@ -55,8 +55,9 @@ fofa client in Go
 ```
 - 分为几个基础模块
     - account
-    - host
-- 账号认证设计
+      - profile
+    - host
+- 账号认证设计
     - 是header传递还是url传递好一点？
     - 是只传递key还是传递email/key好一点？
 
