@@ -5,17 +5,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 )
 
-func (c *Client) buildURL(apiURI string) string {
-	return fmt.Sprintf("%s/api/%s/%s?email=%s&key=%s", c.Server, c.APIVersion, apiURI, c.Email, c.Key)
+// params is key=>value for query, auto encoded with uri escape
+func (c *Client) buildURL(apiURI string, params map[string]string) string {
+	fullURL := fmt.Sprintf("%s/api/%s/%s?", c.Server, c.APIVersion, apiURI)
+	ps := url.Values{}
+	ps.Set("email", c.Email)
+	ps.Set("key", c.Key)
+	for k, v := range params {
+		ps.Set(k, v)
+	}
+	return fullURL + ps.Encode()
 }
 
 // http request and parse as json return to v
-func (c *Client) fetch(apiURI string, v interface{}) (err error) {
+func (c *Client) fetch(apiURI string, params map[string]string, v interface{}) (err error) {
 	var req *http.Request
 	var resp *http.Response
-	req, err = http.NewRequest("GET", c.buildURL(apiURI), nil)
+	req, err = http.NewRequest("GET", c.buildURL(apiURI, params), nil)
 	resp, err = c.httpClient.Do(req)
 	if err != nil {
 		return

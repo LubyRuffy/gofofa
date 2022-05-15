@@ -26,8 +26,10 @@ type Client struct {
 	Email      string // fofa email
 	Key        string // fofa key
 
-	httpClient *http.Client
-	Account    AccountInfo
+	Account    AccountInfo // fofa account info
+	DeductMode DeductMode  // 扣费提醒默认
+
+	httpClient *http.Client //
 }
 
 // Update merge config from config url
@@ -65,6 +67,7 @@ func NewClient(configURL string) (*Client, error) {
 		}
 	}
 
+	// fetch one time to make sure network is ok
 	c.httpClient = &http.Client{}
 	c.Account, err = c.AccountInfo()
 	if err != nil {
