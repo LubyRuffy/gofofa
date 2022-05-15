@@ -27,3 +27,12 @@ func newClientFromEnv() (*Client, error) {
 
 	return c, nil
 }
+
+func FofaURLFromEnv() string {
+	c, err := newClientFromEnv()
+	if err != nil {
+		return ""
+	}
+
+	return c.URL()
+}
