@@ -1,0 +1,29 @@
+package gofofa
+
+import "os"
+
+// env can set:FOFA_SERVER,FOFA_EMAIL,FOFA_KEY,FOFA_CLIENT_URL
+// FOFA_CLIENT_URL > FOFA_SERVER
+func newClientFromEnv() (*Client, error) {
+	c := &Client{
+		Server:     defaultServer,
+		APIVersion: defaultAPIVersion,
+	}
+
+	if v := os.Getenv("FOFA_SERVER"); len(v) > 0 {
+		c.Server = v
+	}
+	if v := os.Getenv("FOFA_EMAIL"); len(v) > 0 {
+		c.Email = v
+	}
+	if v := os.Getenv("FOFA_KEY"); len(v) > 0 {
+		c.Key = v
+	}
+	if v := os.Getenv("FOFA_CLIENT_URL"); len(v) > 0 {
+		if err := c.Update(v); err != nil {
+			return nil, err
+		}
+	}
+
+	return c, nil
+}
