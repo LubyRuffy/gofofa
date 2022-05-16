@@ -14,6 +14,8 @@ fofa client in Go
 - [ ] 可以作为SDK
 - [ ] 用户信息
 - [ ] 搜索原始数据
+  - 指定字段fields
+  - 指定获取的数据量size
 - [ ] 聚合查询结果
     - [ ] 输出csv格式
     - [ ] 输出table格式
@@ -38,6 +40,7 @@ fofa client in Go
 - [ ] 扣费的模式下提醒用户是否继续
   - [ ] 可以通过配置文件全局打开
   - [ ] 可以通过命令行配置
+- [ ] 子命令自动提示
 
 ## API设计规范v2
 - 所有接口都应该满足如下定义：
@@ -46,7 +49,7 @@ fofa client in Go
 {
     "error": true,
     "errmsg": "Account Invalid",
-    "errcode": -700
+    "code": -700
 }
 正确
 {
