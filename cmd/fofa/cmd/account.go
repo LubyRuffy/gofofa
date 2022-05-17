@@ -5,7 +5,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// account 子命令
+// account subcommand
 var accountCmd = &cli.Command{
 	Name:  "account",
 	Usage: "fofa account information",

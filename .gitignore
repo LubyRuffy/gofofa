@@ -4,4 +4,5 @@ dist/
 .DS_Store
 go.sum
 cmd/fofa/fofa
+cmd/fofa/count
 cmd/fofa/go_build_github_com_lubyruffy_gofofa_cmd_fofa

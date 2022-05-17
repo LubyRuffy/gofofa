@@ -1,3 +1,7 @@
+
+## v0.0.3 color
+- add count subcommand: ```./fofa count port=80```
+
 ## v0.0.2 code quality
 - support default command to search: ```./fofa port=80```
 - search support -o param to write to file: ```./fofa search -o a.txt port=80```

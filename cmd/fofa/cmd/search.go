@@ -18,7 +18,7 @@ var (
 	deductMode  string // deduct Mode
 )
 
-// search 子命令
+// search subcommand
 var searchCmd = &cli.Command{
 	Name:                   "search",
 	Usage:                  "fofa host search",

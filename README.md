@@ -44,6 +44,15 @@ can be csv/json/xml, line by line
 ```shell
 ./fofa --verbose search port=80
 ```
+## Utils
+- count subcommand
+```shell
+./fofa count port=80
+```
+- account subcommand
+```shell
+./fofa account
+```
 
 ## Feature List
 - [x] 跨平台

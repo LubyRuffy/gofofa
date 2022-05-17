@@ -18,6 +18,7 @@ var (
 var GlobalCommands = []*cli.Command{
 	searchCmd,
 	accountCmd,
+	countCmd,
 }
 
 // IsValidCommand valid command name
