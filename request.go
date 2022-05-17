@@ -21,8 +21,8 @@ func (c *Client) buildURL(apiURI string, params map[string]string) string {
 	return fullURL + ps.Encode()
 }
 
-// http request and parse as json return to v
-func (c *Client) fetch(apiURI string, params map[string]string, v interface{}) (err error) {
+// just fetch fofa body, no need to unmarshal
+func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte, err error) {
 	var req *http.Request
 	var resp *http.Response
 
@@ -36,7 +36,12 @@ func (c *Client) fetch(apiURI string, params map[string]string, v interface{}) (
 	}
 
 	defer resp.Body.Close()
-	content, err := ioutil.ReadAll(resp.Body)
+	return ioutil.ReadAll(resp.Body)
+}
+
+// http request and parse as json return to v
+func (c *Client) fetch(apiURI string, params map[string]string, v interface{}) (err error) {
+	content, err := c.fetchBody(apiURI, params)
 	if err != nil {
 		return
 	}

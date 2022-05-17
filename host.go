@@ -3,7 +3,7 @@ package gofofa
 import (
 	"encoding/base64"
 	"errors"
-	"log"
+	"github.com/sirupsen/logrus"
 	"math"
 	"strconv"
 	"strings"
@@ -16,7 +16,7 @@ type HostResults struct {
 	Query   string
 	Page    int
 	Size    int
-	Results [][]string
+	Results interface{}
 }
 
 // HostSearch search fofa host data
@@ -38,8 +38,8 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 		switch c.DeductMode {
 		case DeductModeFree:
 			size = c.freeSize()
-			log.Println("[WARNING] size is larger than your account free limit, ",
-				"just fetch %d instead, if you want deduct fcoin automatically, set mode to 1(DeductModeFCoin) manually")
+			logrus.Warnf("size is larger than your account free limit, "+
+				"just fetch %d instead, if you want deduct fcoin automatically, set mode to 1(DeductModeFCoin) manually", size)
 		}
 	}
 
@@ -71,12 +71,28 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 			break
 		}
 
-		// 无数据
-		if len(hr.Results) == 0 {
+		var results [][]string
+		if v, ok := hr.Results.([]interface{}); ok {
+			// 无数据
+			if len(v) == 0 {
+				break
+			}
+			for _, result := range v {
+				if vStrSlice, ok := result.([]interface{}); ok {
+					var newSlice []string
+					for _, vStr := range vStrSlice {
+						newSlice = append(newSlice, vStr.(string))
+					}
+					results = append(results, newSlice)
+				} else if vStr, ok := result.(string); ok {
+					results = append(results, []string{vStr})
+				}
+			}
+		} else {
 			break
 		}
 
-		res = append(res, hr.Results...)
+		res = append(res, results...)
 
 		// 数据填满了，完成
 		if size <= len(res) {
@@ -84,7 +100,7 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 		}
 
 		// 数据已经没有了
-		if len(hr.Results) < perPage {
+		if len(results) < perPage {
 			break
 		}
 	}

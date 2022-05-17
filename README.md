@@ -37,6 +37,10 @@ can be csv/json/xml, line by line
 ./fofa search --outFile a.txt 'port=6379'
 ./fofa search -o a.txt 'port=6379'
 ```
+- verbose mode
+```shell
+./fofa --verbose search port=80
+```
 
 ## Feature List
 - [x] 跨平台
