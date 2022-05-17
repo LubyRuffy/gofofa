@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/lubyruffy/gofofa"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -25,6 +26,19 @@ func IsValidCommand(cmd string) bool {
 		return false
 	}
 	if cmd[0] == '-' {
+		switch cmd {
+		case "--help", "-help", "-h", "--version", "-version", "-v":
+			// 自带的配置
+			return true
+		default:
+			for _, option := range GlobalOptions {
+				for _, name := range option.Names() {
+					if cmd == "--"+name || cmd == "-"+name {
+						return true
+					}
+				}
+			}
+		}
 		return false
 	}
 
@@ -45,11 +59,20 @@ var GlobalOptions = []cli.Flag{
 		Usage:       "format: <url>/?email=<email>&key=<key>&version=<v2>",
 		Destination: &fofaURL,
 	},
+	&cli.BoolFlag{
+		Name:  "verbose",
+		Usage: "print more information",
+	},
 }
 
 // BeforAction generate fofa client
 func BeforAction(context *cli.Context) error {
 	var err error
+
+	if context.Bool("verbose") {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+
 	fofaCli, err = gofofa.NewClient(fofaURL)
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package gofofa
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -24,16 +25,22 @@ func (c *Client) buildURL(apiURI string, params map[string]string) string {
 func (c *Client) fetch(apiURI string, params map[string]string, v interface{}) (err error) {
 	var req *http.Request
 	var resp *http.Response
-	req, err = http.NewRequest("GET", c.buildURL(apiURI, params), nil)
+
+	fullURL := c.buildURL(apiURI, params)
+	logrus.Debugln("fetch fofa:", fullURL)
+
+	req, err = http.NewRequest("GET", fullURL, nil)
 	resp, err = c.httpClient.Do(req)
 	if err != nil {
 		return
 	}
+
 	defer resp.Body.Close()
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
 	}
+
 	if err = json.Unmarshal(content, v); err != nil {
 		return
 	}

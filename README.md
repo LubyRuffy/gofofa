@@ -17,20 +17,24 @@ fofa client in Go
 ```
 - custom fields, default 'ip,port':
 ```shell
+./fofa search --fields host,ip,port,protocol,lastupdatetime 'port=6379'
 ./fofa search -f host,ip,port,protocol,lastupdatetime 'port=6379'
 ```
 - custom size, default 100:
 ```shell
+./fofa search --size 10 'port=6379'
 ./fofa search -s 10 'port=6379'
 ```
 if size is larger than your account free limit, you can set ```-deductMode``` to decide whether deduct fcoin automatically or not
 - custom out format, default csv:
 can be csv/json/xml, line by line
 ```shell
-./fofa search -format=json 'port=6379'
+./fofa search --format=json 'port=6379'
+./fofa search --format json 'port=6379'
 ```
 - write to file, default stdout:
 ```shell
+./fofa search --outFile a.txt 'port=6379'
 ./fofa search -o a.txt 'port=6379'
 ```
 

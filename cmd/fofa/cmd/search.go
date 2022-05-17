@@ -72,7 +72,7 @@ func SearchAction(ctx *cli.Context) error {
 		return errors.New("fofa fields cannot be empty")
 	}
 
-	// gen writer
+	// gen output
 	var outTo io.Writer
 	if len(outFile) > 0 {
 		var f *os.File
@@ -85,6 +85,8 @@ func SearchAction(ctx *cli.Context) error {
 	} else {
 		outTo = os.Stdout
 	}
+
+	// gen writer
 	var writer outformats.OutWriter
 	switch format {
 	case "csv":
