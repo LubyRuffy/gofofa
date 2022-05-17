@@ -74,5 +74,9 @@ func NewClient(configURL string) (*Client, error) {
 		return c, err
 	}
 
+	if c.Account.Error {
+		return c, fmt.Errorf("auth failed: '%s', make sure key is valid", c.Account.ErrMsg)
+	}
+
 	return c, nil
 }

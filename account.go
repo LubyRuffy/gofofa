@@ -1,5 +1,7 @@
 package gofofa
 
+import "encoding/json"
+
 type DeductMode int // 扣费模式
 const (
 	DeductModeFree  DeductMode = 0 // 不自动扣费
@@ -24,6 +26,11 @@ type AccountInfo struct {
 	FCoin    int    `json:"fcoin"`     // fcoin count
 	IsVIP    bool   `json:"isvip"`     // is vip
 	VIPLevel int    `json:"vip_level"` // vip level
+}
+
+func (ai AccountInfo) String() string {
+	d, _ := json.MarshalIndent(ai, "", "  ")
+	return string(d)
 }
 
 // AccountInfo fetch account info from fofa

@@ -8,6 +8,7 @@ before:
   hooks:
     # You may remove this if you don't use go modules.
     - go mod tidy
+    - go mod download
     # you may remove this if you don't need go generate
     - go generate ./...
 builds:
@@ -19,6 +20,14 @@ builds:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+    asmflags:
+      - -D mysymbol
+      - all=-trimpath={{.Env.GOPATH}}
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
+      - ./dontoptimizeme=-N
 archives:
   - replacements:
       darwin: Darwin
