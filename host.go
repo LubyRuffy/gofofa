@@ -52,7 +52,7 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 	// 分页取数据
 	for {
 		var hr HostResults
-		err = c.fetch("search/all",
+		err = c.Fetch("search/all",
 			map[string]string{
 				"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
 				"size":    strconv.Itoa(perPage),

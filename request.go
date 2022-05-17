@@ -39,8 +39,8 @@ func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte
 	return ioutil.ReadAll(resp.Body)
 }
 
-// http request and parse as json return to v
-func (c *Client) fetch(apiURI string, params map[string]string, v interface{}) (err error) {
+// Fetch http request and parse as json return to v
+func (c *Client) Fetch(apiURI string, params map[string]string, v interface{}) (err error) {
 	content, err := c.fetchBody(apiURI, params)
 	if err != nil {
 		return

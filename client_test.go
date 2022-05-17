@@ -90,6 +90,13 @@ func checkAccount(email, key string) *accountInfo {
 }
 
 func TestNewClient(t *testing.T) {
+	defer func() {
+		os.Unsetenv("FOFA_CLIENT_URL")
+		os.Unsetenv("FOFA_SERVER")
+		os.Unsetenv("FOFA_EMAIL")
+		os.Unsetenv("FOFA_KEY")
+	}()
+
 	var cli *Client
 	var err error
 
@@ -123,107 +130,4 @@ func TestNewClient(t *testing.T) {
 	cli, err = NewClient(fofaURLNew)
 	assert.Nil(t, err)
 	assert.Equal(t, fofaURLNew, cli.URL())
-}
-
-func TestClient_AccountInfo(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(queryHander))
-	defer ts.Close()
-
-	var cli *Client
-	var err error
-	_, err = NewClient(ts.URL + "?email=a@a.com&key=wrong")
-	assert.Contains(t, err.Error(), "[-700] Account Invalid")
-
-	// 注册用户
-	var account accountInfo
-	account = validAccounts[0]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	assert.False(t, cli.Account.IsVIP)
-	assert.Equal(t, 0, cli.Account.FCoin)
-	assert.Equal(t, 0, cli.freeSize())
-
-	// 普通会员
-	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	assert.True(t, cli.Account.IsVIP)
-	assert.Equal(t, 1, cli.Account.VIPLevel)
-	assert.Equal(t, 10, cli.Account.FCoin)
-	assert.Equal(t, 100, cli.freeSize())
-
-	// 高级会员
-	account = validAccounts[2]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	assert.True(t, cli.Account.IsVIP)
-	assert.Equal(t, 2, cli.Account.VIPLevel)
-	assert.Equal(t, 0, cli.Account.FCoin)
-	assert.Equal(t, 10000, cli.freeSize())
-
-	// 企业会员
-	account = validAccounts[3]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	assert.True(t, cli.Account.IsVIP)
-	assert.Equal(t, 3, cli.Account.VIPLevel)
-	assert.Equal(t, 0, cli.Account.FCoin)
-	assert.Equal(t, 100000, cli.freeSize())
-}
-
-func TestClient_HostSearch(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(queryHander))
-	defer ts.Close()
-
-	var cli *Client
-	var err error
-	var account accountInfo
-	var res [][]string
-
-	// 注册用户，没有F币
-	account = validAccounts[0]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
-	assert.Contains(t, err.Error(), "insufficient privileges")
-	// 注册用户，有F币
-	account = validAccounts[4]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
-	assert.Contains(t, err.Error(), "DeductModeFCoin")
-
-	// 参数错误
-	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	assert.Nil(t, err)
-	assert.True(t, cli.Account.IsVIP)
-	res, err = cli.HostSearch("", 10, []string{"ip", "port"})
-	assert.Contains(t, err.Error(), "[-4] Params Error")
-	assert.Equal(t, 0, len(res))
-
-	// 数量超出限制
-	res, err = cli.HostSearch("port=80", 10000, []string{"ip", "port"})
-	assert.Equal(t, 100, len(res))
-	account = validAccounts[2]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	res, err = cli.HostSearch("port=80", 10000, []string{"ip", "port"})
-	assert.Equal(t, 10000, len(res))
-
-	// 多字段
-	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
-	assert.Equal(t, 10, len(res))
-	assert.Equal(t, "94.130.128.248", res[0][0])
-	assert.Equal(t, "80", res[0][1])
-	// 没有字段，跟ip，port一样
-	res, err = cli.HostSearch("port=80", 10, nil)
-	assert.Equal(t, "94.130.128.248", res[0][0])
-	assert.Equal(t, "80", res[0][1])
-
-	// 单字段
-	res, err = cli.HostSearch("port=80", 10, []string{"host"})
-	assert.Nil(t, err)
-	assert.Equal(t, 10, len(res))
 }

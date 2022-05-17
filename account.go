@@ -35,7 +35,7 @@ func (ai AccountInfo) String() string {
 
 // AccountInfo fetch account info from fofa
 func (c *Client) AccountInfo() (ac AccountInfo, err error) {
-	err = c.fetch("info/my", nil, &ac)
+	err = c.Fetch("info/my", nil, &ac)
 	return
 }
 

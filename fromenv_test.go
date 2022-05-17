@@ -7,6 +7,13 @@ import (
 )
 
 func TestFofaURLFromEnv(t *testing.T) {
+	defer func() {
+		os.Unsetenv("FOFA_CLIENT_URL")
+		os.Unsetenv("FOFA_SERVER")
+		os.Unsetenv("FOFA_EMAIL")
+		os.Unsetenv("FOFA_KEY")
+	}()
+
 	os.Setenv("FOFA_SERVER", "https://1.1.1.1")
 	os.Setenv("FOFA_EMAIL", "a@a.com")
 	os.Setenv("FOFA_KEY", "123456")
