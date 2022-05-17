@@ -10,6 +10,7 @@ func TestFofaURLFromEnv(t *testing.T) {
 	os.Setenv("FOFA_SERVER", "https://1.1.1.1")
 	os.Setenv("FOFA_EMAIL", "a@a.com")
 	os.Setenv("FOFA_KEY", "123456")
+	os.Unsetenv("FOFA_CLIENT_URL")
 	assert.Equal(t, "https://1.1.1.1/?email=a@a.com&key=123456&version=v1", FofaURLFromEnv())
 
 	// 异常
