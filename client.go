@@ -40,8 +40,17 @@ func (c *Client) Update(configURL string) error {
 	}
 
 	c.Server = u.Scheme + "://" + u.Host
-	c.Email = u.Query().Get("email")
-	c.Key = u.Query().Get("key")
+	if u.Query().Has("email") {
+		c.Email = u.Query().Get("email")
+	}
+
+	if u.Query().Has("key") {
+		c.Key = u.Query().Get("key")
+	}
+
+	if u.Query().Has("version") {
+		c.APIVersion = u.Query().Get("version")
+	}
 
 	return nil
 }

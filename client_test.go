@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"testing"
 )
@@ -23,6 +24,7 @@ var (
 		{"b@b.com", "22222", true, 1, 10}, // 普通会员
 		{"c@c.com", "33333", true, 2, 0},  // 高级会员
 		{"d@d.com", "44444", true, 3, 0},  // 企业会员
+		{"e@e.com", "55555", true, 0, 10}, // 注册用户有F币
 	}
 
 	queryHander = func(w http.ResponseWriter, r *http.Request) {
@@ -87,6 +89,42 @@ func checkAccount(email, key string) *accountInfo {
 	return nil
 }
 
+func TestNewClient(t *testing.T) {
+	var cli *Client
+	var err error
+
+	// 异常的环境变量
+	os.Setenv("FOFA_CLIENT_URL", "\x7f")
+	cli, err = NewClient("")
+	assert.Error(t, err)
+	assert.Nil(t, cli)
+
+	// url异常
+	os.Unsetenv("FOFA_CLIENT_URL")
+	cli, err = NewClient("\x7F")
+	assert.Error(t, err)
+	assert.Nil(t, cli)
+
+	ts := httptest.NewServer(http.HandlerFunc(queryHander))
+	defer ts.Close()
+
+	// 都正常有环境变量没有参数，取环境变量
+	account := validAccounts[1]
+	fofaURL := ts.URL + "/?email=" + account.Email + "&key=" + account.Key + "&version=v1"
+	os.Setenv("FOFA_CLIENT_URL", fofaURL)
+	cli, err = NewClient("")
+	assert.Nil(t, err)
+	assert.Equal(t, fofaURL, cli.URL())
+
+	// 都正常有参数，以参数为主
+	account = validAccounts[2]
+	fofaURLNew := ts.URL + "/?email=" + account.Email + "&key=" + account.Key + "&version=v1"
+	os.Setenv("FOFA_CLIENT_URL", fofaURL)
+	cli, err = NewClient(fofaURLNew)
+	assert.Nil(t, err)
+	assert.Equal(t, fofaURLNew, cli.URL())
+}
+
 func TestClient_AccountInfo(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(queryHander))
 	defer ts.Close()
@@ -142,10 +180,18 @@ func TestClient_HostSearch(t *testing.T) {
 	var account accountInfo
 	var res [][]string
 
-	// 权限不够
-	//account = validAccounts[0]
-	//cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
-	//assert.Nil(t, err)
+	// 注册用户，没有F币
+	account = validAccounts[0]
+	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	assert.Nil(t, err)
+	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
+	assert.Contains(t, err.Error(), "insufficient privileges")
+	// 注册用户，有F币
+	account = validAccounts[4]
+	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	assert.Nil(t, err)
+	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
+	assert.Contains(t, err.Error(), "DeductModeFCoin")
 
 	// 参数错误
 	account = validAccounts[1]
@@ -169,6 +215,13 @@ func TestClient_HostSearch(t *testing.T) {
 	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
 	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
 	assert.Equal(t, 10, len(res))
+	assert.Equal(t, "94.130.128.248", res[0][0])
+	assert.Equal(t, "80", res[0][1])
+	// 没有字段，跟ip，port一样
+	res, err = cli.HostSearch("port=80", 10, nil)
+	assert.Equal(t, "94.130.128.248", res[0][0])
+	assert.Equal(t, "80", res[0][1])
+
 	// 单字段
 	res, err = cli.HostSearch("port=80", 10, []string{"host"})
 	assert.Nil(t, err)
