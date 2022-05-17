@@ -51,8 +51,12 @@ can be csv/json/xml, line by line
     - [x] Linux
     - [x] Mac
 - [ ] 完善的文档
-- [ ] 代码测试覆盖度超过80%
+- [x] 代码测试覆盖度超过80%
 - [ ] 可以作为SDK
+  - [x] Client: NewClient
+    - [x] HostSearch
+    - [x] HostSize
+    - [x] AccountInfo
 - [ ] 子命令
   - [x] 用户信息 account
   - [x] 搜索原始数据 search
@@ -67,14 +71,14 @@ can be csv/json/xml, line by line
     - [x] 支持输出到文件 outFile/o
   - [ ] 查询聚合结果
   - [ ] 单IP聚合查询
-- [ ] 完善的版本管理
-- [ ] 完善的Issue管理 
+  - [ ] icon hash 生成查询，并且自动打开浏览器
+- [x] 完善的版本管理
 - [ ] 支持终端颜色
 - [ ] 支持发布到各平台
-    - [ ] brew
-    - [ ] apt
-    - [ ] yum
-    - [ ] github
+  - [x] github
+  - [ ] brew
+  - [ ] apt
+  - [ ] yum
 - [ ] 配置形式多样化
     - [x] 支持环境变量设置fofa配置
         - [x] FOFA_CLIENT_URL 格式：<url>/?email=<email>&key=<key>&version=<v2>
@@ -84,7 +88,6 @@ can be csv/json/xml, line by line
     - [x] 支持命令行设置fofa配置
       - [x] fofaURL
       - [x] deductMode 扣费的模式下提醒用户是否继续
-- [ ] 子命令自动提示
 
 ## API设计规范v2
 - 所有接口都应该满足如下定义：

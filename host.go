@@ -10,13 +10,13 @@ import (
 )
 
 type HostResults struct {
-	Mode    string
-	Error   bool
-	Errmsg  string
-	Query   string
-	Page    int
-	Size    int
-	Results interface{}
+	Mode    string      `json:"mode"`
+	Error   bool        `json:"error"`
+	Errmsg  string      `json:"errmsg"`
+	Query   string      `json:"query"`
+	Page    int         `json:"page"`
+	Size    int         `json:"size"` // 总数
+	Results interface{} `json:"results"`
 }
 
 // HostSearch search fofa host data
@@ -105,5 +105,23 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 		}
 	}
 
+	return
+}
+
+// HostSize fetch query matched host count
+func (c *Client) HostSize(query string) (count int, err error) {
+	var hr HostResults
+	err = c.Fetch("search/all",
+		map[string]string{
+			"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
+			"size":    "1",
+			"page":    "1",
+			"full":    "false", // 是否全部数据，非一年内
+		},
+		&hr)
+	if err != nil {
+		return
+	}
+	count = hr.Size
 	return
 }

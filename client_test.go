@@ -54,6 +54,12 @@ var (
 				return
 			}
 
+			// 0 长度直接返回错误
+			if r.FormValue("size") == "0" {
+				w.Write([]byte(`{"error":true,"errmsg":"[51] The Size value ` + "`" + `0` + "`" + ` must be between 1 and 10000"}`))
+				return
+			}
+
 			switch string(q) {
 			case "port=80":
 				switch r.FormValue("fields") {
@@ -61,9 +67,12 @@ var (
 					// 测试单个字段
 					w.Write([]byte(`{"error":false,"size":470262270,"page":1,"mode":"extended","query":"port=\"80\"","results":["118.190.75.134","34.83.32.116","117.4.67.26",":0",":0",":0","176.198.13.22","81.174.169.62","23.42.6.133","webdisk.dutadamaijawatengah.id"]}`))
 					return
-				case "ip,port":
+				case "ip,port", "":
 					// 多字段测试
 					switch r.FormValue("size") {
+					case "1":
+						// 主要用于取数据量
+						w.Write([]byte(`{"error":false,"size":12345678,"page":1,"mode":"extended","query":"port=\"80\"","results":[["94.130.128.248","80"]]}`))
 					case "10":
 						w.Write([]byte(`{"error":false,"size":470293950,"page":1,"mode":"extended","query":"port=\"80\"","results":[["94.130.128.248","80"],["186.6.19.151","80"],["72.247.70.195","80"],["18.66.199.67","80"],["91.122.52.148","80"],["113.23.57.252","80"],["54.144.154.222","80"],["188.223.2.247","80"],["50.213.108.254","80"],["34.237.16.144","80"]]}`))
 					case "100":
