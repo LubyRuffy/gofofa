@@ -1,10 +1,40 @@
 # gofofa
 fofa client in Go
 
-## 背景
+## Background
 之前官方的库功能不全，代码质量差，完全没有社区活跃度，不符合开源项目的基本要求。因此，想就fofa的客户端作为练手，解决上述问题。
 
-## 需求列表
+## Usage
+### Search
+- search query, only query needed:
+```shell
+./fofa search port=80
+./fofa search 'port=80 && protocol=ftp'
+```
+- search short, default subcommand is search:
+```shell
+./fofa domain=qq.com
+```
+- custom fields, default 'ip,port':
+```shell
+./fofa search -f host,ip,port,protocol,lastupdatetime 'port=6379'
+```
+- custom size, default 100:
+```shell
+./fofa search -s 10 'port=6379'
+```
+if size is larger than your account free limit, you can set ```-deductMode``` to decide whether deduct fcoin automatically or not
+- custom out format, default csv:
+can be csv/json/xml, line by line
+```shell
+./fofa search -format=json 'port=6379'
+```
+- write to file, default stdout:
+```shell
+./fofa search -o a.txt 'port=6379'
+```
+
+## Feature List
 - [x] 跨平台
     - [x] Windows
     - [x] Linux
@@ -16,13 +46,14 @@ fofa client in Go
   - [x] 用户信息 account
   - [x] 搜索原始数据 search
     - [x] 指定查询语句 query
-    - [x] 指定字段 fields
-    - [x] 指定获取的数据量 size
-    - [x] 输出格式 outFormat
+    - [x] 指定字段 fields/f
+    - [x] 指定获取的数据量 size/s
+    - [x] 输出格式 format
         - [x] 输出csv格式
         - [x] 输出json格式
         - [x] 输出xml格式
         - [ ] 输出table格式
+    - [x] 支持输出到文件 outFile/o
   - [ ] 查询聚合结果
   - [ ] 单IP聚合查询
 - [ ] 完善的版本管理
