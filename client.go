@@ -55,6 +55,7 @@ func (c *Client) Update(configURL string) error {
 	return nil
 }
 
+// URL generate fofa connection url string
 func (c *Client) URL() string {
 	return fmt.Sprintf("%s/?email=%s&key=%s&version=%s", c.Server, c.Email, c.Key, c.APIVersion)
 }

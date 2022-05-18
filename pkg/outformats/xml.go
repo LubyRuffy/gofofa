@@ -7,6 +7,7 @@ import (
 	"io"
 )
 
+// XMLWriter XML format writer
 type XMLWriter struct {
 	fields []string
 	w      *bufio.Writer

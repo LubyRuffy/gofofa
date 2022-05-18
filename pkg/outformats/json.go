@@ -7,6 +7,7 @@ import (
 	"io"
 )
 
+// JSONWriter JSON format writer
 type JSONWriter struct {
 	fields []string
 	w      *bufio.Writer

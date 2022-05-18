@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// HostResults /search/all api results
 type HostResults struct {
 	Mode    string      `json:"mode"`
 	Error   bool        `json:"error"`

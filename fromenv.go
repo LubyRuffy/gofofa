@@ -28,6 +28,7 @@ func newClientFromEnv() (*Client, error) {
 	return c, nil
 }
 
+// FofaURLFromEnv parse fofa connection url from env, then generate url string
 func FofaURLFromEnv() string {
 	c, err := newClientFromEnv()
 	if err != nil {

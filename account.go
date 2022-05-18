@@ -2,12 +2,15 @@ package gofofa
 
 import "encoding/json"
 
-type DeductMode int // 扣费模式
+// DeductMode should deduct fcoin automatically or just use free limit
+type DeductMode int
+
 const (
-	DeductModeFree  DeductMode = 0 // 不自动扣费
-	DeductModeFCoin DeductMode = 1 // 自动扣除F币
+	DeductModeFree  DeductMode = 0 // DeductModeFree only use free limit size
+	DeductModeFCoin DeductMode = 1 // DeductModeFCoin deduct fcoin automatically if account has fcoin
 )
 
+// ParseDeductMode parse string to DeductMode
 func ParseDeductMode(v string) DeductMode {
 	switch v {
 	case "0", "DeductModeFree":
