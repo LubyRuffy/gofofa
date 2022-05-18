@@ -68,7 +68,15 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 ./fofa --verbose search port=80
 ```
 
-## Utils
+### Stats
+
+-   stats subcommand
+
+```shell
+./fofa stats --fields port,title,country title="test"
+```
+
+### Utils
 
 -   count subcommand
 
@@ -80,6 +88,12 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 
 ```shell
 ./fofa account
+```
+
+-   version
+
+```shell
+./fofa --version
 ```
 
 ## Features
@@ -115,7 +129,7 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
         -   ☑ fofaURL
         -   ☑ deductMode
     -   Envirement
-        -   ☑ FOFA_CLIENT_URL 格式：<url>/?email=<email>&key=<key>&version=<v2>
+        -   ☑ FOFA_CLIENT_URL format: <url>/?email=\<email\>&key=\<key\>&version=\<v1\>
         -   ☑ FOFA_SERVER
         -   ☑ FOFA_EMAIL
         -   ☑ FOFA_KEY
@@ -159,23 +173,3 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 -   账号认证设计
     -   是header传递还是url传递好一点？
     -   是只传递key还是传递email/key好一点？
-
-## 使用场景
-
-### 获取版本信息
-
-版本信息跟代码tag一致
-
-### 获取用户信息
-
-获取vip等级，积分信息等
-
-### 获取原始数据
-
-## Other
-
-### 
-
-```shell
-docker run --rm -it -v $PWD:/code:ro pipelinecomponents/remark-lint remark --color --use preset-lint-recommended .
-```

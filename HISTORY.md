@@ -1,7 +1,9 @@
-## v0.0.3 color
+## v0.0.3 color and stats
 
 -   add count subcommand: `./fofa count port=80`
-
+-   add stats subcommand: `./fofa stats port=80`
+-   add terminal color support
+  
 ## v0.0.2 code quality
 
 -   support default command to search: `./fofa port=80`

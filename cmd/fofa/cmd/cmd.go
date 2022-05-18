@@ -4,6 +4,7 @@ import (
 	"github.com/lubyruffy/gofofa"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"os"
 )
 
 var (
@@ -19,6 +20,7 @@ var GlobalCommands = []*cli.Command{
 	searchCmd,
 	accountCmd,
 	countCmd,
+	statsCmd,
 }
 
 // IsValidCommand valid command name
@@ -69,6 +71,11 @@ var GlobalOptions = []cli.Flag{
 // BeforAction generate fofa client
 func BeforAction(context *cli.Context) error {
 	var err error
+
+	// not any command, and no query for default command(search)
+	if len(os.Args) == 1 {
+		return nil
+	}
 
 	if context.Bool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)

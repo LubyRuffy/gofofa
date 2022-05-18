@@ -6,8 +6,10 @@ import "encoding/json"
 type DeductMode int
 
 const (
-	DeductModeFree  DeductMode = 0 // DeductModeFree only use free limit size
-	DeductModeFCoin DeductMode = 1 // DeductModeFCoin deduct fcoin automatically if account has fcoin
+	// DeductModeFree only use free limit size
+	DeductModeFree DeductMode = 0
+	// DeductModeFCoin deduct fcoin automatically if account has fcoin
+	DeductModeFCoin DeductMode = 1
 )
 
 // ParseDeductMode parse string to DeductMode
