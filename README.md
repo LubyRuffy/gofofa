@@ -1,117 +1,146 @@
 # gofofa
+
 fofa client in Go
 
 [![Test status](https://github.com/lubyruffy/gofofa/workflows/Go/badge.svg)](https://github.com/lubyruffy/gofofa/actions?query=workflow%3A%22Go%22)
 [![codecov](https://codecov.io/gh/lubyruffy/gofofa/branch/main/graph/badge.svg)](https://codecov.io/gh/lubyruffy/gofofa)
 [![License: MIT](https://img.shields.io/github/license/lubyruffy/gofofa)](https://github.com/LubyRuffy/gofofa/blob/main/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/lubyruffy/gofofa)](https://goreportcard.com/report/github.com/lubyruffy/gofofa)
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/3eadab4e412e4c3494bbc5f188d441e8)](https://www.codacy.com/gh/LubyRuffy/gofofa/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LubyRuffy/gofofa&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/3eadab4e412e4c3494bbc5f188d441e8)](https://www.codacy.com/gh/LubyRuffy/gofofa/dashboard?utm_source=github.com&utm_medium=referral&utm_content=LubyRuffy/gofofa&utm_campaign=Badge_Grade)
 [![Github Release](https://img.shields.io/github/release/lubyruffy/gofofa/all.svg)](https://github.com/lubyruffy/gofofa/releases)
 
 ## Background
+
 The official library doesn't has unittests,  之前官方的库功能不全，代码质量差，完全没有社区活跃度，不符合开源项目的基本要求。因此，想就fofa的客户端作为练手，解决上述问题。
 
 ## Usage
+
 ### Search
-- search query, only query needed:
+
+-   search query, only query needed:
+
 ```shell
 ./fofa search port=80
 ./fofa search 'port=80 && protocol=ftp'
 ```
-- search short, default subcommand is search:
+
+-   search short, default subcommand is search:
+
 ```shell
 ./fofa domain=qq.com
 ```
-- custom fields, default 'ip,port':
+
+-   custom fields, default 'ip,port':
+
 ```shell
 ./fofa search --fields host,ip,port,protocol,lastupdatetime 'port=6379'
 ./fofa search -f host,ip,port,protocol,lastupdatetime 'port=6379'
 ```
-- custom size, default 100:
+
+-   custom size, default 100:
+
 ```shell
 ./fofa search --size 10 'port=6379'
 ./fofa search -s 10 'port=6379'
 ```
-if size is larger than your account free limit, you can set ```-deductMode``` to decide whether deduct fcoin automatically or not
-- custom out format, default csv:
-can be csv/json/xml, line by line
+
+if size is larger than your account free limit, you can set `-deductMode` to decide whether deduct fcoin automatically or not
+
+-   custom out format, default csv:
+    can be csv/json/xml, line by line
+
 ```shell
 ./fofa search --format=json 'port=6379'
 ./fofa search --format json 'port=6379'
 ```
-- write to file, default stdout:
+
+-   write to file, default stdout:
+
 ```shell
 ./fofa search --outFile a.txt 'port=6379'
 ./fofa search -o a.txt 'port=6379'
 ```
-- verbose mode
+
+-   verbose mode
+
 ```shell
 ./fofa --verbose search port=80
 ```
+
 ## Utils
-- count subcommand
+
+-   count subcommand
+
 ```shell
 ./fofa count port=80
 ```
-- account subcommand
+
+-   account subcommand
+
 ```shell
 ./fofa account
 ```
 
 ## Feature List
-- [x] 跨平台
-    - [x] Windows
-    - [x] Linux
-    - [x] Mac
-- [ ] 完善的文档
-- [x] 代码测试覆盖度超过80%
-- [ ] 可以作为SDK
-  - [x] Client: NewClient
-    - [x] HostSearch
-    - [x] HostSize
-    - [x] AccountInfo
-- [ ] 子命令
-  - [x] 用户信息 account
-  - [x] 搜索原始数据 search
-    - [x] 指定查询语句 query
-    - [x] 指定字段 fields/f
-    - [x] 指定获取的数据量 size/s
-    - [x] 输出格式 format
-        - [x] 输出csv格式
-        - [x] 输出json格式
-        - [x] 输出xml格式
-        - [ ] 输出table格式
-    - [x] 支持输出到文件 outFile/o
-  - [ ] 查询聚合结果
-  - [ ] 单IP聚合查询
-  - [ ] icon hash 生成查询，并且自动打开浏览器
-- [x] 完善的版本管理
-- [ ] 支持终端颜色
-- [ ] 支持发布到各平台
-  - [x] github
-  - [ ] brew
-  - [ ] apt
-  - [ ] yum
-- [ ] 配置形式多样化
-    - [x] 支持环境变量设置fofa配置
-        - [x] FOFA_CLIENT_URL 格式：<url>/?email=<email>&key=<key>&version=<v2>
-        - [x] FOFA_SERVER
-        - [x] FOFA_EMAIL
-        - [x] FOFA_KEY
-    - [x] 支持命令行设置fofa配置
-      - [x] fofaURL
-      - [x] deductMode 扣费的模式下提醒用户是否继续
+
+-   [x] 跨平台
+    -   [x] Windows
+    -   [x] Linux
+    -   [x] Mac
+-   [ ] 完善的文档
+-   [x] 代码测试覆盖度超过80%
+-   [ ] 可以作为SDK
+    -   [x] Client: NewClient
+        -   [x] HostSearch
+        -   [x] HostSize
+        -   [x] AccountInfo
+-   [ ] 子命令
+    -   [x] 用户信息 account
+    -   [x] 搜索原始数据 search
+        -   [x] 指定查询语句 query
+        -   [x] 指定字段 fields/f
+        -   [x] 指定获取的数据量 size/s
+        -   [x] 输出格式 format
+            -   [x] 输出csv格式
+            -   [x] 输出json格式
+            -   [x] 输出xml格式
+            -   [ ] 输出table格式
+        -   [x] 支持输出到文件 outFile/o
+    -   [ ] 查询聚合结果
+    -   [ ] 单IP聚合查询
+    -   [ ] icon hash 生成查询，并且自动打开浏览器
+-   [x] 完善的版本管理
+-   [ ] 支持终端颜色
+-   [ ] 支持发布到各平台
+    -   [x] github
+    -   [ ] brew
+    -   [ ] apt
+    -   [ ] yum
+-   [ ] 配置形式多样化
+    -   [x] 支持环境变量设置fofa配置
+        -   [x] FOFA_CLIENT_URL 格式：<url>/?email=<email>&key=<key>&version=<v2>
+        -   [x] FOFA_SERVER
+        -   [x] FOFA_EMAIL
+        -   [x] FOFA_KEY
+    -   [x] 支持命令行设置fofa配置
+        -   [x] fofaURL
+        -   [x] deductMode 扣费的模式下提醒用户是否继续
 
 ## API设计规范v2
-- 所有接口都应该满足如下定义：
-```json
+
+-   所有接口都应该满足如下定义：
+
 错误
+```json
 {
     "error": true,
     "errmsg": "Account Invalid",
     "code": -700
 }
+```
 正确
+```json
+
 {
     "error": false,
     "data": {
@@ -119,19 +148,31 @@ can be csv/json/xml, line by line
     }
 }
 ```
-- 分为几个基础模块
-    - account
-      - profile
-    - host
-- 账号认证设计
-    - 是header传递还是url传递好一点？
-    - 是只传递key还是传递email/key好一点？
+
+-   分为几个基础模块
+    -   account
+        -   profile
+    -   host
+-   账号认证设计
+    -   是header传递还是url传递好一点？
+    -   是只传递key还是传递email/key好一点？
 
 ## 使用场景
+
 ### 获取版本信息
+
 版本信息跟代码tag一致
 
 ### 获取用户信息
+
 获取vip等级，积分信息等
 
 ### 获取原始数据
+
+## Other
+
+### 
+
+```shell
+docker run --rm -it -v $PWD:/code:ro pipelinecomponents/remark-lint remark --color --use preset-lint-recommended .
+```
