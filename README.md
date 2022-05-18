@@ -1,6 +1,7 @@
 # gofofa
 fofa client in Go
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f1b84877d9594857b66bbd4e6181590c)](https://app.codacy.com/gh/LubyRuffy/gofofa?utm_source=github.com&utm_medium=referral&utm_content=LubyRuffy/gofofa&utm_campaign=Badge_Grade_Settings)
 [![Test status](https://github.com/lubyruffy/gofofa/workflows/Go/badge.svg)](https://github.com/lubyruffy/gofofa/actions?query=workflow%3A%22Go%22)
 [![codecov](https://codecov.io/gh/lubyruffy/gofofa/branch/main/graph/badge.svg)](https://codecov.io/gh/lubyruffy/gofofa)
 
