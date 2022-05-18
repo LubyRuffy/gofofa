@@ -8,6 +8,7 @@ fofa client in Go
 [![Go Report Card](https://goreportcard.com/badge/github.com/lubyruffy/gofofa)](https://goreportcard.com/report/github.com/lubyruffy/gofofa)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/3eadab4e412e4c3494bbc5f188d441e8)](https://www.codacy.com/gh/LubyRuffy/gofofa/dashboard?utm_source=github.com&utm_medium=referral&utm_content=LubyRuffy/gofofa&utm_campaign=Badge_Grade)
 [![Github Release](https://img.shields.io/github/release/lubyruffy/gofofa/all.svg)](https://github.com/lubyruffy/gofofa/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/LubyRuffy/gofofa.svg)](https://pkg.go.dev/github.com/LubyRuffy/gofofa)
 
 ## Background
 
@@ -81,56 +82,56 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 ./fofa account
 ```
 
-## Feature List
+## Features
 
--   [x] 跨平台
-    -   [x] Windows
-    -   [x] Linux
-    -   [x] Mac
--   [ ] 完善的文档
--   [x] 代码测试覆盖度超过80%
--   [ ] 可以作为SDK
-    -   [x] Client: NewClient
-        -   [x] HostSearch
-        -   [x] HostSize
-        -   [x] AccountInfo
--   [ ] 子命令
-    -   [x] 用户信息 account
-    -   [x] 搜索原始数据 search
-        -   [x] 指定查询语句 query
-        -   [x] 指定字段 fields/f
-        -   [x] 指定获取的数据量 size/s
-        -   [x] 输出格式 format
-            -   [x] 输出csv格式
-            -   [x] 输出json格式
-            -   [x] 输出xml格式
-            -   [ ] 输出table格式
-        -   [x] 支持输出到文件 outFile/o
-    -   [ ] 查询聚合结果
-    -   [ ] 单IP聚合查询
-    -   [ ] icon hash 生成查询，并且自动打开浏览器
--   [x] 完善的版本管理
--   [ ] 支持终端颜色
--   [ ] 支持发布到各平台
-    -   [x] github
-    -   [ ] brew
-    -   [ ] apt
-    -   [ ] yum
--   [ ] 配置形式多样化
-    -   [x] 支持环境变量设置fofa配置
-        -   [x] FOFA_CLIENT_URL 格式：<url>/?email=<email>&key=<key>&version=<v2>
-        -   [x] FOFA_SERVER
-        -   [x] FOFA_EMAIL
-        -   [x] FOFA_KEY
-    -   [x] 支持命令行设置fofa配置
-        -   [x] fofaURL
-        -   [x] deductMode 扣费的模式下提醒用户是否继续
+-   ☑ Cross-platform
+    -   ☑ Windows
+    -   ☑ Linux
+    -   ☑ Mac
+-   ☑ Code coverage > 90%
+-   ☑ As SDK
+    -   ☑ Client: NewClient
+        -   ☑ HostSearch
+        -   ☑ HostSize
+        -   ☑ AccountInfo
+-   ☐ As Client
+    -   ☐ Sub Commands
+        -   ☑ account
+        -   ☑ search
+            -   ☑ query
+            -   ☑ fields/f
+            -   ☑ size/s
+            -   ☑ format
+                -   ☑ csv
+                -   ☑ json
+                -   ☑ xml
+                -   ☐ table
+            -   ☑ outFile/o
+        -   ☐ stats
+        -   ☐ host
+        -   ☐ icon
+    -   ☐ Terminal color 
+    -   ☐ Global Config
+        -   ☑ fofaURL
+        -   ☑ deductMode
+    -   Envirement
+        -   ☑ FOFA_CLIENT_URL 格式：<url>/?email=<email>&key=<key>&version=<v2>
+        -   ☑ FOFA_SERVER
+        -   ☑ FOFA_EMAIL
+        -   ☑ FOFA_KEY
+-   ☐ Publish
+    -   ☑ github
+    -   ☐ brew
+    -   ☐ apt
+    -   ☐ yum
+
 
 ## API设计规范v2
 
 -   所有接口都应该满足如下定义：
 
 错误
+
 ```json
 {
     "error": true,
@@ -138,7 +139,9 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
     "code": -700
 }
 ```
+
 正确
+
 ```json
 
 {
