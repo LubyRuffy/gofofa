@@ -76,6 +76,36 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 ./fofa stats --fields port,title,country title="test"
 ```
 
+### Icon
+
+-   icon subcommand
+
+search icon at fofa:
+
+```shell
+./fofa icon --open ./data/favicon.ico
+./fofa icon --open https://fofa.info/favicon.ico
+./fofa icon --open http://www.baidu.com
+```
+
+calc local file icon hash:
+
+```shell
+./fofa icon ./data/favicon.ico
+```
+
+calc remote icon hash:
+
+```shell
+./fofa icon https://fofa.info/favicon.ico
+```
+
+calc remote homepage icon hash:
+
+```shell
+./fofa icon http://www.baidu.com
+```
+
 ### Utils
 
 -   count subcommand

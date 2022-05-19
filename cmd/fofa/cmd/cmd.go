@@ -21,6 +21,7 @@ var GlobalCommands = []*cli.Command{
 	accountCmd,
 	countCmd,
 	statsCmd,
+	iconCmd,
 }
 
 // IsValidCommand valid command name
@@ -68,6 +69,22 @@ var GlobalOptions = []cli.Flag{
 	},
 }
 
+//// isSubCmd 判断是否指定的子命令
+//func isSubCmd(args []string, cmd string) bool {
+//	for _, arg := range args {
+//		if arg[0] == '-' {
+//			continue
+//		}
+//		if strings.Contains(arg, "=") {
+//			continue
+//		}
+//		if arg == cmd {
+//			return true
+//		}
+//	}
+//	return false
+//}
+
 // BeforAction generate fofa client
 func BeforAction(context *cli.Context) error {
 	var err error
@@ -80,6 +97,11 @@ func BeforAction(context *cli.Context) error {
 	if context.Bool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+
+	//// icon no need client
+	//if isSubCmd(os.Args[1:], "icon") {
+	//	return nil
+	//}
 
 	fofaCli, err = gofofa.NewClient(fofaURL)
 	if err != nil {

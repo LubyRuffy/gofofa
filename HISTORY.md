@@ -1,3 +1,8 @@
+
+## v0.0.4 icon
+
+-   add icon subcommand: `./fofa icon --open http://www.baidu.com`
+
 ## v0.0.3 color and stats
 
 -   add count subcommand: `./fofa count port=80`
