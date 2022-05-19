@@ -181,6 +181,9 @@ var (
 
 	faviconLinkDoubleSlashHandler = func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case "/favicon.ico":
+			http.ServeFile(w, r, "./data"+r.URL.Path)
+			return
 		case "/":
 			// 主要用于测试favicon
 			w.Write([]byte(`
