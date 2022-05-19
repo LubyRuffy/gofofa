@@ -179,6 +179,28 @@ var (
 		}
 	}
 
+	faviconLinkDoubleSlashHandler = func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			// 主要用于测试favicon
+			w.Write([]byte(`
+<!doctype html>
+<html>
+  <head >
+    <title>网络空间测绘，网络空间安全搜索引擎，网络空间搜索引擎，安全态势感知 - FOFA网络空间测绘系统</title>
+	<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+	<link rel="icon" sizes="any" mask href="//www.baidu.com/img/baidu_85beaf5496f291521eb75ba38eacbd87.svg">
+  </head>
+  <body >
+    hello world
+  </body>
+</html>
+
+`))
+			return
+		}
+	}
+
 	bodyInvalidHandler = func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/":
@@ -196,8 +218,12 @@ rel="icon"
 as="image" 
 type="image/x-icon" 
 href="/favicon.ico">`)))
+	// 自闭合
+	assert.Equal(t, "/favicon.ico", ExtractIconFromHtml([]byte(`<link rel="icon" type="image/x-icon" href="/favicon.ico" />`)))
 	// 大写
 	assert.Equal(t, "/favicon.ico", ExtractIconFromHtml([]byte(`<LINK rel="icon" type="image/x-icon" href="/favicon.ico">`)))
+	// 两条
+	assert.Equal(t, "/favicon.ico", ExtractIconFromHtml([]byte(`<Link rel="shortcut Icon" type="image/x-icon" href="/favicon.ico">`)))
 	// 相对
 	assert.Equal(t, "/favicon_rel.ico", ExtractIconFromHtml([]byte(`<link rel="icon" as="image" type="image/x-icon" href="/favicon_rel.ico">`)))
 	// 绝对路径
@@ -205,6 +231,13 @@ href="/favicon.ico">`)))
 	assert.Equal(t, "%1", ExtractIconFromHtml([]byte(`<link rel="icon" as="image" type="image/x-icon" href="%1">`)))
 	// 空
 	assert.Equal(t, "", ExtractIconFromHtml([]byte(`<link rel="stylesheet" href="styles.css">`)))
+
+	// 多条icon
+	assert.Equal(t, "/favicon.ico", ExtractIconFromHtml([]byte(`<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+	<link rel="icon" sizes="any" mask href="//www.baidu.com/img/baidu_85beaf5496f291521eb75ba38eacbd87.svg">`)))
+
+	//todo: unicode编码测试
+	//todo: gb2312测试
 }
 
 func TestFetchURLContent(t *testing.T) {
@@ -331,4 +364,10 @@ func TestIconHash(t *testing.T) {
 	defer ts7.Close()
 	hash, err = IconHash(ts7.URL)
 	assert.Contains(t, err.Error(), "can not find any icon")
+
+	// 格式: "//www.baidu.com/img/baidu_85beaf5496f291521eb75ba38eacbd87.svg"
+	ts8 := httptest.NewServer(http.HandlerFunc(faviconLinkDoubleSlashHandler))
+	defer ts8.Close()
+	hash, err = IconHash(ts8.URL)
+	assert.Nil(t, err)
 }

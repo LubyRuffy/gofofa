@@ -101,11 +101,11 @@ tokenize:
 		var href string
 		var isIconLink bool
 
-		switch {
-		case tt == html.ErrorToken:
+		switch tt {
+		case html.ErrorToken:
 			// End of the document, we're done
 			return ""
-		case tt == html.StartTagToken:
+		case html.StartTagToken, html.SelfClosingTagToken:
 			name, hasAttr := z.TagName()
 			if atom.Link == atom.Lookup(name) {
 				for hasAttr {
@@ -113,10 +113,17 @@ tokenize:
 					k, v, hasAttr = z.TagAttr()
 					switch string(k) {
 					case "rel":
-						if !bytes.EqualFold(v, []byte("icon")) {
+						cs := strings.Split(strings.ToLower(string(v)), " ")
+						for _, c := range cs {
+							if strings.EqualFold(c, "icon") {
+								isIconLink = true
+								break
+							}
+						}
+
+						if !isIconLink {
 							continue tokenize
 						}
-						isIconLink = true
 					case "href":
 						href = string(v)
 					}

@@ -108,6 +108,20 @@ calc remote homepage icon hash:
 
 ### Utils
 
+-   random subcommand
+
+random generate date from fofa, line by line
+```shell
+./fofa random
+./fofa random -f host,ip,port,lastupdatetime,title,header,body --format json
+```
+
+every 500ms generate one line, never stop
+
+```shell
+./fofa random -s -1 -sleep 500
+```
+
 -   count subcommand
 
 ```shell
