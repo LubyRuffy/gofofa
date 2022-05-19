@@ -63,9 +63,40 @@ func TestClient_HostSearch(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 10, len(res))
 
-	// 0 数据
+	// 请求0数据
 	res, err = cli.HostSearch("port=80", 0, nil)
 	assert.Contains(t, err.Error(), "The Size value `0` must be between")
+
+	// 返回0条数据
+	res, err = cli.HostSearch("port=100000", 10, nil)
+	assert.Nil(t, err)
+	assert.Nil(t, res)
+
+	// 返回非正常格式数据
+	res, err = cli.HostSearch("port=100001", 10, nil)
+	assert.Nil(t, err)
+
+	// 数据不够
+	res, err = cli.HostSearch("port=50000", 10000, nil)
+	assert.Nil(t, err)
+	assert.Equal(t, 9, len(res))
+
+	// 错误语句
+	res, err = cli.HostSearch("aaa=bbb", 10, nil)
+	assert.Contains(t, err.Error(), "[820000] FOFA Query Syntax Incorrect")
+
+	// 请求失败
+	cli = &Client{
+		Server:     "http://fofa.info:66666",
+		httpClient: &http.Client{},
+		Account: AccountInfo{
+			FCoin:    0,
+			IsVIP:    true,
+			VIPLevel: 1,
+		},
+	}
+	res, err = cli.HostSearch("port=80", 10, []string{"host"})
+	assert.Error(t, err)
 }
 
 func TestClient_HostSize(t *testing.T) {
@@ -83,4 +114,12 @@ func TestClient_HostSize(t *testing.T) {
 	count, err = cli.HostSize("port=80")
 	assert.Nil(t, err)
 	assert.Equal(t, 12345678, count)
+
+	// 请求失败
+	cli = &Client{
+		Server:     "http://fofa.info:66666",
+		httpClient: &http.Client{},
+	}
+	count, err = cli.HostSize("port=80")
+	assert.Error(t, err)
 }

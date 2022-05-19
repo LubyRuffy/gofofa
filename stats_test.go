@@ -43,4 +43,12 @@ func TestClient_Stats(t *testing.T) {
 	assert.Equal(t, "country", res[1].Name)
 	assert.Equal(t, "United States of America", res[1].Items[0].Name)
 	assert.Equal(t, 154746752, res[1].Items[0].Count)
+
+	// 请求失败
+	cli = &Client{
+		Server:     "http://fofa.info:66666",
+		httpClient: &http.Client{},
+	}
+	res, err = cli.Stats("port=80", 5, nil)
+	assert.Error(t, err)
 }

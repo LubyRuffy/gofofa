@@ -8,7 +8,7 @@ fofa client in Go
 [![Go Report Card](https://goreportcard.com/badge/github.com/lubyruffy/gofofa)](https://goreportcard.com/report/github.com/lubyruffy/gofofa)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/3eadab4e412e4c3494bbc5f188d441e8)](https://www.codacy.com/gh/LubyRuffy/gofofa/dashboard?utm_source=github.com&utm_medium=referral&utm_content=LubyRuffy/gofofa&utm_campaign=Badge_Grade)
 [![Github Release](https://img.shields.io/github/release/lubyruffy/gofofa/all.svg)](https://github.com/lubyruffy/gofofa/releases)
-[![Go Reference](https://pkg.go.dev/badge/github.com/LubyRuffy/gofofa.svg)](https://pkg.go.dev/github.com/LubyRuffy/gofofa)
+[![Go Reference](https://pkg.go.dev/badge/github.com/LubyRuffy/gofofa.svg)](https://pkg.go.dev/github.com/lubyruffy/gofofa)
 
 ## Background
 
@@ -138,8 +138,8 @@ calc remote homepage icon hash:
         -   ☑ HostSearch
         -   ☑ HostSize
         -   ☑ AccountInfo
--   ☐ As Client
-    -   ☐ Sub Commands
+-   ☑ As Client
+    -   ☑ Sub Commands
         -   ☑ account
         -   ☑ search
             -   ☑ query
@@ -151,14 +151,13 @@ calc remote homepage icon hash:
                 -   ☑ xml
                 -   ☐ table
             -   ☑ outFile/o
-        -   ☐ stats
-        -   ☐ host
-        -   ☐ icon
-    -   ☐ Terminal color 
-    -   ☐ Global Config
+        -   ☑ stats
+        -   ☑ icon
+    -   ☑ Terminal color 
+    -   ☑ Global Config
         -   ☑ fofaURL
         -   ☑ deductMode
-    -   Envirement
+    -   ☑ Envirement
         -   ☑ FOFA_CLIENT_URL format: <url>/?email=\<email\>&key=\<key\>&version=\<v1\>
         -   ☑ FOFA_SERVER
         -   ☑ FOFA_EMAIL

@@ -62,8 +62,8 @@ func fileIconHash(url string) (hash string, err error) {
 	return
 }
 
-// fetchIconURL 获取url内容
-func fetchIconURL(iconUrl string) (data []byte, contentType string, err error) {
+// fetchURLContent fetch content and type from url
+func fetchURLContent(iconUrl string) (data []byte, contentType string, err error) {
 	// fetch url
 	var resp *http.Response
 	resp, err = http.Get(iconUrl)
@@ -89,8 +89,8 @@ func fetchIconURL(iconUrl string) (data []byte, contentType string, err error) {
 	return
 }
 
-// extractIconFromHtml extract link icon from html
-func extractIconFromHtml(data []byte) string {
+// ExtractIconFromHtml extract link icon from html
+func ExtractIconFromHtml(data []byte) string {
 	r := bytes.NewReader(data)
 	z := html.NewTokenizer(r)
 
@@ -127,8 +127,6 @@ tokenize:
 			return href
 		}
 	}
-
-	return ""
 }
 
 // IconHash
@@ -160,7 +158,7 @@ func IconHash(iconUrl string) (hash string, err error) {
 	// remote url
 	var data []byte
 	var contentType string
-	data, contentType, err = fetchIconURL(iconUrl)
+	data, contentType, err = fetchURLContent(iconUrl)
 	if isImageContent(contentType) {
 		hash = mmh3Hash32(data)
 		return
@@ -170,14 +168,14 @@ func IconHash(iconUrl string) (hash string, err error) {
 	var parsedURL string
 	if strings.Contains(contentType, "html") {
 		logrus.Debug("try to parse favicon url")
-		parsedURL = extractIconFromHtml(data)
+		parsedURL = ExtractIconFromHtml(data)
 	}
 
 	if len(parsedURL) > 0 {
 		logrus.Debug("parsed favicon url from html:", parsedURL)
 		if rel, errP := url.Parse(parsedURL); errP == nil {
 			newURL := u.ResolveReference(rel)
-			data, contentType, err = fetchIconURL(newURL.String())
+			data, contentType, err = fetchURLContent(newURL.String())
 			if isImageContent(contentType) {
 				hash = mmh3Hash32(data)
 				return
@@ -190,7 +188,7 @@ func IconHash(iconUrl string) (hash string, err error) {
 	// just try default favicon.ico
 	logrus.Debug("try default favicon.ico")
 	defaultIconURL := u.Scheme + "://" + u.Host + "/favicon.ico"
-	data, contentType, err = fetchIconURL(defaultIconURL)
+	data, contentType, err = fetchURLContent(defaultIconURL)
 	if isImageContent(contentType) {
 		hash = mmh3Hash32(data)
 		return

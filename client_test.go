@@ -61,6 +61,22 @@ var (
 			}
 
 			switch string(q) {
+			case "aaa=bbb":
+				// 不支持的语法
+				w.Write([]byte(`{"error":true,"errmsg":"[820000] FOFA Query Syntax Incorrect"}`))
+				return
+			case "port=100000":
+				// 构造0个数据
+				w.Write([]byte(`{"error":false,"size":0,"page":1,"mode":"extended","query":"port=\"100000\"","results":[]}`))
+				return
+			case "port=100001":
+				// 构造非正常格式
+				w.Write([]byte(`{"error":false,"size":0,"page":1,"mode":"extended","query":"port=\"100000\"","results":"test"}`))
+				return
+			case "port=50000":
+				// 数据不够
+				w.Write([]byte(`{"error":false,"size":9,"page":1,"mode":"extended","query":"port=\"50000\"","results":["118.190.75.134","34.83.32.116","117.4.67.26",":0",":0",":0","176.198.13.22","81.174.169.62","23.42.6.133"]}`))
+				return
 			case "port=80":
 				switch r.FormValue("fields") {
 				case "host":
