@@ -1,7 +1,7 @@
-
 ## v0.0.4 icon
 
 -   add icon subcommand: `./fofa icon --open http://www.baidu.com`
+-   add random subcommand: `./fofa random body="icon"`
 
 ## v0.0.3 color and stats
 

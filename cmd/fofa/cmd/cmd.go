@@ -22,6 +22,7 @@ var GlobalCommands = []*cli.Command{
 	countCmd,
 	statsCmd,
 	iconCmd,
+	randomCmd,
 }
 
 // IsValidCommand valid command name
