@@ -73,8 +73,9 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 -   stats subcommand
 
 ```shell
-./fofa stats --fields port,title,country title="test"
+./fofa stats --fields title,country title="hacked by"
 ```
+![fofa stats](./data/fofa_stats.png)
 
 ### Icon
 
