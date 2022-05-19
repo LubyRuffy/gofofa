@@ -218,7 +218,8 @@ func TestFetchURLContent(t *testing.T) {
 	// 请求成功
 	data, contentType, err = fetchURLContent(ts.URL + "/favicon.ico")
 	assert.Nil(t, err)
-	assert.Equal(t, "image/x-icon", contentType)
+	assert.Contains(t, contentType, "image") // image/vnd.microsoft.icon  image/x-icon
+	assert.Contains(t, contentType, "icon")  // image/vnd.microsoft.icon  image/x-icon
 	assert.Equal(t, 1150, len(data))
 
 	// 请求失败
