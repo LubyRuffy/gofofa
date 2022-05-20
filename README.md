@@ -191,3 +191,9 @@ every 500ms generate one line, never stop
 ```shell
 ./fofa stats -f domain -s 100 'cert.is_valid=true && (cert="google")'
 ```
+
+### How to dump link icon datasets?
+
+```shell
+./fofa.exe random -s 10 -sleep 0 -f body 'body=icon && body=link'  | jq .body | grep -Po "(<[Ll][^>]*?rel[^>]*?icon[^>]*?>)"
+```

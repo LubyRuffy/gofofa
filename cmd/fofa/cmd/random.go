@@ -64,6 +64,14 @@ func randomAction(ctx *cli.Context) error {
 	if len(fields) == 0 {
 		return errors.New("fofa fields cannot be empty")
 	}
+	hostIndex := -1
+	if ctx.Bool("verbose") {
+		if !hashField(fields, "host") {
+			logrus.Warnln("verbose mode, so add host to fields automatically")
+			fields = append(fields, "host")
+		}
+		hostIndex = fieldIndex(fields, "host")
+	}
 
 	// gen writer
 	outTo := os.Stdout
@@ -100,6 +108,11 @@ func randomAction(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
+
+		if ctx.Bool("verbose") {
+			logrus.Debugln("host:", res[0][hostIndex])
+		}
+
 		// output
 		if err = writer.WriteAll(res); err != nil {
 			return err

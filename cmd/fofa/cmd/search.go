@@ -61,13 +61,26 @@ var searchCmd = &cli.Command{
 	Action: SearchAction,
 }
 
-func hasBodyField(fields []string) bool {
+func fieldIndex(fields []string, fieldName string) int {
+	for i, f := range fields {
+		if f == fieldName {
+			return i
+		}
+	}
+	return -1
+}
+
+func hashField(fields []string, fieldName string) bool {
 	for _, f := range fields {
-		if f == "body" {
+		if f == fieldName {
 			return true
 		}
 	}
 	return false
+}
+
+func hasBodyField(fields []string) bool {
+	return hashField(fields, "body")
 }
 
 // SearchAction search action

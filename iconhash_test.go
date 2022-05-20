@@ -2,6 +2,7 @@ package gofofa
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/vincent-petithory/dataurl"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,6 +21,7 @@ var (
 			return
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -44,6 +46,7 @@ var (
 			return
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -68,6 +71,7 @@ var (
 			return
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -100,6 +104,7 @@ var (
 		switch r.URL.Path {
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -121,6 +126,7 @@ var (
 		switch r.URL.Path {
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -142,6 +148,7 @@ var (
 		switch r.URL.Path {
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -162,6 +169,7 @@ var (
 		switch r.URL.Path {
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -179,6 +187,28 @@ var (
 		}
 	}
 
+	faviconLinkBase64Handler = func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
+			d, _ := os.ReadFile("./data/favicon.ico")
+			u := dataurl.New(d, "image/x-icon")
+			w.Write([]byte("<link rel=\"shortcut icon\" href=\"" + u.String() + "\" type=\"image/x-icon\" />"))
+			return
+		}
+	}
+
+	faviconLinkBase64ErrorHandler = func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<link rel=\"shortcut icon\" href=\"data:image/icon-x;\" />"))
+			return
+		}
+	}
+
 	faviconLinkDoubleSlashHandler = func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/favicon.ico":
@@ -186,6 +216,7 @@ var (
 			return
 		case "/":
 			// 主要用于测试favicon
+			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`
 <!doctype html>
 <html>
@@ -373,4 +404,17 @@ func TestIconHash(t *testing.T) {
 	defer ts8.Close()
 	hash, err = IconHash(ts8.URL)
 	assert.Nil(t, err)
+
+	// base64格式
+	ts9 := httptest.NewServer(http.HandlerFunc(faviconLinkBase64Handler))
+	defer ts9.Close()
+	hash, err = IconHash(ts9.URL)
+	assert.Equal(t, "-247388890", hash)
+
+	// base64格式
+	ts10 := httptest.NewServer(http.HandlerFunc(faviconLinkBase64ErrorHandler))
+	defer ts10.Close()
+	hash, err = IconHash(ts10.URL)
+	assert.Contains(t, err.Error(), "unterminated parameter sequence")
+
 }

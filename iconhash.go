@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/twmb/murmur3"
+	"github.com/vincent-petithory/dataurl"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 	"io/ioutil"
@@ -180,6 +181,20 @@ func IconHash(iconUrl string) (hash string, err error) {
 
 	if len(parsedURL) > 0 {
 		logrus.Debug("parsed favicon url from html:", parsedURL)
+
+		// inner base64
+		if strings.HasPrefix(parsedURL, "data:image") {
+			var dataURL *dataurl.DataURL
+			dataURL, err = dataurl.DecodeString(parsedURL)
+			if err != nil {
+				return
+			}
+			if isImageContent(dataURL.MediaType.ContentType()) {
+				hash = mmh3Hash32(dataURL.Data)
+				return
+			}
+		}
+
 		if rel, errP := url.Parse(parsedURL); errP == nil {
 			newURL := u.ResolveReference(rel)
 			data, contentType, err = fetchURLContent(newURL.String())
