@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lubyruffy/gofofa/pkg/outformats"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"math/rand"
 	"os"
@@ -67,15 +68,20 @@ func randomAction(ctx *cli.Context) error {
 	// gen writer
 	outTo := os.Stdout
 	var writer outformats.OutWriter
-	switch format {
-	case "csv":
-		writer = outformats.NewCSVWriter(outTo)
-	case "json":
+	if hasBodyField(fields) && format == "csv" {
+		logrus.Warnln("fields contains body, so change format to json")
 		writer = outformats.NewJSONWriter(outTo, fields)
-	case "xml":
-		writer = outformats.NewXMLWriter(outTo, fields)
-	default:
-		return fmt.Errorf("unknown format: %s", format)
+	} else {
+		switch format {
+		case "csv":
+			writer = outformats.NewCSVWriter(outTo)
+		case "json":
+			writer = outformats.NewJSONWriter(outTo, fields)
+		case "xml":
+			writer = outformats.NewXMLWriter(outTo, fields)
+		default:
+			return fmt.Errorf("unknown format: %s", format)
+		}
 	}
 
 	// do search

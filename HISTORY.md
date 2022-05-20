@@ -1,3 +1,8 @@
+## v0.0.5 data pipeline
+
+-   support gzip compress
+-   terminal color on debug output (```--verbose```)
+  
 ## v0.0.4 icon
 
 -   add icon subcommand: `./fofa icon --open http://www.baidu.com`

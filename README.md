@@ -184,36 +184,10 @@ every 500ms generate one line, never stop
     -   ☐ yum
 
 
-## API设计规范v2
+## Scenes
 
--   所有接口都应该满足如下定义：
+### How to dump all domains that cert is valid and contains google?
 
-错误
-
-```json
-{
-    "error": true,
-    "errmsg": "Account Invalid",
-    "code": -700
-}
+```shell
+./fofa stats -f domain -s 100 'cert.is_valid=true && (cert="google")'
 ```
-
-正确
-
-```json
-
-{
-    "error": false,
-    "data": {
-        "fcoin": 1000
-    }
-}
-```
-
--   分为几个基础模块
-    -   account
-        -   profile
-    -   host
--   账号认证设计
-    -   是header传递还是url传递好一点？
-    -   是只传递key还是传递email/key好一点？

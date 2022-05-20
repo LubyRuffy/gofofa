@@ -95,6 +95,10 @@ func BeforAction(context *cli.Context) error {
 		return nil
 	}
 
+	//logrus.SetOutput(os.Stderr) // 默认
+	logrus.SetFormatter(&logrus.TextFormatter{
+		ForceColors: true,
+	})
 	if context.Bool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
