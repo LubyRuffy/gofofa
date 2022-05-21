@@ -195,5 +195,31 @@ every 500ms generate one line, never stop
 ### How to dump link icon datasets?
 
 ```shell
-./fofa.exe random -s 10 -sleep 0 -f body 'body=icon && body=link'  | jq .body | grep -Po "(<[Ll][^>]*?rel[^>]*?icon[^>]*?>)"
+./fofa random -s 10 -sleep 0 -f body 'body=icon && body=link'  | jq .body | grep -Po "(<[Ll][^>]*?rel[^>]*?icon[^>]*?>)"
+```
+
+pipeline mode (not finish yet):
+```shell
+./fofa pipeline -f dump.fofapipe
+```
+
+dump.fofapipe
+```golang
+FetchFofa(map[string]interface{} {
+    "query": "body=icon && body=link",
+    "size": 10,
+    "fields": "host,title,body",
+})
+ 
+AddField(map[string]interface{}{
+    "from": map[string]interface{}{
+        "method": "grep",
+        "field": "body",
+        "value": "(?is)(<link[^>]*?rel[^>]*?=[^>]*?['\"][^>'\"]*?icon[^>'\"]*?['\"][^>]*?>)",
+        "options": "-o",
+    },
+    "name": "icon_tag",
+})
+
+RemoveField("body")
 ```

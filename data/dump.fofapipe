@@ -1,0 +1,17 @@
+FetchFofa(map[string]interface{} {
+    "query": "body=icon && body=link",
+    "size": 10,
+    "fields": "host,title,body",
+})
+ 
+AddField(map[string]interface{}{
+    "from": map[string]interface{}{
+        "method": "grep",
+        "field": "body",
+        "value": "(?is)(<link[^>]*?rel[^>]*?=[^>]*?['\"][^>'\"]*?icon[^>'\"]*?['\"][^>]*?>)",
+        "options": "-o",
+    },
+    "name": "icon_tag",
+})
+
+RemoveField("body")

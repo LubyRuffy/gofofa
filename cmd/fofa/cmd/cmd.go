@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/lubyruffy/gofofa"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"os"
 )
 
 var (
@@ -23,6 +24,7 @@ var GlobalCommands = []*cli.Command{
 	statsCmd,
 	iconCmd,
 	randomCmd,
+	pipelineCmd,
 }
 
 // IsValidCommand valid command name

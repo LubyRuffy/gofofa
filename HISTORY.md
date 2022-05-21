@@ -1,5 +1,6 @@
 ## v0.0.5 data pipeline
 
+-   add pipeline subcommand: ```./fofa pipeline -f dump.fofapipe```
 -   support gzip compress
 -   terminal color on debug output (```--verbose```)
   
