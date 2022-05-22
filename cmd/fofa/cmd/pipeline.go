@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"regexp"
@@ -34,9 +35,10 @@ func (p *pipeTask) Close() {
 }
 
 type PipeRunner struct {
-	content  string
-	tasks    []pipeTask
-	lastFile string
+	content      string
+	tasks        []pipeTask
+	lastFile     string
+	lastFileSize int64 // 最后写入文件的大小
 }
 
 // NewPipeRunner create pipe runner
@@ -58,18 +60,52 @@ func (p *PipeRunner) addPipe(pt pipeTask) {
 	p.lastFile = pt.outfile
 }
 
-func (p *PipeRunner) eachLine(filename string, f func(line string) error) error {
+func read(r *bufio.Reader) ([]byte, error) {
+	var (
+		isPrefix = true
+		err      error
+		line, ln []byte
+	)
+
+	for isPrefix && err == nil {
+		line, isPrefix, err = r.ReadLine()
+		ln = append(ln, line...)
+	}
+
+	return ln, err
+}
+
+func (p *PipeRunner) eachLine(filename string, size int64, f func(line string) error) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		f(scanner.Text())
+
+	// check valid
+	if size > 0 {
+		var s os.FileInfo
+		s, err = file.Stat()
+		if err != nil {
+			panic(err)
+		}
+		if s.Size() != size {
+			panic("size is not same")
+		}
 	}
-	if err := scanner.Err(); err != nil {
-		return err
+
+	reader := bufio.NewReader(file)
+	for {
+		line, err := read(reader)
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				panic(err)
+			}
+		}
+
+		f(string(line))
 	}
 	return nil
 }
@@ -160,7 +196,7 @@ func (p *PipeRunner) addField(params map[string]interface{}) {
 	var addRegex *regexp.Regexp
 
 	var newLines []string
-	p.eachLine(p.lastFile, func(line string) error {
+	p.eachLine(p.lastFile, p.lastFileSize, func(line string) error {
 		var newLine string
 		if options.Value != nil {
 			if addValue == "" {
@@ -177,7 +213,10 @@ func (p *PipeRunner) addField(params map[string]interface{}) {
 					}
 				}
 				res := addRegex.FindAllStringSubmatch(gjson.Get(line, options.From.Field).String(), -1)
-				newLine, _ = sjson.Set(line, options.Name, res)
+				newLine, err = sjson.Set(line, options.Name, res)
+				if err != nil {
+					panic(err)
+				}
 			default:
 				panic(errors.New("unknown from type"))
 			}
@@ -189,11 +228,19 @@ func (p *PipeRunner) addField(params map[string]interface{}) {
 	pt := pipeTask{
 		content: fmt.Sprintf("%v", params),
 		outfile: p.writeTempJSONFile(func(f *os.File) {
-			f.WriteString(strings.Join(newLines, "\n"))
+			content := strings.Join(newLines, "\n")
+			n, err := f.WriteString(content)
+			if err != nil {
+				panic(err)
+			}
+			if n != len(content) {
+				panic("write string failed")
+			}
+			p.lastFileSize = int64(n)
 		}),
 	}
 	p.addPipe(pt)
-	logrus.Debug("write to file:", pt.outfile)
+	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
 }
 
 func (p *PipeRunner) removeField(params string) {
@@ -203,8 +250,11 @@ func (p *PipeRunner) removeField(params string) {
 	}
 
 	var newLines []string
-	p.eachLine(p.lastFile, func(line string) error {
-		newLine, _ := sjson.Delete(line, params)
+	p.eachLine(p.lastFile, p.lastFileSize, func(line string) error {
+		newLine, err := sjson.Delete(line, params)
+		if err != nil {
+			panic(err)
+		}
 		newLines = append(newLines, newLine)
 		return nil
 	})
@@ -212,11 +262,19 @@ func (p *PipeRunner) removeField(params string) {
 	pt := pipeTask{
 		content: fmt.Sprintf("%v", params),
 		outfile: p.writeTempJSONFile(func(f *os.File) {
-			f.WriteString(strings.Join(newLines, "\n"))
+			content := strings.Join(newLines, "\n")
+			n, err := f.WriteString(content)
+			if err != nil {
+				panic(err)
+			}
+			if n != len(content) {
+				panic("write string failed")
+			}
+			p.lastFileSize = int64(n)
 		}),
 	}
 	p.addPipe(pt)
-	logrus.Debug("write to file:", pt.outfile)
+	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
 }
 
 // Run run pipelines
@@ -286,7 +344,7 @@ func pipelineAction(ctx *cli.Context) error {
 		return err
 	}
 
-	pr.eachLine(pr.lastFile, func(line string) error {
+	pr.eachLine(pr.lastFile, pr.lastFileSize, func(line string) error {
 		fmt.Println(line)
 		return nil
 	})
