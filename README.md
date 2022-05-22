@@ -210,8 +210,9 @@ every 500ms generate one line, never stop
 ./fofa random -s 10 -sleep 0 -f body 'body=icon && body=link'  | jq .body | grep -Po "(<[Ll][^>]*?rel[^>]*?icon[^>]*?>)"
 ```
 
-pipeline mode (not finish yet):
+pipeline mode:
 ```shell
+./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'
 ./fofa pipeline -f dump.fofapipe
 ```
 
