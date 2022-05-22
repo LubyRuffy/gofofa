@@ -14,4 +14,6 @@ AddField(map[string]interface{}{
     "name": "icon_tag",
 })
 
-RemoveField("body")
+RemoveField(map[string]interface{}{
+    "name": "body",
+})

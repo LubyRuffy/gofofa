@@ -107,6 +107,18 @@ calc remote homepage icon hash:
 ./fofa icon http://www.baidu.com
 ```
 
+### Pipeline
+
+-   pipeline subcommand
+
+do workflow pipeline to process data:
+
+```shell
+./fofa pipeline -f dump.fofapipe
+```
+
+[PipeLine](doc/PipeLine.md)
+
 ### Utils
 
 -   random subcommand
@@ -221,5 +233,7 @@ AddField(map[string]interface{}{
     "name": "icon_tag",
 })
 
-RemoveField("body")
+RemoveField(map[string]interface{}{
+    "name": "body",
+})
 ```

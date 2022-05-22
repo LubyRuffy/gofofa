@@ -243,7 +243,7 @@ func (p *PipeRunner) addField(params map[string]interface{}) {
 	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
 }
 
-func (p *PipeRunner) removeField(params string) {
+func (p *PipeRunner) removeField(params map[string]interface{}) {
 	logrus.Debug("removeField params:", params)
 	if len(p.lastFile) == 0 {
 		panic(errors.New("removeField need input pipe or file"))
@@ -251,7 +251,7 @@ func (p *PipeRunner) removeField(params string) {
 
 	var newLines []string
 	p.eachLine(p.lastFile, p.lastFileSize, func(line string) error {
-		newLine, err := sjson.Delete(line, params)
+		newLine, err := sjson.Delete(line, params["name"].(string))
 		if err != nil {
 			panic(err)
 		}
