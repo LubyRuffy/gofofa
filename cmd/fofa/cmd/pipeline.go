@@ -34,6 +34,7 @@ func (p *pipeTask) Close() {
 	os.Remove(p.outfile)
 }
 
+// PipeRunner pipe运行器
 type PipeRunner struct {
 	content      string
 	tasks        []pipeTask
