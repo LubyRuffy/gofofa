@@ -373,6 +373,10 @@ func fofaHook(fi *pipeparser.FuncInfo) string {
 		panic(err)
 	}
 	var size int64 = 10
+	fields := "`host,title`"
+	if len(fi.Params) > 1 {
+		fields = fi.Params[1].String()
+	}
 	if len(fi.Params) > 2 {
 		size = fi.Params[2].Int64()
 	}
@@ -383,7 +387,7 @@ func fofaHook(fi *pipeparser.FuncInfo) string {
 		Fields string
 	}{
 		Query:  fi.Params[0].String(),
-		Fields: fi.Params[1].String(),
+		Fields: fields,
 		Size:   size,
 	})
 	if err != nil {

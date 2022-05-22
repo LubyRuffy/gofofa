@@ -114,7 +114,7 @@ calc remote homepage icon hash:
 do workflow pipeline to process data:
 
 ```shell
-./fofa pipeline -f dump.fofapipe
+./fofa pipeline 'fofa(`title="hacked"`,`host,ip,port,title,server`) | cut(`server,ip,port`)'
 ```
 
 [PipeLine](doc/PipeLine.md)
