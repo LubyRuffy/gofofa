@@ -1,7 +1,9 @@
 package pipeparser
 
 import (
+	"bytes"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -28,6 +30,7 @@ func TestNewParser(t *testing.T) {
 
 	// 字符串参数
 	assert.Equal(t, "a(\"abc\")\n", NewParser().Parse(`a("abc")`))
+	assert.Equal(t, "a(`abc`)\n", NewParser().Parse("a(`abc`)"))
 	assert.Equal(t, `a("abc\"123")`+"\n", NewParser().Parse(`a("abc\"123")`))
 
 	// 0x
@@ -35,4 +38,36 @@ func TestNewParser(t *testing.T) {
 
 	// char
 	assert.Equal(t, "a('a')\n", NewParser().Parse(`a('a')`))
+
+	// translate simple mode to go code
+	RegisterFunction("fofa", func(fi *FuncInfo) string {
+		tmpl, err := template.New("fofa").Parse(`FetchFofa(map[string]interface{} {
+    "query": {{ .Query }},
+    "size": {{ .Size }},
+    "fields": {{ .Fields }},
+})`)
+		if err != nil {
+			panic(err)
+		}
+		var tpl bytes.Buffer
+		err = tmpl.Execute(&tpl, struct {
+			Query  string
+			Size   int64
+			Fields string
+		}{
+			Query:  fi.Params[0].String(),
+			Size:   fi.Params[1].Int64(),
+			Fields: fi.Params[2].String(),
+		})
+		if err != nil {
+			panic(err)
+		}
+		return tpl.String()
+	})
+	assert.Equal(t, `FetchFofa(map[string]interface{} {
+    "query": `+"`"+`title="test"`+"`"+`,
+    "size": 10,
+    "fields": `+"`"+`host,title,body`+"`"+`,
+})
+`, NewParser().Parse("fofa(`title=\"test\"`, 10, `host,title,body`)"))
 }

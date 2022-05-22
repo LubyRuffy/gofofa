@@ -228,12 +228,11 @@ AddField(map[string]interface{}{
         "method": "grep",
         "field": "body",
         "value": "(?is)(<link[^>]*?rel[^>]*?=[^>]*?['\"][^>'\"]*?icon[^>'\"]*?['\"][^>]*?>)",
-        "options": "-o",
     },
     "name": "icon_tag",
 })
 
 RemoveField(map[string]interface{}{
-    "name": "body",
+    "fields": "body",
 })
 ```

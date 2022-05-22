@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
+	"github.com/lubyruffy/gofofa/pkg/pipeparser"
 	"io"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/lubyruffy/gofofa/pkg/outformats"
 	"github.com/mitchellh/mapstructure"
@@ -250,11 +253,17 @@ func (p *PipeRunner) removeField(params map[string]interface{}) {
 		panic(errors.New("removeField need input pipe or file"))
 	}
 
+	fields := strings.Split(params["fields"].(string), ",")
+
 	var newLines []string
 	p.eachLine(p.lastFile, p.lastFileSize, func(line string) error {
-		newLine, err := sjson.Delete(line, params["name"].(string))
-		if err != nil {
-			panic(err)
+		var err error
+		newLine := line
+		for _, field := range fields {
+			newLine, err = sjson.Delete(newLine, field)
+			if err != nil {
+				panic(err)
+			}
 		}
 		newLines = append(newLines, newLine)
 		return nil
@@ -336,7 +345,8 @@ func pipelineAction(ctx *cli.Context) error {
 		if len(pipelineContent) > 0 {
 			return errors.New("file and content only one is allowed")
 		}
-		pipelineContent = v
+
+		pipelineContent = pipeparser.NewParser().Parse(v)
 	}
 
 	pr := NewPipeRunner(pipelineContent)
@@ -351,4 +361,82 @@ func pipelineAction(ctx *cli.Context) error {
 	})
 
 	return nil
+}
+
+func fofaHook(fi *pipeparser.FuncInfo) string {
+	tmpl, err := template.New("fofa").Parse(`FetchFofa(map[string]interface{} {
+    "query": {{ .Query }},
+    "size": {{ .Size }},
+    "fields": {{ .Fields }},
+})`)
+	if err != nil {
+		panic(err)
+	}
+	var size int64 = 10
+	if len(fi.Params) > 2 {
+		size = fi.Params[2].Int64()
+	}
+	var tpl bytes.Buffer
+	err = tmpl.Execute(&tpl, struct {
+		Query  string
+		Size   int64
+		Fields string
+	}{
+		Query:  fi.Params[0].String(),
+		Fields: fi.Params[1].String(),
+		Size:   size,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return tpl.String()
+}
+
+func cutHook(fi *pipeparser.FuncInfo) string {
+	tmpl, err := template.New("cut").Parse(`RemoveField(map[string]interface{}{
+    "fields": {{ . }},
+})`)
+	if err != nil {
+		panic(err)
+	}
+	var tpl bytes.Buffer
+	err = tmpl.Execute(&tpl, fi.Params[0].String())
+	if err != nil {
+		panic(err)
+	}
+	return tpl.String()
+}
+
+func grepAddHook(fi *pipeparser.FuncInfo) string {
+	tmpl, err := template.New("grep_add").Parse(`AddField(map[string]interface{}{
+    "from": map[string]interface{}{
+        "method": "grep",
+        "field": {{ .Field }},
+        "value": {{ .Value }},
+    },
+    "name": {{ .Name }},
+})`)
+	if err != nil {
+		panic(err)
+	}
+	var tpl bytes.Buffer
+	err = tmpl.Execute(&tpl, struct {
+		Field string
+		Value string
+		Name  string
+	}{
+		Field: fi.Params[0].String(),
+		Value: fi.Params[1].String(),
+		Name:  fi.Params[2].String(),
+	})
+	if err != nil {
+		panic(err)
+	}
+	return tpl.String()
+}
+
+func init() {
+	pipeparser.RegisterFunction("fofa", fofaHook)
+	pipeparser.RegisterFunction("cut", cutHook)
+	pipeparser.RegisterFunction("grep_add", grepAddHook)
 }
