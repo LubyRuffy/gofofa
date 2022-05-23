@@ -165,6 +165,7 @@ every 500ms generate one line, never stop
         -   ☑ HostSearch
         -   ☑ HostSize
         -   ☑ AccountInfo
+        -   ☑ IconHash
 -   ☑ As Client
     -   ☑ Sub Commands
         -   ☑ account

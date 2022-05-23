@@ -30,13 +30,7 @@ func newAst() (*parsec.AST, parsec.Parser) {
 	// value 值表达式，可以是function
 	identifier := parsec.OrdChoice(
 		func(nodes []parsec.ParsecNode) parsec.ParsecNode {
-			switch v := nodes[0].(type) {
-			case *parsec.Terminal:
-				return v
-			case *parsec.NonTerminal:
-				return v
-			}
-			panic("unreachable code")
+			return nodes[0]
 		},
 		parsec.Float(), parsec.Hex(), parsec.Int(),
 		parsec.Oct(),

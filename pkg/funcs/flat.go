@@ -12,31 +12,15 @@ import (
 )
 
 // flat 将数组分成多条一维记录并且展开
-// flat("a", true)
-// 第一个参数是字段名称，第二个参数是是否任意多层都打散（可选参数）
+// flat("a")
+// 第一个参数是字段名称
 // 注意：空值会移除
 func flat(fi *pipeparser.FuncInfo) string {
-
-	oneLevel := false
-	if len(fi.Params) > 1 {
-		oneLevel = fi.Params[1].Bool()
-	}
-
-	tmpl, err := template.New("flat").Parse(`FlatArray(GetRunner(), map[string]interface{}{
-    "field": {{ .Field }},
-    "oneLevel": {{ .OneLevel }},
+	tmpl, _ := template.New("flat").Parse(`FlatArray(GetRunner(), map[string]interface{}{
+    "field": {{ . }},
 })`)
-	if err != nil {
-		panic(err)
-	}
 	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, struct {
-		Field    string
-		OneLevel bool
-	}{
-		Field:    fi.Params[0].String(),
-		OneLevel: oneLevel,
-	})
+	err := tmpl.Execute(&tpl, fi.Params[0].String())
 	if err != nil {
 		panic(err)
 	}

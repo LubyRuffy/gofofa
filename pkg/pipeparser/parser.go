@@ -70,17 +70,14 @@ func (p *Parser) parseValue(node parsec.Queryable) interface{} {
 		case "DOUBLEQUOTESTRING", "QUOTESTRING":
 			return child.GetValue()
 		case "INT":
-			v, err := strconv.Atoi(child.GetValue())
-			if err != nil {
-				panic(err)
-			}
+			v, _ := strconv.Atoi(child.GetValue())
 			return int64(v)
 		case "HEX", "OCT", "FLOAT", "CHAR":
 			return child.GetValue()
 		case "function":
 			return p.parseFunc(child)
-		default:
-			panic(child.GetValue())
+			//default:
+			//	panic(child.GetValue())
 		}
 	}
 	return nil

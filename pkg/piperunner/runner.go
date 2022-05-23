@@ -141,38 +141,6 @@ func grepAddHook(fi *pipeparser.FuncInfo) string {
 	return tpl.String()
 }
 
-func dropHook(fi *pipeparser.FuncInfo) string {
-	//	tmpl, err := template.New("cut").Parse(`RemoveField(GetRunner(), map[string]interface{}{
-	//    "fields": {{ . }},
-	//})`)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	var tpl bytes.Buffer
-	//	err = tmpl.Execute(&tpl, fi.Params[0].String())
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return tpl.String()
-
-	// 调用zq
-	return `ZqQuery(GetRunner(), map[string]interface{}{
-    "query": "drop ` + fi.Params[0].RawString() + `",
-})`
-}
-
-// sort 参数可选
-func sortHook(fi *pipeparser.FuncInfo) string {
-	// 调用zq
-	field := ""
-	if len(fi.Params) > 0 {
-		fi.Params[0].RawString()
-	}
-	return `ZqQuery(GetRunner(), map[string]interface{}{
-    "query": "sort ` + field + `",
-})`
-}
-
 func intHook(fi *pipeparser.FuncInfo) string {
 	// 调用zq
 	return `ZqQuery(GetRunner(), map[string]interface{}{
@@ -182,9 +150,7 @@ func intHook(fi *pipeparser.FuncInfo) string {
 
 func init() {
 	// funcs
-	pipeparser.RegisterFunction("drop", dropHook)        // 删除字段
 	pipeparser.RegisterFunction("grep_add", grepAddHook) // grep匹配再新增字段
-	pipeparser.RegisterFunction("sort", sortHook)        // 排序
 	pipeparser.RegisterFunction("to_int", intHook)       // 将某个字段转换为int类型
 }
 

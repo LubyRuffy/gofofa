@@ -26,10 +26,10 @@ func (fp FuncParameter) String() string {
 	return fp.v.(string)
 }
 
-// String 做为string返回
-func (fp FuncParameter) Bool() bool {
-	return fp.v.(bool)
-}
+// Bool 做为bool返回
+//func (fp FuncParameter) Bool() bool {
+//	return fp.v.(bool)
+//}
 
 // RawString 不要引号
 func (fp FuncParameter) RawString() string {
