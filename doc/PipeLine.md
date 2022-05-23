@@ -29,12 +29,16 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
                 -   value 参数值
     -   RemoveField
         -   name 字段的名称
--   （未完成）支持缩写模式: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'```
+-   支持缩写模式: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'```
 -   （未完成）每一步都支持配置是否保留文件
 -   （未完成）函数可以进行统一化的参数配置
--   （未完成）框架支持内嵌golang注册函数的扩展
+-   框架支持内嵌golang注册函数的扩展
 -   （未完成）框架支持动态加载扩展，golang的脚本语言
 -   支持simple模式，将pipeline的模式转换成完整的golang代码
+-   （未完成）输出到不同的目标
+-   （未完成）可以保持中间数据，如aggs结果；不参与主流程，只用于统计，方便后续生成报表
+-   （未完成）可以形成报表
+-   （未完成）完整的日志记录
 
 ## simple模式
 
