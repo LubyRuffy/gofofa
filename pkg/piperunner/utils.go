@@ -7,6 +7,10 @@ import (
 	"os"
 )
 
+var (
+	defaultPipeTmpFilePrefix = "gofofa_pipeline_"
+)
+
 func read(r *bufio.Reader) ([]byte, error) {
 	var (
 		isPrefix = true
@@ -47,6 +51,7 @@ func EachLine(filename string, f func(line string) error) error {
 }
 
 // WriteTempJSONFile 写入临时文件
+// 如果writeF是nil，就只返回生成的一个临时空文件路径
 func WriteTempJSONFile(writeF func(f *os.File)) string {
 	var f *os.File
 	var err error
@@ -56,7 +61,8 @@ func WriteTempJSONFile(writeF func(f *os.File)) string {
 	}
 	defer f.Close()
 
-	writeF(f)
-
+	if writeF != nil {
+		writeF(f)
+	}
 	return f.Name()
 }

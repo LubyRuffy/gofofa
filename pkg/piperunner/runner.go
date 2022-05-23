@@ -1,7 +1,6 @@
 package piperunner
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/lubyruffy/gofofa/pkg/pipeparser"
 	"github.com/sirupsen/logrus"
@@ -10,12 +9,10 @@ import (
 	"os"
 	"reflect"
 	"sync"
-	"text/template"
 )
 
 var (
-	defaultPipeTmpFilePrefix = "gofofa_pipeline_"
-	functions                sync.Map
+	functions sync.Map
 )
 
 type pipeTask struct {
@@ -31,10 +28,9 @@ func (p *pipeTask) Close() {
 
 // PipeRunner pipe运行器
 type PipeRunner struct {
-	content      string
-	tasks        []pipeTask
-	LastFile     string // 最后生成的文件名
-	LastFileSize int64  // 最后写入文件的大小
+	content  string
+	tasks    []pipeTask
+	LastFile string // 最后生成的文件名
 }
 
 // RegisterWorkflow 注册workflow
@@ -88,9 +84,6 @@ func (p *PipeRunner) Run() error {
 			"GetRunner": reflect.ValueOf(func() *PipeRunner {
 				return p
 			}),
-			"RemoveField": reflect.ValueOf(removeField),
-			"AddField":    reflect.ValueOf(addField),
-			"ZqQuery":     reflect.ValueOf(zqQuery),
 		},
 	}
 	functions.Range(func(key, value any) bool {
@@ -111,47 +104,6 @@ func (p *PipeRunner) Run() error {
 	_, err = i.Eval(p.content)
 
 	return err
-}
-
-func grepAddHook(fi *pipeparser.FuncInfo) string {
-	tmpl, err := template.New("grep_add").Parse(`AddField(GetRunner(), map[string]interface{}{
-    "from": map[string]interface{}{
-        "method": "grep",
-        "field": {{ .Field }},
-        "value": {{ .Value }},
-    },
-    "name": {{ .Name }},
-})`)
-	if err != nil {
-		panic(err)
-	}
-	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, struct {
-		Field string
-		Value string
-		Name  string
-	}{
-		Field: fi.Params[0].String(),
-		Value: fi.Params[1].String(),
-		Name:  fi.Params[2].String(),
-	})
-	if err != nil {
-		panic(err)
-	}
-	return tpl.String()
-}
-
-func intHook(fi *pipeparser.FuncInfo) string {
-	// 调用zq
-	return `ZqQuery(GetRunner(), map[string]interface{}{
-    "query": "cast(this, <{` + fi.Params[0].RawString() + `:int64}>) ",
-})`
-}
-
-func init() {
-	// funcs
-	pipeparser.RegisterFunction("grep_add", grepAddHook) // grep匹配再新增字段
-	pipeparser.RegisterFunction("to_int", intHook)       // 将某个字段转换为int类型
 }
 
 // New create pipe runner
