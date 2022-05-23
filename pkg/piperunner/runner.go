@@ -1,35 +1,40 @@
 package piperunner
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/sirupsen/logrus"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
+	"html/template"
 	"os"
 	"reflect"
 	"sync"
+	"time"
 )
 
 var (
 	functions sync.Map
 )
 
-type pipeTask struct {
-	name    string // pipe name
-	content string // raw content
-	outfile string // tmp file
+// PipeTask 每一个pipe执行的任务统计信息
+type PipeTask struct {
+	Name    string        // pipe name
+	Content string        // raw content
+	Outfile string        // tmp file
+	Cost    time.Duration // time costs
 }
 
 // Close remove tmp outfile
-func (p *pipeTask) Close() {
-	os.Remove(p.outfile)
+func (p *PipeTask) Close() {
+	os.Remove(p.Outfile)
 }
 
 // PipeRunner pipe运行器
 type PipeRunner struct {
 	content  string
-	tasks    []pipeTask
+	tasks    []PipeTask
 	LastFile string // 最后生成的文件名
 }
 
@@ -53,12 +58,15 @@ func RegisterWorkflow(workflow string, transFunc pipeast.FunctionTranslateHook,
 		functions.Store(funcName, func(p *PipeRunner, params map[string]interface{}) {
 			logrus.Debug(funcName+" params:", params)
 
-			pt := pipeTask{
-				name:    funcName,
-				content: fmt.Sprintf("%v", params),
-				outfile: funcBody(p, params),
-			}
-			p.addPipe(pt)
+			s := time.Now()
+			fn := funcBody(p, params)
+
+			p.addPipe(PipeTask{
+				Name:    funcName,
+				Content: fmt.Sprintf("%v", params),
+				Outfile: fn,
+				Cost:    time.Since(s),
+			})
 		})
 	}
 }
@@ -70,16 +78,18 @@ func (p *PipeRunner) Close() {
 	}
 }
 
-func (p *PipeRunner) addPipe(pt pipeTask) {
+func (p *PipeRunner) addPipe(pt PipeTask) {
 	p.tasks = append(p.tasks, pt)
-	p.LastFile = pt.outfile
+	p.LastFile = pt.Outfile
 
-	logrus.Debug(pt.name+"write to file: ", pt.outfile)
+	logrus.Debug(pt.Name+" write to file: ", pt.Outfile)
 }
 
 // Run run pipelines
 func (p *PipeRunner) Run() error {
 	var err error
+
+	p.tasks = nil
 
 	i := interp.New(interp.Options{})
 	_ = i.Use(stdlib.Symbols)
@@ -109,6 +119,34 @@ func (p *PipeRunner) Run() error {
 	_, err = i.Eval(p.content)
 
 	return err
+}
+
+// DumpTasks tasks dump to html
+func (p *PipeRunner) DumpTasks() string {
+	t, _ := template.New("tasks").Parse(`   
+<html>
+<head>
+    <title>gofofa tasks</title>
+</head>
+<body>
+	<h1>gofofa tasks</h1>
+	{{range .}}
+		<ul>
+			<li>{{ .Name }}</li>
+			<li>{{ .Content }}</li>
+			<li><a href="{{ .Outfile }}">{{ .Outfile }}</a></li>
+			<li>{{ .Cost }}</li>
+		</ul>
+	{{end}}
+</body>
+</html>`)
+	var out bytes.Buffer
+	err := t.Execute(&out, p.tasks)
+	if err != nil {
+		panic(err)
+	}
+
+	return out.String()
 }
 
 // New create pipe runner

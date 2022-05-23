@@ -1,7 +1,7 @@
 ## v0.0.6 pipeline exports
 
 -   add chart?
--   add pipeline full log?
+-   add pipeline tasks log: ```./fofa pipeline -t tasks.html 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
   
 ## v0.0.5 data pipeline
 

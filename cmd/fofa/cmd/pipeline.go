@@ -10,13 +10,15 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/mitchellh/mapstructure"
 	"github.com/urfave/cli/v2"
+	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
 )
 
 var (
-	pipelineFile string
+	pipelineFile    string
+	pipelineTaskOut string // 导出任务列表文件
 )
 
 // pipeline subcommand
@@ -30,6 +32,12 @@ var pipelineCmd = &cli.Command{
 			Aliases:     []string{"f"},
 			Usage:       "load pipeline file",
 			Destination: &pipelineFile,
+		},
+		&cli.StringFlag{
+			Name:        "taskOut",
+			Aliases:     []string{"t"},
+			Usage:       "output pipeline tasks",
+			Destination: &pipelineTaskOut,
 		},
 	},
 	Action: pipelineAction,
@@ -71,6 +79,13 @@ func pipelineAction(ctx *cli.Context) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	if len(pipelineTaskOut) > 0 {
+		err = ioutil.WriteFile(pipelineTaskOut, []byte(pr.DumpTasks()), 0666)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
