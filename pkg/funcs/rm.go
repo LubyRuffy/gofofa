@@ -3,7 +3,7 @@ package funcs
 import (
 	"bytes"
 	"errors"
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/tidwall/sjson"
 	"os"
@@ -11,7 +11,7 @@ import (
 	"text/template"
 )
 
-func rmHook(fi *pipeparser.FuncInfo) string {
+func rmHook(fi *pipeast.FuncInfo) string {
 	tmpl, err := template.New("rm").Parse(`RemoveField(GetRunner(), map[string]interface{}{
    "fields": {{ . }},
 })`)

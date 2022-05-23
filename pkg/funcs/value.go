@@ -1,8 +1,11 @@
 package funcs
 
-import "github.com/lubyruffy/gofofa/pkg/pipeparser"
+import (
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
+	"github.com/lubyruffy/gofofa/pkg/piperunner"
+)
 
-func valueHook(fi *pipeparser.FuncInfo) string {
+func valueHook(fi *pipeast.FuncInfo) string {
 	// 调用zq
 	return `ZqQuery(GetRunner(), map[string]interface{}{
     "query": "yield ` + fi.Params[0].RawString() + `",
@@ -10,5 +13,5 @@ func valueHook(fi *pipeparser.FuncInfo) string {
 }
 
 func init() {
-	pipeparser.RegisterFunction("value", valueHook) // 取值
+	piperunner.RegisterWorkflow("value", valueHook, "", nil) // 取值
 }

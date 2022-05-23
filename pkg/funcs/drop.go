@@ -1,8 +1,11 @@
 package funcs
 
-import "github.com/lubyruffy/gofofa/pkg/pipeparser"
+import (
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
+	"github.com/lubyruffy/gofofa/pkg/piperunner"
+)
 
-func dropHook(fi *pipeparser.FuncInfo) string {
+func dropHook(fi *pipeast.FuncInfo) string {
 	// 调用zq
 	return `ZqQuery(GetRunner(), map[string]interface{}{
     "query": "drop ` + fi.Params[0].RawString() + `",
@@ -10,5 +13,5 @@ func dropHook(fi *pipeparser.FuncInfo) string {
 }
 
 func init() {
-	pipeparser.RegisterFunction("drop", dropHook) // 删除字段
+	piperunner.RegisterWorkflow("drop", dropHook, "", nil) // 删除字段
 }

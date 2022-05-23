@@ -65,3 +65,6 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   （未完成）set(field_name, value)
     -   value(field) 取出值
     -   flat(field) 把数组打平，去掉空值
+    -   stats(field, top_size) 统计计数：```./fofa --verbose pipeline 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
+    -   uniq(true) 相邻的去重，注意：不会先排序
+    -   zq(query) 调用原始的zq语句

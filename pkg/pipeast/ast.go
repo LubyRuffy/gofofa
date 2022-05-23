@@ -1,4 +1,4 @@
-package pipeparser
+package pipeast
 
 import parsec "github.com/prataprc/goparsec"
 
@@ -30,6 +30,13 @@ func newAst() (*parsec.AST, parsec.Parser) {
 	// value 值表达式，可以是function
 	identifier := parsec.OrdChoice(
 		func(nodes []parsec.ParsecNode) parsec.ParsecNode {
+			switch node := nodes[0].(type) {
+			case []parsec.ParsecNode:
+				switch n := node[0].(type) {
+				case *parsec.Terminal:
+					return n
+				}
+			}
 			return nodes[0]
 		},
 		parsec.Float(), parsec.Hex(), parsec.Int(),

@@ -2,7 +2,7 @@ package piperunner
 
 import (
 	"fmt"
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/sirupsen/logrus"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
@@ -38,9 +38,14 @@ type PipeRunner struct {
 // 第二个参数是workflow转换为函数调用字符串的函数
 // 第三个参数是底层函数的名称
 // 第四个参数是一个回调函数，参数是传递的参数，返回值是生成的文件名
-func RegisterWorkflow(workflow string, transFunc pipeparser.FunctionTranslateHook, funcName string, funcBody func(*PipeRunner, map[string]interface{}) string) {
+// 第三四个参数可以留空值，表明只注册到语法解析器中去
+func RegisterWorkflow(workflow string, transFunc pipeast.FunctionTranslateHook,
+	funcName string, funcBody func(*PipeRunner, map[string]interface{}) string) {
+
 	// 解析器的函数注册
-	pipeparser.RegisterFunction(workflow, transFunc)
+	if len(workflow) > 0 {
+		pipeast.RegisterFunction(workflow, transFunc)
+	}
 
 	// 注册底层函数
 	if len(funcName) > 0 {

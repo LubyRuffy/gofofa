@@ -1,3 +1,8 @@
+## v0.0.6 pipeline exports
+
+-   add chart?
+-   add pipeline full log?
+  
 ## v0.0.5 data pipeline
 
 -   add pipeline subcommand: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | drop("body")'```

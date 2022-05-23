@@ -1,7 +1,7 @@
 package funcs
 
 import (
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -9,7 +9,7 @@ import (
 )
 
 func assertPipeCmd(t *testing.T, pipeCmd string, jsonData string, except string) {
-	p := piperunner.New(pipeparser.NewParser().Parse(pipeCmd))
+	p := piperunner.New(pipeast.NewParser().Parse(pipeCmd))
 
 	// write json to file
 	f, err := os.CreateTemp(os.TempDir(), "piperunner_")
@@ -31,7 +31,7 @@ func assertPipeCmd(t *testing.T, pipeCmd string, jsonData string, except string)
 }
 
 func assertPipeCmdError(t *testing.T, pipeCmd string, jsonData string, errStr string) {
-	p := piperunner.New(pipeparser.NewParser().Parse(pipeCmd))
+	p := piperunner.New(pipeast.NewParser().Parse(pipeCmd))
 
 	// write json to file
 	f, err := os.CreateTemp(os.TempDir(), "piperunner_")

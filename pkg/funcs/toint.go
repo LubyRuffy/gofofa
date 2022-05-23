@@ -1,8 +1,11 @@
 package funcs
 
-import "github.com/lubyruffy/gofofa/pkg/pipeparser"
+import (
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
+	"github.com/lubyruffy/gofofa/pkg/piperunner"
+)
 
-func intHook(fi *pipeparser.FuncInfo) string {
+func intHook(fi *pipeast.FuncInfo) string {
 	// 调用zq
 	return `ZqQuery(GetRunner(), map[string]interface{}{
     "query": "cast(this, <{` + fi.Params[0].RawString() + `:int64}>) ",
@@ -10,5 +13,5 @@ func intHook(fi *pipeparser.FuncInfo) string {
 }
 
 func init() {
-	pipeparser.RegisterFunction("to_int", intHook) // 将某个字段转换为int类型
+	piperunner.RegisterWorkflow("to_int", intHook, "", nil) // 将某个字段转换为int类型
 }

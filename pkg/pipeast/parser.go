@@ -1,21 +1,21 @@
 // Copyright 2022 The GOFOFA Authors. All rights reserved.
 
 /*
-Package pipeparser pipe grammar parser
+Package pipeast pipe grammar parser
 
 用管道的方式生成底层的go代码:
-	pipelineCode := pipeparser.NewParser().Parse("a() | b() | c()")
+	pipelineCode := pipeast.NewParser().Parse("a() | b() | c()")
 	// 如果没有注册hook函数的话，那么自动生成 "a()\nb()\nc()\n"
 
 用hook的方式自定义生成go代码：
-	pipeparser.RegisterFunction("a", func(fi *pipeparser.FuncInfo) string {
+	pipeast.RegisterFunction("a", func(fi *pipeast.FuncInfo) string {
 		return "testa()"
 	})
-	pipelineCode := pipeparser.NewParser().Parse("a() | b() | c()")
+	pipelineCode := pipeast.NewParser().Parse("a() | b() | c()")
 	// 生成 "testa()\nb()\nc()"
 
 处理参数，同时进行模板话处理：
-	pipeparser.RegisterFunction("a", func(fi *pipeparser.FuncInfo) string {
+	pipeast.RegisterFunction("a", func(fi *pipeast.FuncInfo) string {
 		tmpl, err := template.New("fofa").Parse(`FetchFofa(GetRunner(), map[string]interface{} {
 			"query": {{ .Query }},
 			"size": {{ .Size }},
@@ -47,10 +47,10 @@ Package pipeparser pipe grammar parser
 		}
 		return tpl.String()
 	})
-	pipelineCode := pipeparser.NewParser().Parse("fofa(`title="test`)")
+	pipelineCode := pipeast.NewParser().Parse("fofa(`title="test`)")
 	// 生成 "FetchFofa(GetRunner(), map[string]interface{} {\n...\n})\nb()\nc()"
 */
-package pipeparser
+package pipeast
 
 import (
 	parsec "github.com/prataprc/goparsec"

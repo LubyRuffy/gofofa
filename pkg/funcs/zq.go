@@ -2,12 +2,12 @@ package funcs
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/fzq"
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/mitchellh/mapstructure"
 )
 
-func zqHook(fi *pipeparser.FuncInfo) string {
+func zqHook(fi *pipeast.FuncInfo) string {
 	return `ZqQuery(GetRunner(), map[string]interface{}{
     "query": ` + fi.Params[0].String() + `,
 })`

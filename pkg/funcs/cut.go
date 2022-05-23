@@ -1,8 +1,11 @@
 package funcs
 
-import "github.com/lubyruffy/gofofa/pkg/pipeparser"
+import (
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
+	"github.com/lubyruffy/gofofa/pkg/piperunner"
+)
 
-func cutHook(fi *pipeparser.FuncInfo) string {
+func cutHook(fi *pipeast.FuncInfo) string {
 	// 调用zq
 	return `ZqQuery(GetRunner(), map[string]interface{}{
     "query": "cut ` + fi.Params[0].RawString() + `",
@@ -10,5 +13,5 @@ func cutHook(fi *pipeparser.FuncInfo) string {
 }
 
 func init() {
-	pipeparser.RegisterFunction("cut", cutHook) // 剪出要的字段
+	piperunner.RegisterWorkflow("cut", cutHook, "", nil) // 剪出要的字段
 }

@@ -1,4 +1,4 @@
-package pipeparser
+package pipeast
 
 import (
 	"strconv"

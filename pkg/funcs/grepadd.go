@@ -3,7 +3,7 @@ package funcs
 import (
 	"bytes"
 	"errors"
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
@@ -14,7 +14,7 @@ import (
 	"text/template"
 )
 
-func grepAddHook(fi *pipeparser.FuncInfo) string {
+func grepAddHook(fi *pipeast.FuncInfo) string {
 	tmpl, err := template.New("grep_add").Parse(`AddField(GetRunner(), map[string]interface{}{
     "from": map[string]interface{}{
         "method": "grep",

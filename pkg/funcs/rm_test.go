@@ -1,7 +1,7 @@
 package funcs
 
 import (
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,7 +12,7 @@ func TestLoad_rm(t *testing.T) {
    "fields": "title",
 })
 `,
-		pipeparser.NewParser().Parse(`rm("title")`))
+		pipeast.NewParser().Parse(`rm("title")`))
 
 	assertPipeCmd(t, `rm("title")`,
 		`{"title":"abc","a":1}`,

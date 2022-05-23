@@ -3,7 +3,7 @@ package funcs
 import (
 	"bytes"
 	"errors"
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
@@ -15,7 +15,7 @@ import (
 // flat("a")
 // 第一个参数是字段名称
 // 注意：空值会移除
-func flat(fi *pipeparser.FuncInfo) string {
+func flat(fi *pipeast.FuncInfo) string {
 	tmpl, _ := template.New("flat").Parse(`FlatArray(GetRunner(), map[string]interface{}{
     "field": {{ . }},
 })`)

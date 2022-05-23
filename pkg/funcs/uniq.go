@@ -5,18 +5,18 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 )
 
-// sort 参数可选
-func sortHook(fi *pipeast.FuncInfo) string {
+// uniq 参数可选
+func uniqHook(fi *pipeast.FuncInfo) string {
 	// 调用zq
-	field := ""
+	count := ""
 	if len(fi.Params) > 0 {
-		field = fi.Params[0].RawString()
+		count = "-c"
 	}
 	return `ZqQuery(GetRunner(), map[string]interface{}{
-    "query": "sort ` + field + `",
+    "query": "uniq ` + count + `",
 })`
 }
 
 func init() {
-	piperunner.RegisterWorkflow("sort", sortHook, "", nil) // 排序
+	piperunner.RegisterWorkflow("uniq", uniqHook, "", nil) // 排序
 }

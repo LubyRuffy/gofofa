@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/lubyruffy/gofofa/pkg/funcs"
 	"github.com/lubyruffy/gofofa/pkg/outformats"
-	"github.com/lubyruffy/gofofa/pkg/pipeparser"
+	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
 	"github.com/mitchellh/mapstructure"
 	"github.com/urfave/cli/v2"
@@ -56,7 +56,7 @@ func pipelineAction(ctx *cli.Context) error {
 		if len(pipelineContent) > 0 {
 			return errors.New("file and content only one is allowed")
 		}
-		pipelineContent = pipeparser.NewParser().Parse(v)
+		pipelineContent = pipeast.NewParser().Parse(v)
 	}
 
 	pr := piperunner.New(pipelineContent)
@@ -112,7 +112,7 @@ func fetchFofa(p *piperunner.PipeRunner, params map[string]interface{}) string {
 	})
 }
 
-func fofaHook(fi *pipeparser.FuncInfo) string {
+func fofaHook(fi *pipeast.FuncInfo) string {
 	tmpl, err := template.New("fofa").Parse(`FetchFofa(GetRunner(), map[string]interface{} {
     "query": {{ .Query }},
     "size": {{ .Size }},
