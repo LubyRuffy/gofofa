@@ -29,7 +29,7 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
                 -   value 参数值
     -   RemoveField
         -   name 字段的名称
--   支持缩写模式: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'```
+-   支持缩写模式: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | drop("body")'```
 -   （未完成）每一步都支持配置是否保留文件
 -   （未完成）函数可以进行统一化的参数配置
 -   框架支持内嵌golang注册函数的扩展
@@ -68,3 +68,10 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   stats(field, top_size) 统计计数：```./fofa --verbose pipeline 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
     -   uniq(true) 相邻的去重，注意：不会先排序
     -   zq(query) 调用原始的zq语句
+
+## 一些场景
+
+-   用一个复杂的语句来验证任务列表：
+```
+./fofa pipeline -t a.html 'fofa("body=icon && body=link", "body,host,ip,port", 500) | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | drop("body") | flat("icon_tag") | sort() | uniq(true) | sort("count") | zq("tail 10")'
+```

@@ -10,7 +10,7 @@ import (
 func statsHook(fi *pipeast.FuncInfo) string {
 	// 调用zq
 	field := ""
-	if len(fi.Params) > 0 {
+	if len(fi.Params) > 0 && len(fi.Params[0].RawString()) > 0 {
 		field = "yield " + fi.Params[0].RawString() + " | "
 	}
 
