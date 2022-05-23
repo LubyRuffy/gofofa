@@ -3,6 +3,7 @@ module github.com/lubyruffy/gofofa
 go 1.18
 
 require (
+	github.com/brimdata/zed v1.1.0
 	github.com/fatih/color v1.13.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
@@ -19,14 +20,37 @@ require (
 )
 
 require (
+	github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4 // indirect
+	github.com/apache/thrift v0.16.0 // indirect
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
+	github.com/aws/aws-sdk-go v1.36.17 // indirect
+	github.com/axiomhq/hyperloglog v0.0.0-20191112132149-a4c4c47bc57f // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
+	github.com/fraugster/parquet-go v0.10.1-0.20220222153523-e6b70a8a7212 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
+	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/pbnjay/memory v0.0.0-20190104145345-974d429e7ae4 // indirect
+	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/segmentio/ksuid v1.0.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
+	go.uber.org/zap v1.16.0 // indirect
+	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
+	go4.org/unsafe/assume-no-moving-gc v0.0.0-20211027215541-db492cf91b37 // indirect
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/text v0.3.7 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210106172901-c476de37821d // indirect
+	inet.af/netaddr v0.0.0-20211027220019-c74959edd3b6 // indirect
 )

@@ -26,6 +26,22 @@ func (fp FuncParameter) String() string {
 	return fp.v.(string)
 }
 
+// RawString 不要引号
+func (fp FuncParameter) RawString() string {
+	s := fp.v.(string)
+	l := len(s)
+	if l == 0 {
+		return s
+	}
+	switch s[0] {
+	case '`':
+		return s[1 : l-1]
+	case '"':
+		panic("not impl")
+	}
+	return s
+}
+
 // ToString 转换成字符串
 func (fp FuncParameter) ToString() string {
 	switch fp.v.(type) {
@@ -64,6 +80,8 @@ func (f *FuncInfo) String() string {
 	return rStr + ")"
 }
 
+// RegisterFunction 注册函数，包括函数名称和Hook
+// hook用于生成底层的函数部分
 func RegisterFunction(name string, f FunctionTranslateHook) {
 	globalFunctionTranslateHooks.Store(name, f)
 }

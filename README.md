@@ -114,7 +114,7 @@ calc remote homepage icon hash:
 do workflow pipeline to process data:
 
 ```shell
-./fofa pipeline 'fofa(`title="hacked"`,`host,ip,port,title,server`) | cut(`server,ip,port`)'
+./fofa pipeline 'fofa(`title="hacked"`,`host,ip,port,title,server`) | cut(`host,ip,port`) | to_int(`port`) | sort(`port`)'
 ```
 
 [PipeLine](doc/PipeLine.md)
@@ -213,27 +213,9 @@ every 500ms generate one line, never stop
 pipeline mode:
 ```shell
 ./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'
-./fofa pipeline -f dump.fofapipe
 ```
 
-dump.fofapipe
-```golang
-FetchFofa(map[string]interface{} {
-    "query": "body=icon && body=link",
-    "size": 10,
-    "fields": "host,title,body",
-})
- 
-AddField(map[string]interface{}{
-    "from": map[string]interface{}{
-        "method": "grep",
-        "field": "body",
-        "value": "(?is)(<link[^>]*?rel[^>]*?=[^>]*?['\"][^>'\"]*?icon[^>'\"]*?['\"][^>]*?>)",
-    },
-    "name": "icon_tag",
-})
-
-RemoveField(map[string]interface{}{
-    "fields": "body",
-})
+We can check fofa's bug like this:
+```shell
+./fofa.exe random -s 10 -sleep 0 -f body 'body=icon && icon_hash=="0"'
 ```

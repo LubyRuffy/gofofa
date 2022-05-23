@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/lubyruffy/gofofa/pkg/fzq"
 	"github.com/lubyruffy/gofofa/pkg/pipeparser"
 	"io"
 	"os"
@@ -24,10 +25,12 @@ import (
 )
 
 var (
-	pipelineFile string
+	pipelineFile             string
+	defaultPipeTmpFilePrefix = "gofofa_pipeline_"
 )
 
 type pipeTask struct {
+	name    string // pipe name
 	content string // raw content
 	outfile string // tmp file
 }
@@ -117,7 +120,7 @@ func (p *PipeRunner) eachLine(filename string, size int64, f func(line string) e
 func (p *PipeRunner) writeTempJSONFile(writeF func(f *os.File)) string {
 	var f *os.File
 	var err error
-	f, err = os.CreateTemp(os.TempDir(), "gofofa_pipeline_")
+	f, err = os.CreateTemp(os.TempDir(), defaultPipeTmpFilePrefix)
 	if err != nil {
 		panic(fmt.Errorf("create outFile %s failed: %w", outFile, err))
 	}
@@ -159,6 +162,7 @@ func (p *PipeRunner) fetchFofa(params map[string]interface{}) {
 	}
 
 	pt := pipeTask{
+		name:    "fetchFofa",
 		content: fmt.Sprintf("%v", params),
 		outfile: p.writeTempJSONFile(func(f *os.File) {
 			w := outformats.NewJSONWriter(f, fields)
@@ -182,6 +186,38 @@ type addFieldParams struct {
 	Name  string
 	Value *string       // 可以没有，就取from
 	From  *addFieldFrom // 可以没有，就取Value
+}
+
+type zqQueryParams struct {
+	Query string `json:"query"`
+}
+
+func (p *PipeRunner) zqQuery(params map[string]interface{}) {
+	logrus.Debug("zqQuery params:", params)
+	var err error
+	var options zqQueryParams
+	if err = mapstructure.Decode(params, &options); err != nil {
+		panic(err)
+	}
+	var f *os.File
+	f, err = os.CreateTemp(os.TempDir(), defaultPipeTmpFilePrefix)
+	if err != nil {
+		panic(fmt.Errorf("create outFile %s failed: %w", outFile, err))
+	}
+	name := f.Name()
+	f.Close()
+
+	err = fzq.ZqQuery(options.Query, p.lastFile, name)
+	if err != nil {
+		panic(err)
+	}
+	pt := pipeTask{
+		name:    "zqQuery",
+		content: fmt.Sprintf("%v", params),
+		outfile: name,
+	}
+	p.addPipe(pt)
+	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
 }
 
 func (p *PipeRunner) addField(params map[string]interface{}) {
@@ -230,6 +266,7 @@ func (p *PipeRunner) addField(params map[string]interface{}) {
 	})
 
 	pt := pipeTask{
+		name:    "addField",
 		content: fmt.Sprintf("%v", params),
 		outfile: p.writeTempJSONFile(func(f *os.File) {
 			content := strings.Join(newLines, "\n")
@@ -270,6 +307,7 @@ func (p *PipeRunner) removeField(params map[string]interface{}) {
 	})
 
 	pt := pipeTask{
+		name:    "removeField",
 		content: fmt.Sprintf("%v", params),
 		outfile: p.writeTempJSONFile(func(f *os.File) {
 			content := strings.Join(newLines, "\n")
@@ -299,6 +337,7 @@ func (p *PipeRunner) Run() error {
 			"FetchFofa":   reflect.ValueOf(p.fetchFofa),
 			"RemoveField": reflect.ValueOf(p.removeField),
 			"AddField":    reflect.ValueOf(p.addField),
+			"ZqQuery":     reflect.ValueOf(p.zqQuery),
 		},
 	})
 	if err != nil {
@@ -396,21 +435,6 @@ func fofaHook(fi *pipeparser.FuncInfo) string {
 	return tpl.String()
 }
 
-func cutHook(fi *pipeparser.FuncInfo) string {
-	tmpl, err := template.New("cut").Parse(`RemoveField(map[string]interface{}{
-    "fields": {{ . }},
-})`)
-	if err != nil {
-		panic(err)
-	}
-	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, fi.Params[0].String())
-	if err != nil {
-		panic(err)
-	}
-	return tpl.String()
-}
-
 func grepAddHook(fi *pipeparser.FuncInfo) string {
 	tmpl, err := template.New("grep_add").Parse(`AddField(map[string]interface{}{
     "from": map[string]interface{}{
@@ -439,8 +463,55 @@ func grepAddHook(fi *pipeparser.FuncInfo) string {
 	return tpl.String()
 }
 
+func dropHook(fi *pipeparser.FuncInfo) string {
+	//	tmpl, err := template.New("cut").Parse(`RemoveField(map[string]interface{}{
+	//    "fields": {{ . }},
+	//})`)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	var tpl bytes.Buffer
+	//	err = tmpl.Execute(&tpl, fi.Params[0].String())
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//	return tpl.String()
+
+	// 调用zq
+	return `ZqQuery(map[string]interface{}{
+    "query": "drop ` + fi.Params[0].RawString() + `",
+})`
+}
+
+func cutHook(fi *pipeparser.FuncInfo) string {
+	// 调用zq
+	return `ZqQuery(map[string]interface{}{
+    "query": "cut ` + fi.Params[0].RawString() + `",
+})`
+}
+
+func sortHook(fi *pipeparser.FuncInfo) string {
+	// 调用zq
+	return `ZqQuery(map[string]interface{}{
+    "query": "sort ` + fi.Params[0].RawString() + `",
+})`
+}
+
+func intHook(fi *pipeparser.FuncInfo) string {
+	// 调用zq
+	return `ZqQuery(map[string]interface{}{
+    "query": "cast(this, <{` + fi.Params[0].RawString() + `:int64}>) ",
+})`
+}
+
 func init() {
+	// data source
 	pipeparser.RegisterFunction("fofa", fofaHook)
+
+	// functions
 	pipeparser.RegisterFunction("cut", cutHook)
+	pipeparser.RegisterFunction("drop", dropHook)
 	pipeparser.RegisterFunction("grep_add", grepAddHook)
+	pipeparser.RegisterFunction("sort", sortHook)
+	pipeparser.RegisterFunction("to_int", intHook)
 }

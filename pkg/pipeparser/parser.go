@@ -1,4 +1,55 @@
-// Package pipeparser pipe grammar parser
+// Copyright 2022 The GOFOFA Authors. All rights reserved.
+
+/*
+Package pipeparser pipe grammar parser
+
+用管道的方式生成底层的go代码:
+	pipelineCode := pipeparser.NewParser().Parse("a() | b() | c()")
+	// 如果没有注册hook函数的话，那么自动生成 "a()\nb()\nc()\n"
+
+用hook的方式自定义生成go代码：
+	pipeparser.RegisterFunction("a", func(fi *pipeparser.FuncInfo) string {
+		return "testa()"
+	})
+	pipelineCode := pipeparser.NewParser().Parse("a() | b() | c()")
+	// 生成 "testa()\nb()\nc()"
+
+处理参数，同时进行模板话处理：
+	pipeparser.RegisterFunction("a", func(fi *pipeparser.FuncInfo) string {
+		tmpl, err := template.New("fofa").Parse(`FetchFofa(map[string]interface{} {
+			"query": {{ .Query }},
+			"size": {{ .Size }},
+			"fields": {{ .Fields }},
+		})`)
+		if err != nil {
+			panic(err)
+		}
+		var size int64 = 10
+		fields := "`host,title`"
+		if len(fi.Params) > 1 {
+			fields = fi.Params[1].String()
+		}
+		if len(fi.Params) > 2 {
+			size = fi.Params[2].Int64()
+		}
+		var tpl bytes.Buffer
+		err = tmpl.Execute(&tpl, struct {
+			Query  string
+			Size   int64
+			Fields string
+		}{
+			Query:  fi.Params[0].String(),
+			Fields: fields,
+			Size:   size,
+		})
+		if err != nil {
+			panic(err)
+		}
+		return tpl.String()
+	})
+	pipelineCode := pipeparser.NewParser().Parse("fofa(`title="test`)")
+	// 生成 "FetchFofa(map[string]interface{} {\n...\n})\nb()\nc()"
+*/
 package pipeparser
 
 import (

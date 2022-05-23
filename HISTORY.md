@@ -1,7 +1,6 @@
 ## v0.0.5 data pipeline
 
--   add pipeline subcommand: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'```
--   pipeline subcommand can load script file: ```./fofa pipeline -f dump.fofapipe```
+-   add pipeline subcommand: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | drop("body")'```
 -   support gzip compress
 -   terminal color on debug output (```--verbose```)
   
