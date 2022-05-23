@@ -63,3 +63,5 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   to_int(field) 格式转换为int：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) | to_int(`port`)'```
     -   sort(field) 排序：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) | to_int(`port`) | sort(`port`)'```
     -   （未完成）set(field_name, value)
+    -   value(field) 取出值
+    -   （未完成）flatten(field) 

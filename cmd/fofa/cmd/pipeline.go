@@ -1,134 +1,79 @@
 package cmd
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/lubyruffy/gofofa/pkg/fzq"
+	"github.com/lubyruffy/gofofa/pkg/funcs"
+	"github.com/lubyruffy/gofofa/pkg/outformats"
 	"github.com/lubyruffy/gofofa/pkg/pipeparser"
-	"io"
+	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/mitchellh/mapstructure"
+	"github.com/urfave/cli/v2"
 	"os"
-	"reflect"
-	"regexp"
 	"strings"
 	"text/template"
-
-	"github.com/lubyruffy/gofofa/pkg/outformats"
-	"github.com/mitchellh/mapstructure"
-	"github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
-	"github.com/urfave/cli/v2"
 )
 
 var (
-	pipelineFile             string
-	defaultPipeTmpFilePrefix = "gofofa_pipeline_"
+	pipelineFile string
 )
 
-type pipeTask struct {
-	name    string // pipe name
-	content string // raw content
-	outfile string // tmp file
+// pipeline subcommand
+var pipelineCmd = &cli.Command{
+	Name:                   "pipeline",
+	Usage:                  "fofa data pipeline",
+	UseShortOptionHandling: true,
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:        "file",
+			Aliases:     []string{"f"},
+			Usage:       "load pipeline file",
+			Destination: &pipelineFile,
+		},
+	},
+	Action: pipelineAction,
 }
 
-// Close remove tmp outfile
-func (p *pipeTask) Close() {
-	os.Remove(p.outfile)
-}
+// pipelineAction pipeline action
+// 基本逻辑是：命令行的query是一个pipeline模式，每一个pipeline的workflow都要转换成底层可以执行的代码
+// 也就是说注册一个pipeline可以支持的命令，需要：一）注册底层函数；二）注册pipeline的函数到底层函数调用的代码转换器
+func pipelineAction(ctx *cli.Context) error {
 
-// PipeRunner pipe运行器
-type PipeRunner struct {
-	content      string
-	tasks        []pipeTask
-	lastFile     string
-	lastFileSize int64 // 最后写入文件的大小
-}
+	funcs.Load()
+	piperunner.RegisterWorkflow("fofa", fofaHook, "FetchFofa", fetchFofa)
 
-// NewPipeRunner create pipe runner
-func NewPipeRunner(content string) *PipeRunner {
-	return &PipeRunner{
-		content: content,
+	// valid same config
+	var pipelineContent string
+	if len(pipelineFile) > 0 {
+		v, err := os.ReadFile(pipelineFile)
+		if err != nil {
+			return err
+		}
+		pipelineContent = string(v)
 	}
-}
-
-// Close remove tmp outfile
-func (p *PipeRunner) Close() {
-	for _, task := range p.tasks {
-		task.Close()
-	}
-}
-
-func (p *PipeRunner) addPipe(pt pipeTask) {
-	p.tasks = append(p.tasks, pt)
-	p.lastFile = pt.outfile
-}
-
-func read(r *bufio.Reader) ([]byte, error) {
-	var (
-		isPrefix = true
-		err      error
-		line, ln []byte
-	)
-
-	for isPrefix && err == nil {
-		line, isPrefix, err = r.ReadLine()
-		ln = append(ln, line...)
+	if v := ctx.Args().First(); len(v) > 0 {
+		if len(pipelineContent) > 0 {
+			return errors.New("file and content only one is allowed")
+		}
+		pipelineContent = pipeparser.NewParser().Parse(v)
 	}
 
-	return ln, err
-}
-
-func (p *PipeRunner) eachLine(filename string, size int64, f func(line string) error) error {
-	file, err := os.Open(filename)
+	pr := piperunner.New(pipelineContent)
+	err := pr.Run()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	// check valid
-	if size > 0 {
-		var s os.FileInfo
-		s, err = file.Stat()
-		if err != nil {
-			panic(err)
-		}
-		if s.Size() != size {
-			panic("size is not same")
-		}
-	}
-
-	reader := bufio.NewReader(file)
-	for {
-		line, err := read(reader)
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				panic(err)
-			}
-		}
-
-		f(string(line))
-	}
-	return nil
-}
-
-func (p *PipeRunner) writeTempJSONFile(writeF func(f *os.File)) string {
-	var f *os.File
-	var err error
-	f, err = os.CreateTemp(os.TempDir(), defaultPipeTmpFilePrefix)
+	err = piperunner.EachLine(pr.LastFile, func(line string) error {
+		fmt.Println(line)
+		return nil
+	})
 	if err != nil {
-		panic(fmt.Errorf("create outFile %s failed: %w", outFile, err))
+		return err
 	}
-	defer f.Close()
 
-	writeF(f)
-
-	return f.Name()
+	return nil
 }
 
 type fetchFofaParams struct {
@@ -137,9 +82,7 @@ type fetchFofaParams struct {
 	Fields string
 }
 
-func (p *PipeRunner) fetchFofa(params map[string]interface{}) {
-	logrus.Debug("fetchFofa params:", params)
-
+func fetchFofa(p *piperunner.PipeRunner, params map[string]interface{}) string {
 	var err error
 	var options fetchFofaParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -161,249 +104,16 @@ func (p *PipeRunner) fetchFofa(params map[string]interface{}) {
 		panic(err)
 	}
 
-	pt := pipeTask{
-		name:    "fetchFofa",
-		content: fmt.Sprintf("%v", params),
-		outfile: p.writeTempJSONFile(func(f *os.File) {
-			w := outformats.NewJSONWriter(f, fields)
-			if err = w.WriteAll(res); err != nil {
-				panic(err)
-			}
-		}),
-	}
-	p.addPipe(pt)
-	logrus.Debug("write to file:", pt.outfile)
-}
-
-type addFieldFrom struct {
-	Method  string `json:"method"`
-	Field   string
-	Value   string
-	Options string
-}
-
-type addFieldParams struct {
-	Name  string
-	Value *string       // 可以没有，就取from
-	From  *addFieldFrom // 可以没有，就取Value
-}
-
-type zqQueryParams struct {
-	Query string `json:"query"`
-}
-
-func (p *PipeRunner) zqQuery(params map[string]interface{}) {
-	logrus.Debug("zqQuery params:", params)
-	var err error
-	var options zqQueryParams
-	if err = mapstructure.Decode(params, &options); err != nil {
-		panic(err)
-	}
-	var f *os.File
-	f, err = os.CreateTemp(os.TempDir(), defaultPipeTmpFilePrefix)
-	if err != nil {
-		panic(fmt.Errorf("create outFile %s failed: %w", outFile, err))
-	}
-	name := f.Name()
-	f.Close()
-
-	err = fzq.ZqQuery(options.Query, p.lastFile, name)
-	if err != nil {
-		panic(err)
-	}
-	pt := pipeTask{
-		name:    "zqQuery",
-		content: fmt.Sprintf("%v", params),
-		outfile: name,
-	}
-	p.addPipe(pt)
-	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
-}
-
-func (p *PipeRunner) addField(params map[string]interface{}) {
-	logrus.Debug("addField params:", params)
-	if len(p.lastFile) == 0 {
-		panic(errors.New("addField need input pipe or file"))
-	}
-
-	var err error
-	var options addFieldParams
-	if err = mapstructure.Decode(params, &options); err != nil {
-		panic(err)
-	}
-
-	var addValue string
-	var addRegex *regexp.Regexp
-
-	var newLines []string
-	p.eachLine(p.lastFile, p.lastFileSize, func(line string) error {
-		var newLine string
-		if options.Value != nil {
-			if addValue == "" {
-				addValue = *options.Value
-			}
-			newLine, _ = sjson.Set(line, options.Name, addValue)
-		} else {
-			switch options.From.Method {
-			case "grep":
-				if addRegex == nil {
-					addRegex, err = regexp.Compile(options.From.Value)
-					if err != nil {
-						panic(err)
-					}
-				}
-				res := addRegex.FindAllStringSubmatch(gjson.Get(line, options.From.Field).String(), -1)
-				newLine, err = sjson.Set(line, options.Name, res)
-				if err != nil {
-					panic(err)
-				}
-			default:
-				panic(errors.New("unknown from type"))
-			}
+	return piperunner.WriteTempJSONFile(func(f *os.File) {
+		w := outformats.NewJSONWriter(f, fields)
+		if err = w.WriteAll(res); err != nil {
+			panic(err)
 		}
-		newLines = append(newLines, newLine)
-		return nil
 	})
-
-	pt := pipeTask{
-		name:    "addField",
-		content: fmt.Sprintf("%v", params),
-		outfile: p.writeTempJSONFile(func(f *os.File) {
-			content := strings.Join(newLines, "\n")
-			n, err := f.WriteString(content)
-			if err != nil {
-				panic(err)
-			}
-			if n != len(content) {
-				panic("write string failed")
-			}
-			p.lastFileSize = int64(n)
-		}),
-	}
-	p.addPipe(pt)
-	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
-}
-
-func (p *PipeRunner) removeField(params map[string]interface{}) {
-	logrus.Debug("removeField params:", params)
-	if len(p.lastFile) == 0 {
-		panic(errors.New("removeField need input pipe or file"))
-	}
-
-	fields := strings.Split(params["fields"].(string), ",")
-
-	var newLines []string
-	p.eachLine(p.lastFile, p.lastFileSize, func(line string) error {
-		var err error
-		newLine := line
-		for _, field := range fields {
-			newLine, err = sjson.Delete(newLine, field)
-			if err != nil {
-				panic(err)
-			}
-		}
-		newLines = append(newLines, newLine)
-		return nil
-	})
-
-	pt := pipeTask{
-		name:    "removeField",
-		content: fmt.Sprintf("%v", params),
-		outfile: p.writeTempJSONFile(func(f *os.File) {
-			content := strings.Join(newLines, "\n")
-			n, err := f.WriteString(content)
-			if err != nil {
-				panic(err)
-			}
-			if n != len(content) {
-				panic("write string failed")
-			}
-			p.lastFileSize = int64(n)
-		}),
-	}
-	p.addPipe(pt)
-	logrus.Debug("write to file:", pt.outfile, " size:", p.lastFileSize)
-}
-
-// Run run pipelines
-func (p *PipeRunner) Run() error {
-	var err error
-
-	i := interp.New(interp.Options{})
-	_ = i.Use(stdlib.Symbols)
-
-	err = i.Use(interp.Exports{
-		"this/this": {
-			"FetchFofa":   reflect.ValueOf(p.fetchFofa),
-			"RemoveField": reflect.ValueOf(p.removeField),
-			"AddField":    reflect.ValueOf(p.addField),
-			"ZqQuery":     reflect.ValueOf(p.zqQuery),
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	// i.ImportUsed()
-	i.Eval(`import (
-		. "this/this"
-		)`)
-	_, err = i.Eval(p.content)
-
-	return err
-}
-
-// pipeline subcommand
-var pipelineCmd = &cli.Command{
-	Name:                   "pipeline",
-	Usage:                  "fofa data pipeline",
-	UseShortOptionHandling: true,
-	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:        "file",
-			Aliases:     []string{"f"},
-			Usage:       "load pipeline file",
-			Destination: &pipelineFile,
-		},
-	},
-	Action: pipelineAction,
-}
-
-// pipelineAction pipeline action
-func pipelineAction(ctx *cli.Context) error {
-	// valid same config
-	var pipelineContent string
-	if len(pipelineFile) > 0 {
-		v, err := os.ReadFile(pipelineFile)
-		if err != nil {
-			return err
-		}
-		pipelineContent = string(v)
-	}
-	if v := ctx.Args().First(); len(v) > 0 {
-		if len(pipelineContent) > 0 {
-			return errors.New("file and content only one is allowed")
-		}
-
-		pipelineContent = pipeparser.NewParser().Parse(v)
-	}
-
-	pr := NewPipeRunner(pipelineContent)
-	err := pr.Run()
-	if err != nil {
-		return err
-	}
-
-	pr.eachLine(pr.lastFile, pr.lastFileSize, func(line string) error {
-		fmt.Println(line)
-		return nil
-	})
-
-	return nil
 }
 
 func fofaHook(fi *pipeparser.FuncInfo) string {
-	tmpl, err := template.New("fofa").Parse(`FetchFofa(map[string]interface{} {
+	tmpl, err := template.New("fofa").Parse(`FetchFofa(GetRunner(), map[string]interface{} {
     "query": {{ .Query }},
     "size": {{ .Size }},
     "fields": {{ .Fields }},
@@ -433,85 +143,4 @@ func fofaHook(fi *pipeparser.FuncInfo) string {
 		panic(err)
 	}
 	return tpl.String()
-}
-
-func grepAddHook(fi *pipeparser.FuncInfo) string {
-	tmpl, err := template.New("grep_add").Parse(`AddField(map[string]interface{}{
-    "from": map[string]interface{}{
-        "method": "grep",
-        "field": {{ .Field }},
-        "value": {{ .Value }},
-    },
-    "name": {{ .Name }},
-})`)
-	if err != nil {
-		panic(err)
-	}
-	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, struct {
-		Field string
-		Value string
-		Name  string
-	}{
-		Field: fi.Params[0].String(),
-		Value: fi.Params[1].String(),
-		Name:  fi.Params[2].String(),
-	})
-	if err != nil {
-		panic(err)
-	}
-	return tpl.String()
-}
-
-func dropHook(fi *pipeparser.FuncInfo) string {
-	//	tmpl, err := template.New("cut").Parse(`RemoveField(map[string]interface{}{
-	//    "fields": {{ . }},
-	//})`)
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	var tpl bytes.Buffer
-	//	err = tmpl.Execute(&tpl, fi.Params[0].String())
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//	return tpl.String()
-
-	// 调用zq
-	return `ZqQuery(map[string]interface{}{
-    "query": "drop ` + fi.Params[0].RawString() + `",
-})`
-}
-
-func cutHook(fi *pipeparser.FuncInfo) string {
-	// 调用zq
-	return `ZqQuery(map[string]interface{}{
-    "query": "cut ` + fi.Params[0].RawString() + `",
-})`
-}
-
-func sortHook(fi *pipeparser.FuncInfo) string {
-	// 调用zq
-	return `ZqQuery(map[string]interface{}{
-    "query": "sort ` + fi.Params[0].RawString() + `",
-})`
-}
-
-func intHook(fi *pipeparser.FuncInfo) string {
-	// 调用zq
-	return `ZqQuery(map[string]interface{}{
-    "query": "cast(this, <{` + fi.Params[0].RawString() + `:int64}>) ",
-})`
-}
-
-func init() {
-	// data source
-	pipeparser.RegisterFunction("fofa", fofaHook)
-
-	// functions
-	pipeparser.RegisterFunction("cut", cutHook)
-	pipeparser.RegisterFunction("drop", dropHook)
-	pipeparser.RegisterFunction("grep_add", grepAddHook)
-	pipeparser.RegisterFunction("sort", sortHook)
-	pipeparser.RegisterFunction("to_int", intHook)
 }

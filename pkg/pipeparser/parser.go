@@ -16,7 +16,7 @@ Package pipeparser pipe grammar parser
 
 处理参数，同时进行模板话处理：
 	pipeparser.RegisterFunction("a", func(fi *pipeparser.FuncInfo) string {
-		tmpl, err := template.New("fofa").Parse(`FetchFofa(map[string]interface{} {
+		tmpl, err := template.New("fofa").Parse(`FetchFofa(GetRunner(), map[string]interface{} {
 			"query": {{ .Query }},
 			"size": {{ .Size }},
 			"fields": {{ .Fields }},
@@ -48,7 +48,7 @@ Package pipeparser pipe grammar parser
 		return tpl.String()
 	})
 	pipelineCode := pipeparser.NewParser().Parse("fofa(`title="test`)")
-	// 生成 "FetchFofa(map[string]interface{} {\n...\n})\nb()\nc()"
+	// 生成 "FetchFofa(GetRunner(), map[string]interface{} {\n...\n})\nb()\nc()"
 */
 package pipeparser
 

@@ -26,6 +26,11 @@ func (fp FuncParameter) String() string {
 	return fp.v.(string)
 }
 
+// String 做为string返回
+func (fp FuncParameter) Bool() bool {
+	return fp.v.(bool)
+}
+
 // RawString 不要引号
 func (fp FuncParameter) RawString() string {
 	s := fp.v.(string)
@@ -37,7 +42,8 @@ func (fp FuncParameter) RawString() string {
 	case '`':
 		return s[1 : l-1]
 	case '"':
-		panic("not impl")
+		// 暂时不处理转义
+		return s[1 : l-1]
 	}
 	return s
 }

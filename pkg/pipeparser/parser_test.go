@@ -41,7 +41,7 @@ func TestNewParser(t *testing.T) {
 
 	// translate simple mode to go code
 	RegisterFunction("fofa", func(fi *FuncInfo) string {
-		tmpl, err := template.New("fofa").Parse(`FetchFofa(map[string]interface{} {
+		tmpl, err := template.New("fofa").Parse(`FetchFofa(GetRunner(), map[string]interface{} {
     "query": {{ .Query }},
     "size": {{ .Size }},
     "fields": {{ .Fields }},
@@ -64,7 +64,7 @@ func TestNewParser(t *testing.T) {
 		}
 		return tpl.String()
 	})
-	assert.Equal(t, `FetchFofa(map[string]interface{} {
+	assert.Equal(t, `FetchFofa(GetRunner(), map[string]interface{} {
     "query": `+"`"+`title="test"`+"`"+`,
     "size": 10,
     "fields": `+"`"+`host,title,body`+"`"+`,

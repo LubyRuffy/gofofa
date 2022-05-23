@@ -1,10 +1,10 @@
-FetchFofa(map[string]interface{} {
+FetchFofa(GetRunner(), map[string]interface{} {
     "query": "body=icon && body=link",
     "size": 10,
     "fields": "host,title,body",
 })
  
-AddField(map[string]interface{}{
+AddField(GetRunner(), map[string]interface{}{
     "from": map[string]interface{}{
         "method": "grep",
         "field": "body",
@@ -13,6 +13,6 @@ AddField(map[string]interface{}{
     "name": "icon_tag",
 })
 
-RemoveField(map[string]interface{}{
+RemoveField(GetRunner(), map[string]interface{}{
     "fields": "body",
 })
