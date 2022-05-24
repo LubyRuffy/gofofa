@@ -21,6 +21,7 @@ type PipeTask struct {
 	Outfile        string        // tmp json file 统一格式
 	GeneratedFiles []string      // files to archive 非json格式的文件不往后进行传递
 	Cost           time.Duration // time costs
+	Children       []Runner      // fork children
 }
 
 // Close remove tmp outfile
@@ -32,7 +33,8 @@ func (p *PipeTask) Close() {
 type Runner interface {
 	GetFofaCli() *gofofa.Client
 	GetLastFile() string
-	AddWorkflow(PipeTask)
+	AddWorkflow(*PipeTask)
+	GetWorkflows() []*PipeTask
 }
 
 // RegisterWorkflow 注册workflow
@@ -58,7 +60,7 @@ func RegisterWorkflow(workflow string, transFunc pipeast.FunctionTranslateHook,
 			s := time.Now()
 			fn, gfs := funcBody(p, params)
 
-			p.AddWorkflow(PipeTask{
+			p.AddWorkflow(&PipeTask{
 				Name:           funcName,
 				Content:        fmt.Sprintf("%v", params),
 				Outfile:        fn,

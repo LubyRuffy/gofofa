@@ -54,7 +54,6 @@ package pipeast
 
 import (
 	parsec "github.com/prataprc/goparsec"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -134,7 +133,7 @@ func pipeListToRawString(node parsec.Queryable) string {
 }
 
 func pipeToRawString(node parsec.Queryable) string {
-	log.Println(node.GetName(), node.GetValue())
+	//log.Println(node.GetName(), node.GetValue())
 	ret := ""
 	first := true
 	for _, child := range node.GetChildren() {
@@ -176,9 +175,9 @@ func (p *Parser) parseFork(node parsec.Queryable) string {
 			for _, pipe := range child.GetChildren() {
 				switch pipe.GetName() {
 				case "function":
-					ret += `fork(` + pipe.GetValue() + ")\n"
+					ret += `Fork(` + pipe.GetValue() + ")\n"
 				case "pipe":
-					ret += `fork("` + escapeString(pipeToRawString(pipe)) + "\")\n"
+					ret += `Fork("` + escapeString(pipeToRawString(pipe)) + "\")\n"
 				}
 			}
 		}
