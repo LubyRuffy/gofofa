@@ -2,7 +2,7 @@ package funcs
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 )
 
 func cutHook(fi *pipeast.FuncInfo) string {
@@ -13,5 +13,5 @@ func cutHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("cut", cutHook, "", nil) // 剪出要的字段
+	corefuncs.RegisterWorkflow("cut", cutHook, "", nil) // 剪出要的字段
 }

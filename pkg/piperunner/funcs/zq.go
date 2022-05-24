@@ -3,7 +3,7 @@ package funcs
 import (
 	"github.com/lubyruffy/gofofa/pkg/fzq"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -17,15 +17,15 @@ type zqQueryParams struct {
 	Query string `json:"query"`
 }
 
-func zqQuery(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
+func zqQuery(p corefuncs.Runner, params map[string]interface{}) (string, []string) {
 	var err error
 	var options zqQueryParams
 	if err = mapstructure.Decode(params, &options); err != nil {
 		panic(err)
 	}
 
-	name := piperunner.WriteTempFile(".json", nil)
-	err = fzq.ZqQuery(options.Query, p.LastFile, name)
+	name := WriteTempFile(".json", nil)
+	err = fzq.ZqQuery(options.Query, p.GetLastFile(), name)
 	if err != nil {
 		panic(err)
 	}
@@ -34,5 +34,5 @@ func zqQuery(p *piperunner.PipeRunner, params map[string]interface{}) (string, [
 }
 
 func init() {
-	piperunner.RegisterWorkflow("zq", zqHook, "ZqQuery", zqQuery) // grep匹配再新增字段
+	corefuncs.RegisterWorkflow("zq", zqHook, "ZqQuery", zqQuery) // grep匹配再新增字段
 }

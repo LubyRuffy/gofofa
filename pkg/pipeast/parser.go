@@ -54,7 +54,9 @@ package pipeast
 
 import (
 	parsec "github.com/prataprc/goparsec"
+	"log"
 	"strconv"
+	"strings"
 )
 
 // Parser pipe grammar parser
@@ -115,9 +117,82 @@ func (p *Parser) parseFunc(node parsec.Queryable) *FuncInfo {
 	return &fi
 }
 
+func pipeListToRawString(node parsec.Queryable) string {
+	ret := ""
+	first := true
+	for _, child := range node.GetChildren() {
+		switch child.GetName() {
+		case "pipe", "function", "fork":
+			if !first {
+				ret += "&"
+			}
+			ret += pipeToRawString(child)
+			first = false
+		}
+	}
+	return ret
+}
+
+func pipeToRawString(node parsec.Queryable) string {
+	log.Println(node.GetName(), node.GetValue())
+	ret := ""
+	first := true
+	for _, child := range node.GetChildren() {
+		switch child.GetName() {
+		case "pipe", "function", "fork":
+			if !first {
+				ret += "|"
+			}
+			ret += pipeToRawString(child)
+			first = false
+		case "pipeList":
+			ret += pipeListToRawString(child)
+		case "parameter", "value":
+			ret += pipeToRawString(child)
+		case "missing":
+		case "IDENT", "OPENP", "CLOSEP", "QUOTESTRING", "OPENFORK", "CLOSEFORK", "DOUBLEQUOTESTRING":
+			ret += child.GetValue()
+		default:
+			panic(child.GetName())
+		}
+	}
+
+	return ret
+}
+
+func escapeString(s string) string {
+	//s, _ = sjson.Set(`{"a":""}`, "a", s)
+	//return s[strings.Index(s, `:`)+1 : len(s)-1]
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return s
+}
+
+func (p *Parser) parseFork(node parsec.Queryable) string {
+	var ret string
+	for _, child := range node.GetChildren() {
+		switch child.GetName() {
+		case "pipeList":
+			for _, pipe := range child.GetChildren() {
+				switch pipe.GetName() {
+				case "function":
+					ret += `fork(` + pipe.GetValue() + ")\n"
+				case "pipe":
+					ret += `fork("` + escapeString(pipeToRawString(pipe)) + "\")\n"
+				}
+			}
+		}
+	}
+	return ret
+}
+
 func (p *Parser) parseAST(node parsec.Queryable) string {
 	//log.Println(node.GetName(), node.GetValue())
 	switch node.GetName() {
+	case "ANDFORK":
+		return ","
+	case "fork":
+		return p.parseFork(node)
 	case "function":
 		return p.parseFunc(node).String() + "\n"
 	case "pipe":
@@ -126,8 +201,9 @@ func (p *Parser) parseAST(node parsec.Queryable) string {
 			ret += p.parseAST(child)
 		}
 		return ret
-		// default:
-		// 	panic(node.GetName())
+	case "OPENFORK", "CLOSEFORK":
+	default:
+		panic(node.GetName())
 	}
 
 	return ""

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -55,7 +55,7 @@ type addFieldParams struct {
 	From  *addFieldFrom // 可以没有，就取Value
 }
 
-func addField(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
+func addField(p corefuncs.Runner, params map[string]interface{}) (string, []string) {
 
 	var err error
 	var options addFieldParams
@@ -67,7 +67,7 @@ func addField(p *piperunner.PipeRunner, params map[string]interface{}) (string, 
 	var addRegex *regexp.Regexp
 
 	var newLines []string
-	piperunner.EachLine(p.LastFile, func(line string) error {
+	EachLine(p.GetLastFile(), func(line string) error {
 		var newLine string
 		if options.Value != nil {
 			if addValue == "" {
@@ -96,7 +96,7 @@ func addField(p *piperunner.PipeRunner, params map[string]interface{}) (string, 
 		return nil
 	})
 
-	return piperunner.WriteTempFile(".json", func(f *os.File) {
+	return WriteTempFile(".json", func(f *os.File) {
 		content := strings.Join(newLines, "\n")
 		n, err := f.WriteString(content)
 		if err != nil {
@@ -109,5 +109,5 @@ func addField(p *piperunner.PipeRunner, params map[string]interface{}) (string, 
 }
 
 func init() {
-	piperunner.RegisterWorkflow("grep_add", grepAddHook, "AddField", addField) // grep匹配再新增字段
+	corefuncs.RegisterWorkflow("grep_add", grepAddHook, "AddField", addField) // grep匹配再新增字段
 }

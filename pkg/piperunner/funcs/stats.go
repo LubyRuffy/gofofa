@@ -3,7 +3,7 @@ package funcs
 import (
 	"fmt"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 )
 
 // stats 指定字段统计
@@ -24,5 +24,5 @@ func statsHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("stats", statsHook, "", nil) // 统计
+	corefuncs.RegisterWorkflow("stats", statsHook, "", nil) // 统计
 }

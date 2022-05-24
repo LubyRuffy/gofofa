@@ -2,7 +2,7 @@ package funcs
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 )
 
 func dropHook(fi *pipeast.FuncInfo) string {
@@ -13,5 +13,5 @@ func dropHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("drop", dropHook, "", nil) // 删除字段
+	corefuncs.RegisterWorkflow("drop", dropHook, "", nil) // 删除字段
 }

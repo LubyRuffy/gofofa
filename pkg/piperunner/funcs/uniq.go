@@ -2,7 +2,7 @@ package funcs
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 )
 
 // uniq 参数可选
@@ -18,5 +18,5 @@ func uniqHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("uniq", uniqHook, "", nil) // 排序
+	corefuncs.RegisterWorkflow("uniq", uniqHook, "", nil) // 排序
 }

@@ -4,76 +4,21 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/lubyruffy/gofofa"
-	"github.com/lubyruffy/gofofa/pkg/pipeast"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 	"github.com/sirupsen/logrus"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"html/template"
-	"os"
 	"reflect"
 	"strings"
-	"sync"
-	"time"
 )
-
-var (
-	functions sync.Map
-)
-
-// PipeTask 每一个pipe执行的任务统计信息
-type PipeTask struct {
-	Name           string        // pipe name
-	Content        string        // raw content
-	Outfile        string        // tmp json file 统一格式
-	GeneratedFiles []string      // files to archive 非json格式的文件不往后进行传递
-	Cost           time.Duration // time costs
-}
-
-// Close remove tmp outfile
-func (p *PipeTask) Close() {
-	os.Remove(p.Outfile)
-}
 
 // PipeRunner pipe运行器
 type PipeRunner struct {
 	content  string
-	tasks    []PipeTask
+	tasks    []corefuncs.PipeTask
 	LastFile string         // 最后生成的文件名
 	FofaCli  *gofofa.Client // fofa客户端
-}
-
-// RegisterWorkflow 注册workflow
-// 第一个参数是workflow名称；
-// 第二个参数是workflow转换为函数调用字符串的函数
-// 第三个参数是底层函数的名称
-// 第四个参数是一个回调函数，参数是传递的参数，返回值是生成的文件名
-// 第三四个参数可以留空值，表明只注册到语法解析器中去
-func RegisterWorkflow(workflow string, transFunc pipeast.FunctionTranslateHook,
-	funcName string, funcBody func(*PipeRunner, map[string]interface{}) (string, []string)) {
-
-	// 解析器的函数注册
-	if len(workflow) > 0 {
-		pipeast.RegisterFunction(workflow, transFunc)
-	}
-
-	// 注册底层函数
-	if len(funcName) > 0 {
-		// 执行并且自动生成任务队列
-		functions.Store(funcName, func(p *PipeRunner, params map[string]interface{}) {
-			logrus.Debug(funcName+" params:", params)
-
-			s := time.Now()
-			fn, gfs := funcBody(p, params)
-
-			p.addPipe(PipeTask{
-				Name:           funcName,
-				Content:        fmt.Sprintf("%v", params),
-				Outfile:        fn,
-				GeneratedFiles: gfs,
-				Cost:           time.Since(s),
-			})
-		})
-	}
 }
 
 // Close remove tmp outfile
@@ -83,7 +28,8 @@ func (p *PipeRunner) Close() {
 	}
 }
 
-func (p *PipeRunner) addPipe(pt PipeTask) {
+// AddWorkflow 添加一次任务的日志
+func (p *PipeRunner) AddWorkflow(pt corefuncs.PipeTask) {
 	p.tasks = append(p.tasks, pt)
 
 	// 可以不写文件
@@ -103,19 +49,19 @@ func (p *PipeRunner) Run() error {
 	i := interp.New(interp.Options{})
 	_ = i.Use(stdlib.Symbols)
 
-	funcs := interp.Exports{
+	exports := interp.Exports{
 		"this/this": {
 			"GetRunner": reflect.ValueOf(func() *PipeRunner {
 				return p
 			}),
 		},
 	}
-	functions.Range(func(key, value any) bool {
-		funcs["this/this"][key.(string)] = reflect.ValueOf(value)
+	corefuncs.Range(func(key, value any) bool {
+		exports["this/this"][key.(string)] = reflect.ValueOf(value)
 		return true
 	})
 
-	err = i.Use(funcs)
+	err = i.Use(exports)
 	if err != nil {
 		panic(err)
 	}
@@ -175,6 +121,16 @@ func (p *PipeRunner) DumpTasks() string {
 	}
 
 	return out.String()
+}
+
+// GetFofaCli fofa client
+func (p *PipeRunner) GetFofaCli() *gofofa.Client {
+	return p.FofaCli
+}
+
+// GetLastFile last genrated file
+func (p *PipeRunner) GetLastFile() string {
+	return p.LastFile
 }
 
 // New create pipe runner

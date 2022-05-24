@@ -2,7 +2,7 @@ package funcs
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 )
 
 // sort 参数可选
@@ -18,5 +18,5 @@ func sortHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("sort", sortHook, "", nil) // 排序
+	corefuncs.RegisterWorkflow("sort", sortHook, "", nil) // 排序
 }

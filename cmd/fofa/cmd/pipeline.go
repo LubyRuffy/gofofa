@@ -3,9 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/lubyruffy/gofofa/pkg/funcs"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/funcs"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
@@ -52,7 +53,7 @@ var pipelineCmd = &cli.Command{
 func pipelineAction(ctx *cli.Context) error {
 
 	if listWorkflows {
-		fmt.Println(funcs.SupportWorkflows())
+		fmt.Println(corefuncs.SupportWorkflows())
 		return nil
 	}
 
@@ -79,7 +80,7 @@ func pipelineAction(ctx *cli.Context) error {
 		return err
 	}
 
-	err = piperunner.EachLine(pr.LastFile, func(line string) error {
+	err = funcs.EachLine(pr.LastFile, func(line string) error {
 		fmt.Println(line)
 		return nil
 	})

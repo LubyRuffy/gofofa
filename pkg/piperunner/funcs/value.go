@@ -2,7 +2,7 @@ package funcs
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 )
 
 func valueHook(fi *pipeast.FuncInfo) string {
@@ -13,5 +13,5 @@ func valueHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("value", valueHook, "", nil) // 取值
+	corefuncs.RegisterWorkflow("value", valueHook, "", nil) // 取值
 }

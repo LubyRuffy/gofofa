@@ -1,4 +1,4 @@
-package piperunner
+package funcs
 
 import (
 	"bufio"

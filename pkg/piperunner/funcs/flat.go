@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"os"
@@ -41,7 +41,7 @@ type flatParams struct {
 	Field string
 }
 
-func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
+func flatArray(p corefuncs.Runner, params map[string]interface{}) (string, []string) {
 	var err error
 	var options flatParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -52,8 +52,8 @@ func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) (string,
 		panic(errors.New("field cannot be empty"))
 	}
 
-	return piperunner.WriteTempFile(".json", func(f *os.File) {
-		piperunner.EachLine(p.LastFile, func(line string) error {
+	return WriteTempFile(".json", func(f *os.File) {
+		EachLine(p.GetLastFile(), func(line string) error {
 			for _, item := range gjson.Get(line, options.Field).Array() {
 				jsonArrayEnum(item, func(result gjson.Result) {
 					f.WriteString(result.Raw + "\n")
@@ -65,5 +65,5 @@ func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) (string,
 }
 
 func init() {
-	piperunner.RegisterWorkflow("flat", flat, "FlatArray", flatArray)
+	corefuncs.RegisterWorkflow("flat", flat, "FlatArray", flatArray)
 }

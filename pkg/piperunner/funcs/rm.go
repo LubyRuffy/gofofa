@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
 	"github.com/tidwall/sjson"
 	"os"
 	"strings"
@@ -26,15 +26,15 @@ func rmHook(fi *pipeast.FuncInfo) string {
 	return tpl.String()
 }
 
-func removeField(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
-	if len(p.LastFile) == 0 {
+func removeField(p corefuncs.Runner, params map[string]interface{}) (string, []string) {
+	if len(p.GetLastFile()) == 0 {
 		panic(errors.New("removeField need input pipe or file"))
 	}
 
 	fields := strings.Split(params["fields"].(string), ",")
 
-	return piperunner.WriteTempFile(".json", func(f *os.File) {
-		piperunner.EachLine(p.LastFile, func(line string) error {
+	return WriteTempFile(".json", func(f *os.File) {
+		EachLine(p.GetLastFile(), func(line string) error {
 			var err error
 			newLine := line
 			for _, field := range fields {
@@ -53,5 +53,5 @@ func removeField(p *piperunner.PipeRunner, params map[string]interface{}) (strin
 }
 
 func init() {
-	piperunner.RegisterWorkflow("rm", rmHook, "RemoveField", removeField) // 删除字段
+	corefuncs.RegisterWorkflow("rm", rmHook, "RemoveField", removeField) // 删除字段
 }

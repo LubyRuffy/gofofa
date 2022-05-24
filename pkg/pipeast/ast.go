@@ -20,6 +20,9 @@ func newAst() (*parsec.AST, parsec.Parser) {
 	pipeOperator := parsec.Atom(`|`, "pipe_operator")
 	openP := parsec.Atom(`(`, "OPENP")
 	closeP := parsec.Atom(`)`, "CLOSEP")
+	openFork := parsec.Atom(`[`, "OPENFORK")
+	closeFork := parsec.Atom(`]`, "CLOSEFORK")
+	andFork := parsec.Atom(`&`, "ANDFORK")
 	comma := parsec.Atom(",", "COMMA")
 	null := parsec.Atom("null", "null")
 	boolean := parsec.OrdChoice(nil, parsec.Atom("true", "BOOL"), parsec.Atom("false", "BOOL"))
@@ -27,6 +30,9 @@ func newAst() (*parsec.AST, parsec.Parser) {
 	quoteString := parsec.Token("`(?:\\`|.)*?`", "QUOTESTRING")
 
 	var function parsec.Parser
+	var fork parsec.Parser
+	var pipe parsec.Parser
+
 	// value 值表达式，可以是function
 	identifier := parsec.OrdChoice(
 		func(nodes []parsec.ParsecNode) parsec.ParsecNode {
@@ -54,8 +60,14 @@ func newAst() (*parsec.AST, parsec.Parser) {
 
 	// 函数
 	function = ast.And("function", nil, spaceMaybe, parsec.Ident(), openP, spaceMaybe, parameterList, spaceMaybe, closeP, spaceMaybe)
+	workflow := ast.OrdChoice("workflow", nil, &fork, function)
+
+	// 分叉
+	pipeList := ast.Kleene("pipeList", nil, &pipe, andFork)
+	fork = ast.And("fork", nil, openFork, &pipeList, closeFork)
 
 	// 最终的pipe
-	pipe := ast.Kleene("pipe", nil, function, pipeOperator)
+	pipe = ast.Kleene("pipe", nil, workflow, pipeOperator)
+
 	return ast, pipe
 }

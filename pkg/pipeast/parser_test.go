@@ -2,10 +2,9 @@ package pipeast
 
 import (
 	"bytes"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"text/template"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNewParser(t *testing.T) {
@@ -39,6 +38,19 @@ func TestNewParser(t *testing.T) {
 	// char
 	assert.Equal(t, "a('a')\n", NewParser().Parse(`a('a')`))
 
+}
+
+func TestParser_Fork(t *testing.T) {
+	// 测试分叉fork的格式
+	assert.Equal(t, "fork(\"cut(`ip`)\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) & cut(`port`) ]"))
+	assert.Equal(t, "fork(\"cut(\\\"ip\\\")\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(\"ip\") & cut(`port`) ]"))
+
+	// 多层嵌套
+	assert.Equal(t, "fork(\"cut(`ip`)|[cut(`ip`)&cut(`port`)]\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) | [cut(`ip`) & cut(`port`)] & cut(`port`) ]"))
+	assert.Equal(t, "fork(\"cut(`ip`)|[cut(`ip`)&cut(\\\"port\\\")]\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) | [cut(`ip`) & cut(\"port\")] & cut(`port`) ]"))
+}
+
+func TestRegisterFunction(t *testing.T) {
 	// translate simple mode to go code
 	RegisterFunction("fofa", func(fi *FuncInfo) string {
 		tmpl, err := template.New("fofa").Parse(`FetchFofa(GetRunner(), map[string]interface{} {

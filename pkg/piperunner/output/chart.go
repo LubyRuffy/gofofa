@@ -1,4 +1,4 @@
-package funcs
+package output
 
 import (
 	"bytes"
@@ -6,7 +6,8 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/render"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/funcs"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"os"
@@ -51,7 +52,7 @@ type chartParams struct {
 }
 
 // 每一个json行格式必须有value和count字段，对应name和value之，比如：{"value":"US","count":435}
-func generateChart(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
+func generateChart(p corefuncs.Runner, params map[string]interface{}) (string, []string) {
 	var err error
 	var options chartParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -63,7 +64,7 @@ func generateChart(p *piperunner.PipeRunner, params map[string]interface{}) (str
 	pieItems := make([]opts.PieData, 0)
 	//lineItems := make([]opts.LineData, 0)
 
-	piperunner.EachLine(p.LastFile, func(line string) error {
+	funcs.EachLine(p.GetLastFile(), func(line string) error {
 		keys = append(keys, gjson.Get(line, "value").String())
 		barItems = append(barItems, opts.BarData{Name: gjson.Get(line, "value").String(), Value: gjson.Get(line, "count").Int()})
 		pieItems = append(pieItems, opts.PieData{Name: gjson.Get(line, "value").String(), Value: gjson.Get(line, "count").Int()})
@@ -101,7 +102,7 @@ func generateChart(p *piperunner.PipeRunner, params map[string]interface{}) (str
 		panic("unknown chart type: [" + options.Type + "]")
 	}
 
-	f := piperunner.WriteTempFile(".html", func(f *os.File) {
+	f := funcs.WriteTempFile(".html", func(f *os.File) {
 		if err = chartRender.Render(f); err != nil {
 			panic(err)
 		}
@@ -111,5 +112,5 @@ func generateChart(p *piperunner.PipeRunner, params map[string]interface{}) (str
 }
 
 func init() {
-	piperunner.RegisterWorkflow("chart", chart, "GenerateChart", generateChart)
+	corefuncs.RegisterWorkflow("chart", chart, "GenerateChart", generateChart)
 }

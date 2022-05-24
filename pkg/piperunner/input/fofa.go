@@ -1,11 +1,12 @@
-package funcs
+package input
 
 import (
 	"bytes"
 	"errors"
 	"github.com/lubyruffy/gofofa/pkg/outformats"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/funcs"
 	"github.com/mitchellh/mapstructure"
 	"os"
 	"strings"
@@ -18,7 +19,7 @@ type fetchFofaParams struct {
 	Fields string
 }
 
-func fetchFofa(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
+func fetchFofa(p corefuncs.Runner, params map[string]interface{}) (string, []string) {
 	var err error
 	var options fetchFofaParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -35,12 +36,12 @@ func fetchFofa(p *piperunner.PipeRunner, params map[string]interface{}) (string,
 	fields := strings.Split(options.Fields, ",")
 
 	var res [][]string
-	res, err = p.FofaCli.HostSearch(options.Query, options.Size, fields)
+	res, err = p.GetFofaCli().HostSearch(options.Query, options.Size, fields)
 	if err != nil {
 		panic(err)
 	}
 
-	return piperunner.WriteTempFile(".json", func(f *os.File) {
+	return funcs.WriteTempFile(".json", func(f *os.File) {
 		w := outformats.NewJSONWriter(f, fields)
 		if err = w.WriteAll(res); err != nil {
 			panic(err)
@@ -82,5 +83,5 @@ func fofaHook(fi *pipeast.FuncInfo) string {
 }
 
 func init() {
-	piperunner.RegisterWorkflow("fofa", fofaHook, "FetchFofa", fetchFofa)
+	corefuncs.RegisterWorkflow("fofa", fofaHook, "FetchFofa", fetchFofa)
 }

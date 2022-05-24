@@ -1,4 +1,4 @@
-package funcs
+package input
 
 import (
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
