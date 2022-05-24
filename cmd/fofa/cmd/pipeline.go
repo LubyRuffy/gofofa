@@ -6,6 +6,7 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/funcs"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner"
+	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
 	"os"
@@ -91,6 +92,8 @@ func pipelineAction(ctx *cli.Context) error {
 		if err != nil {
 			return err
 		}
+
+		browser.OpenFile(pipelineTaskOut)
 	}
 
 	return nil

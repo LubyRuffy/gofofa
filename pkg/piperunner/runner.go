@@ -11,6 +11,7 @@ import (
 	"html/template"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -135,6 +136,10 @@ func (p *PipeRunner) DumpTasks() string {
 		"RawHtml": func(value interface{}) template.HTML {
 			return template.HTML(fmt.Sprint(value))
 		},
+		"safeURL": func(u string) template.URL {
+			u = strings.ReplaceAll(u, "\\", "/")
+			return template.URL(u)
+		},
 	}).Parse(`   
 <html>
 <head>
@@ -146,14 +151,18 @@ func (p *PipeRunner) DumpTasks() string {
 		<ul>
 			<li>{{ .Name }}</li>
 			<li>{{ .Content }}</li>
-			<li><a href="{{ .Outfile }}">{{ .Outfile }}</a></li>
-			<li>
-				{{range .GeneratedFiles}}
+
+			{{ if gt (len .Outfile) 0 }}
+			<li><a href="{{ .Outfile | safeURL }}">{{ .Outfile }}</a></li>
+			{{ end }}
+
+			{{ range .GeneratedFiles }}	
+			<li> generate files:
 				<ul>
-					<li><a href="{{ . }}">{{ . }}</a></li>
+					<li><a href="{{ . | safeURL }}">{{ . }}</a></li>
 				</ul>
-			{{end}}
 			</li>
+			{{ end }}
 			<li>{{ .Cost }}</li>
 		</ul>
 	{{end}}
