@@ -73,9 +73,9 @@ func pipelineAction(ctx *cli.Context) error {
 		pipelineContent = pipeast.NewParser().Parse(v)
 	}
 
-	pr := piperunner.New(pipelineContent)
+	pr := piperunner.New()
 	pr.FofaCli = fofaCli
-	err := pr.Run()
+	_, err := pr.Run(pipelineContent)
 	if err != nil {
 		return err
 	}

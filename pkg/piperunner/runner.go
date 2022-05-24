@@ -6,13 +6,9 @@ import (
 	"github.com/lubyruffy/gofofa"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
-	_ "github.com/lubyruffy/gofofa/pkg/piperunner/input"
-	_ "github.com/lubyruffy/gofofa/pkg/piperunner/output"
+	"github.com/lubyruffy/gofofa/pkg/piperunner/gorunner"
 	"github.com/sirupsen/logrus"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
 	"html/template"
-	"reflect"
 	"strings"
 )
 
@@ -23,6 +19,8 @@ type PipeRunner struct {
 	LastTask *corefuncs.PipeTask   // 最后执行的workflow
 	LastFile string                // 最后生成的文件名
 	FofaCli  *gofofa.Client        // fofa客户端
+
+	*gorunner.Runner
 }
 
 // Close remove tmp outfile
@@ -48,48 +46,6 @@ func (p *PipeRunner) AddWorkflow(pt *corefuncs.PipeTask) {
 
 		logrus.Debug(pt.Name+" write to file: ", pt.Outfile)
 	}
-}
-
-// Run run pipelines
-func (p *PipeRunner) Run() error {
-	var err error
-
-	p.Tasks = nil
-
-	i := interp.New(interp.Options{})
-	_ = i.Use(stdlib.Symbols)
-
-	exports := interp.Exports{
-		"this/this": {
-			"GetRunner": reflect.ValueOf(func() *PipeRunner {
-				return p
-			}),
-			"Fork": reflect.ValueOf(func(pipe string) error {
-				forkRunner := New(pipeast.NewParser().Parse(pipe))
-				forkRunner.LastFile = p.LastFile // 从这里开始分叉
-				p.LastTask.Children = append(p.LastTask.Children, forkRunner)
-				return forkRunner.Run()
-			}),
-		},
-	}
-	corefuncs.Range(func(key, value any) bool {
-		exports["this/this"][key.(string)] = reflect.ValueOf(value)
-		return true
-	})
-
-	err = i.Use(exports)
-	if err != nil {
-		panic(err)
-	}
-
-	// i.ImportUsed()
-	i.Eval(`import (
-		. "this/this"
-		)`)
-
-	_, err = i.Eval(p.content)
-
-	return err
 }
 
 // DumpTasks tasks dump to html
@@ -166,8 +122,33 @@ func (p *PipeRunner) GetLastFile() string {
 }
 
 // New create pipe runner
-func New(content string) *PipeRunner {
-	return &PipeRunner{
-		content: content,
+func New() *PipeRunner {
+	r := &PipeRunner{}
+	var err error
+
+	// 注册底层函数
+	var gf gorunner.GoFunction
+	err = gf.Register("GetRunner", func() *PipeRunner {
+		return r
+	})
+	if err != nil {
+		panic(err)
 	}
+	err = gf.Register("Fork", func(pipe string) error {
+		forkRunner := New()
+		forkRunner.LastFile = r.LastFile // 从这里开始分叉
+		r.LastTask.Children = append(r.LastTask.Children, forkRunner)
+		_, err := forkRunner.Run(pipeast.NewParser().Parse(pipe))
+		return err
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	corefuncs.Range(func(key, value any) bool {
+		gf.Register(key.(string), value)
+		return true
+	})
+	r.Runner = gorunner.New(gorunner.WithFunctions(&gf))
+	return r
 }

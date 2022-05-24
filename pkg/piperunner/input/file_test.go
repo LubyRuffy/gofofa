@@ -17,8 +17,8 @@ func TestLoad_load(t *testing.T) {
 		pipeast.NewParser().Parse(`load("test.json")`))
 
 	ast := pipeast.NewParser().Parse(`load("../../../data/forktest.json") | [cut("a") & cut("b")]`)
-	p := piperunner.New(ast)
-	err := p.Run()
+	p := piperunner.New()
+	_, err := p.Run(ast)
 	assert.Nil(t, err)
 	res, err := os.ReadFile(p.LastFile)
 	assert.Nil(t, err)

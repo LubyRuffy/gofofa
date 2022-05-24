@@ -42,12 +42,12 @@ func TestNewParser(t *testing.T) {
 
 func TestParser_Fork(t *testing.T) {
 	// 测试分叉fork的格式
-	assert.Equal(t, "fork(\"cut(`ip`)\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) & cut(`port`) ]"))
-	assert.Equal(t, "fork(\"cut(\\\"ip\\\")\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(\"ip\") & cut(`port`) ]"))
+	assert.Equal(t, "Fork(\"cut(`ip`)\")\nFork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) & cut(`port`) ]"))
+	assert.Equal(t, "Fork(\"cut(\\\"ip\\\")\")\nFork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(\"ip\") & cut(`port`) ]"))
 
 	// 多层嵌套
-	assert.Equal(t, "fork(\"cut(`ip`)|[cut(`ip`)&cut(`port`)]\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) | [cut(`ip`) & cut(`port`)] & cut(`port`) ]"))
-	assert.Equal(t, "fork(\"cut(`ip`)|[cut(`ip`)&cut(\\\"port\\\")]\")\nfork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) | [cut(`ip`) & cut(\"port\")] & cut(`port`) ]"))
+	assert.Equal(t, "Fork(\"cut(`ip`)|[cut(`ip`)&cut(`port`)]\")\nFork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) | [cut(`ip`) & cut(`port`)] & cut(`port`) ]"))
+	assert.Equal(t, "Fork(\"cut(`ip`)|[cut(`ip`)&cut(\\\"port\\\")]\")\nFork(\"cut(`port`)\")\n", NewParser().Parse("[ cut(`ip`) | [cut(`ip`) & cut(\"port\")] & cut(`port`) ]"))
 }
 
 func TestRegisterFunction(t *testing.T) {

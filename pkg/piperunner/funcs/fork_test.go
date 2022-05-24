@@ -12,5 +12,7 @@ func TestPipeRunner_fork(t *testing.T) {
 `,
 		pipeast.NewParser().Parse(`fork("a()")`))
 
-	assertPipeCmd(t, `[cut("a") & cut("b")]`, `{"a":1,"b":2}`, `{"a":1,"b":2}`)
+	//gf := gorunner.GoFunction{}
+	//assertPipeCmdByTestRunner(t, &gf, `load("../../../data/forktest.json") | [cut("a") & cut("b")]`,
+	//	`{"a":1,"b":2}`, `{"a":1,"b":2}`)
 }
