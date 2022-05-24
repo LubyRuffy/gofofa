@@ -25,6 +25,7 @@ var GlobalCommands = []*cli.Command{
 	iconCmd,
 	randomCmd,
 	pipelineCmd,
+	webCmd,
 }
 
 // IsValidCommand valid command name

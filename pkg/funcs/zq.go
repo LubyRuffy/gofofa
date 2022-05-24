@@ -17,20 +17,20 @@ type zqQueryParams struct {
 	Query string `json:"query"`
 }
 
-func zqQuery(p *piperunner.PipeRunner, params map[string]interface{}) string {
+func zqQuery(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
 	var err error
 	var options zqQueryParams
 	if err = mapstructure.Decode(params, &options); err != nil {
 		panic(err)
 	}
 
-	name := piperunner.WriteTempJSONFile(nil)
+	name := piperunner.WriteTempFile(".json", nil)
 	err = fzq.ZqQuery(options.Query, p.LastFile, name)
 	if err != nil {
 		panic(err)
 	}
 
-	return name
+	return name, nil
 }
 
 func init() {

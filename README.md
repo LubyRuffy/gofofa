@@ -178,9 +178,11 @@ every 500ms generate one line, never stop
                 -   ☑ json
                 -   ☑ xml
                 -   ☐ table
+                -   ☐ excel
             -   ☑ outFile/o
         -   ☑ stats
         -   ☑ icon
+        -   ☐ web
     -   ☑ Terminal color 
     -   ☑ Global Config
         -   ☑ fofaURL

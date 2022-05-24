@@ -41,7 +41,7 @@ type flatParams struct {
 	Field string
 }
 
-func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) string {
+func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
 	var err error
 	var options flatParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -52,7 +52,7 @@ func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) string {
 		panic(errors.New("field cannot be empty"))
 	}
 
-	return piperunner.WriteTempJSONFile(func(f *os.File) {
+	return piperunner.WriteTempFile(".json", func(f *os.File) {
 		piperunner.EachLine(p.LastFile, func(line string) error {
 			for _, item := range gjson.Get(line, options.Field).Array() {
 				jsonArrayEnum(item, func(result gjson.Result) {
@@ -61,7 +61,7 @@ func flatArray(p *piperunner.PipeRunner, params map[string]interface{}) string {
 			}
 			return nil
 		})
-	})
+	}), nil
 }
 
 func init() {

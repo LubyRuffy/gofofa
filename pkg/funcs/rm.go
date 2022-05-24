@@ -26,14 +26,14 @@ func rmHook(fi *pipeast.FuncInfo) string {
 	return tpl.String()
 }
 
-func removeField(p *piperunner.PipeRunner, params map[string]interface{}) string {
+func removeField(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
 	if len(p.LastFile) == 0 {
 		panic(errors.New("removeField need input pipe or file"))
 	}
 
 	fields := strings.Split(params["fields"].(string), ",")
 
-	return piperunner.WriteTempJSONFile(func(f *os.File) {
+	return piperunner.WriteTempFile(".json", func(f *os.File) {
 		piperunner.EachLine(p.LastFile, func(line string) error {
 			var err error
 			newLine := line
@@ -49,7 +49,7 @@ func removeField(p *piperunner.PipeRunner, params map[string]interface{}) string
 			}
 			return nil
 		})
-	})
+	}), nil
 }
 
 func init() {

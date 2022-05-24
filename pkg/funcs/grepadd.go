@@ -55,7 +55,7 @@ type addFieldParams struct {
 	From  *addFieldFrom // 可以没有，就取Value
 }
 
-func addField(p *piperunner.PipeRunner, params map[string]interface{}) string {
+func addField(p *piperunner.PipeRunner, params map[string]interface{}) (string, []string) {
 
 	var err error
 	var options addFieldParams
@@ -96,7 +96,7 @@ func addField(p *piperunner.PipeRunner, params map[string]interface{}) string {
 		return nil
 	})
 
-	return piperunner.WriteTempJSONFile(func(f *os.File) {
+	return piperunner.WriteTempFile(".json", func(f *os.File) {
 		content := strings.Join(newLines, "\n")
 		n, err := f.WriteString(content)
 		if err != nil {
@@ -105,7 +105,7 @@ func addField(p *piperunner.PipeRunner, params map[string]interface{}) string {
 		if n != len(content) {
 			panic("write string failed")
 		}
-	})
+	}), nil
 }
 
 func init() {

@@ -1,7 +1,8 @@
 ## v0.0.6 pipeline exports
 
--   add chart?
 -   add pipeline tasks log: ```./fofa pipeline -t tasks.html 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
+-   add chart workflow at pipeline, visit generated html file: ```./fofa pipeline -t a.html 'fofa(`title="hacked"`,`title,country`, 1000) | stats("country",10) | chart("line","test")'```
+-   add web subcommand
   
 ## v0.0.5 data pipeline
 

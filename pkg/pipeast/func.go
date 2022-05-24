@@ -91,3 +91,13 @@ func (f *FuncInfo) String() string {
 func RegisterFunction(name string, f FunctionTranslateHook) {
 	globalFunctionTranslateHooks.Store(name, f)
 }
+
+// SupportWorkflows 所有支持的workflow
+func SupportWorkflows() []string {
+	var r []string
+	globalFunctionTranslateHooks.Range(func(key, value any) bool {
+		r = append(r, key.(string))
+		return true
+	})
+	return r
+}

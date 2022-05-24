@@ -3,6 +3,7 @@ package piperunner
 import (
 	"bytes"
 	"fmt"
+	"github.com/lubyruffy/gofofa"
 	"github.com/lubyruffy/gofofa/pkg/pipeast"
 	"github.com/sirupsen/logrus"
 	"github.com/traefik/yaegi/interp"
@@ -20,10 +21,11 @@ var (
 
 // PipeTask 每一个pipe执行的任务统计信息
 type PipeTask struct {
-	Name    string        // pipe name
-	Content string        // raw content
-	Outfile string        // tmp file
-	Cost    time.Duration // time costs
+	Name           string        // pipe name
+	Content        string        // raw content
+	Outfile        string        // tmp json file 统一格式
+	GeneratedFiles []string      // files to archive 非json格式的文件不往后进行传递
+	Cost           time.Duration // time costs
 }
 
 // Close remove tmp outfile
@@ -35,7 +37,8 @@ func (p *PipeTask) Close() {
 type PipeRunner struct {
 	content  string
 	tasks    []PipeTask
-	LastFile string // 最后生成的文件名
+	LastFile string         // 最后生成的文件名
+	FofaCli  *gofofa.Client // fofa客户端
 }
 
 // RegisterWorkflow 注册workflow
@@ -45,7 +48,7 @@ type PipeRunner struct {
 // 第四个参数是一个回调函数，参数是传递的参数，返回值是生成的文件名
 // 第三四个参数可以留空值，表明只注册到语法解析器中去
 func RegisterWorkflow(workflow string, transFunc pipeast.FunctionTranslateHook,
-	funcName string, funcBody func(*PipeRunner, map[string]interface{}) string) {
+	funcName string, funcBody func(*PipeRunner, map[string]interface{}) (string, []string)) {
 
 	// 解析器的函数注册
 	if len(workflow) > 0 {
@@ -59,13 +62,14 @@ func RegisterWorkflow(workflow string, transFunc pipeast.FunctionTranslateHook,
 			logrus.Debug(funcName+" params:", params)
 
 			s := time.Now()
-			fn := funcBody(p, params)
+			fn, gfs := funcBody(p, params)
 
 			p.addPipe(PipeTask{
-				Name:    funcName,
-				Content: fmt.Sprintf("%v", params),
-				Outfile: fn,
-				Cost:    time.Since(s),
+				Name:           funcName,
+				Content:        fmt.Sprintf("%v", params),
+				Outfile:        fn,
+				GeneratedFiles: gfs,
+				Cost:           time.Since(s),
 			})
 		})
 	}
@@ -80,9 +84,13 @@ func (p *PipeRunner) Close() {
 
 func (p *PipeRunner) addPipe(pt PipeTask) {
 	p.tasks = append(p.tasks, pt)
-	p.LastFile = pt.Outfile
 
-	logrus.Debug(pt.Name+" write to file: ", pt.Outfile)
+	// 可以不写文件
+	if len(pt.Outfile) > 0 {
+		p.LastFile = pt.Outfile
+
+		logrus.Debug(pt.Name+" write to file: ", pt.Outfile)
+	}
 }
 
 // Run run pipelines
@@ -123,7 +131,11 @@ func (p *PipeRunner) Run() error {
 
 // DumpTasks tasks dump to html
 func (p *PipeRunner) DumpTasks() string {
-	t, _ := template.New("tasks").Parse(`   
+	t, _ := template.New("tasks").Funcs(template.FuncMap{
+		"RawHtml": func(value interface{}) template.HTML {
+			return template.HTML(fmt.Sprint(value))
+		},
+	}).Parse(`   
 <html>
 <head>
     <title>gofofa tasks</title>
@@ -135,6 +147,13 @@ func (p *PipeRunner) DumpTasks() string {
 			<li>{{ .Name }}</li>
 			<li>{{ .Content }}</li>
 			<li><a href="{{ .Outfile }}">{{ .Outfile }}</a></li>
+			<li>
+				{{range .GeneratedFiles}}
+				<ul>
+					<li><a href="{{ . }}">{{ . }}</a></li>
+				</ul>
+			{{end}}
+			</li>
 			<li>{{ .Cost }}</li>
 		</ul>
 	{{end}}

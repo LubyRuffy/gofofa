@@ -50,12 +50,15 @@ func EachLine(filename string, f func(line string) error) error {
 	return nil
 }
 
-// WriteTempJSONFile 写入临时文件
+// WriteTempFile 写入临时文件
 // 如果writeF是nil，就只返回生成的一个临时空文件路径
-func WriteTempJSONFile(writeF func(f *os.File)) string {
+func WriteTempFile(ext string, writeF func(f *os.File)) string {
 	var f *os.File
 	var err error
-	f, err = os.CreateTemp(os.TempDir(), defaultPipeTmpFilePrefix)
+	if len(ext) > 0 {
+		ext = "*" + ext
+	}
+	f, err = os.CreateTemp(os.TempDir(), defaultPipeTmpFilePrefix+ext)
 	if err != nil {
 		panic(fmt.Errorf("create tmpfile failed: %w", err))
 	}

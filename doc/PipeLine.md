@@ -37,8 +37,8 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
 -   支持simple模式，将pipeline的模式转换成完整的golang代码
 -   （未完成）输出到不同的目标
 -   （未完成）可以保持中间数据，如aggs结果；不参与主流程，只用于统计，方便后续生成报表
--   （未完成）可以形成报表
--   （未完成）完整的日志记录
+-   可以形成报表
+-   完整的日志记录
 
 ## simple模式
 
@@ -58,7 +58,7 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   fofa(query, size, fields)
 -   数据操作命令：
     -   cut(fields) 只保留特定字段
-    -   drop(fields) 删除字段
+    -   drop(fields) 删除字段，rm也可以
     -   grep_add(from_field, pattern, new_field_name) 通过对已有字段的正则提取到新的字段
     -   to_int(field) 格式转换为int：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) | to_int(`port`)'```
     -   sort(field) 排序：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) | to_int(`port`) | sort(`port`)'```
@@ -68,6 +68,9 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   stats(field, top_size) 统计计数：```./fofa --verbose pipeline 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
     -   uniq(true) 相邻的去重，注意：不会先排序
     -   zq(query) 调用原始的zq语句
+    -   chart(type, title) 生成图表，支持pie/bar
+-   （未完成）通过 ```[ cmd1() & cmd2() ]``` 创建分支？
+    -   （未完成）分支的数据留是分开的，比如```fofa(`port=80`,`ip,port`) | [ cut(`ip`) & cut(`port`) ]```将会生成两条数据流
 
 ## 一些场景
 
