@@ -91,3 +91,14 @@ func TestRegisterFunction(t *testing.T) {
 })
 `, NewParser().MustParse("fofa(`title=\"test\"`, 10, `host,title,body`)"))
 }
+
+func TestParser_ParseToGraph(t *testing.T) {
+	v, err := NewParser().ParseToGraph("test() | [ cut(`ip`) | [cut(`ip`) & cut(`port`)] & cut(`port`) ]")
+	assert.Nil(t, err)
+	assert.Equal(t, `graph TD
+test1-->cut2
+cut2-->cut3
+cut2-->cut4
+test1-->cut5
+`, v)
+}

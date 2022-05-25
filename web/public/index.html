@@ -5,6 +5,14 @@
     <title>Title</title>
 </head>
 <body>
-hello
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script>
+    mermaid.initialize({ startOnLoad: true });
+</script>
+
+Here is one mermaid diagram:
+<div class="mermaid">
+{{ . }}
+</div>
 </body>
 </html>

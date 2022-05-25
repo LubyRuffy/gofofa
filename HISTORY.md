@@ -3,7 +3,9 @@
 -   add chart workflow at pipeline, visit generated html file: ```./fofa pipeline -t a.html 'fofa(`title="hacked"`,`title,country`, 1000) | stats("country",10) | chart("line","test")'```
 -   pipeline add fork flow: ```./fofa pipeline -t a.html 'fofa("body=icon && body=link", "body,host,ip,port") | [cut("ip") & cut("host")]'```
 -   add pipeline tasks log: ```./fofa pipeline -t tasks.html 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
+-   add screenshot workflow
 -   add web subcommand
+-   support workflow viz
   
 ## v0.0.5 data pipeline
 

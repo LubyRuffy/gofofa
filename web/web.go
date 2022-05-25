@@ -2,8 +2,10 @@ package web
 
 import (
 	"fmt"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"text/template"
 )
 
 import "embed"
@@ -12,7 +14,14 @@ import "embed"
 var webFs embed.FS
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+	tmpl := template.Must(template.ParseFS(webFs, "public/index.html"))
+	code := r.FormValue("code")
+	mermaid, err := workflowast.NewParser().ParseToGraph(code)
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("workflow parsed err: %v", err)))
+		return
+	}
+	tmpl.Execute(w, mermaid)
 }
 
 // Start 启动服务器
