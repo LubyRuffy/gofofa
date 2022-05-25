@@ -3,10 +3,10 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/lubyruffy/gofofa/pkg/pipeast"
-	"github.com/lubyruffy/gofofa/pkg/piperunner"
-	"github.com/lubyruffy/gofofa/pkg/piperunner/corefuncs"
-	"github.com/lubyruffy/gofofa/pkg/piperunner/funcs"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/translater"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
+	"github.com/lubyruffy/gofofa/pkg/utils"
 	"github.com/pkg/browser"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
@@ -51,9 +51,10 @@ var pipelineCmd = &cli.Command{
 // 基本逻辑是：命令行的query是一个pipeline模式，每一个pipeline的workflow都要转换成底层可以执行的代码
 // 也就是说注册一个pipeline可以支持的命令，需要：一）注册底层函数；二）注册pipeline的函数到底层函数调用的代码转换器
 func pipelineAction(ctx *cli.Context) error {
+	var err error
 
 	if listWorkflows {
-		fmt.Println(corefuncs.SupportWorkflows())
+		fmt.Println(translater.Translators)
 		return nil
 	}
 
@@ -70,17 +71,20 @@ func pipelineAction(ctx *cli.Context) error {
 		if len(pipelineContent) > 0 {
 			return errors.New("file and content only one is allowed")
 		}
-		pipelineContent = pipeast.NewParser().Parse(v)
+		pipelineContent, err = workflowast.NewParser().Parse(v)
+		if err != nil {
+			return err
+		}
 	}
 
-	pr := piperunner.New()
+	pr := goworkflow.New()
 	pr.FofaCli = fofaCli
-	_, err := pr.Run(pipelineContent)
+	_, err = pr.Run(pipelineContent)
 	if err != nil {
 		return err
 	}
 
-	err = funcs.EachLine(pr.LastFile, func(line string) error {
+	err = utils.EachLine(pr.LastFile, func(line string) error {
 		fmt.Println(line)
 		return nil
 	})
