@@ -478,7 +478,7 @@ func screenShot(p *PipeRunner, params map[string]interface{}) *funcResult {
 			var size int
 			fn, size, err = screenshotURL(u, &options)
 			if err != nil {
-				logrus.Warnf("screenshotURL failed: %w", err)
+				logrus.Warnf("screenshotURL failed: %s", err)
 				return
 			}
 
