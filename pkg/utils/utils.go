@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 )
 
 var (
@@ -75,4 +76,19 @@ func WriteTempFile(ext string, writeF func(f *os.File) error) (fn string, err er
 		}
 	}
 	return
+}
+
+// EscapeString 双引号内的字符串转换
+func EscapeString(s string) string {
+	//s, _ = sjson.Set(`{"a":""}`, "a", s)
+	//return s[strings.Index(s, `:`)+1 : len(s)-1]
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return s
+}
+
+// EscapeDoubleQuoteStringOfHTML 双引号内的字符串转换为Mermaid格式（HTML）
+func EscapeDoubleQuoteStringOfHTML(s string) string {
+	s = strings.ReplaceAll(s, `"`, `#quot;`)
+	return s
 }

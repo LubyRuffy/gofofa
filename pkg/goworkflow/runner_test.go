@@ -1,13 +1,16 @@
 package goworkflow
 
 import (
+	"bytes"
 	"github.com/lubyruffy/gofofa"
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
 	"github.com/lubyruffy/gofofa/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"html/template"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -75,9 +78,18 @@ func TestNew(t *testing.T) {
 		`{"title":"Test123","newfield":"newvalue"}
 {"title":"123test456","newfield":"newvalue"}`)
 
+	// chart格式错误
 	assertPipeCmdByTestRunnerError(t, `chart("line","a")`,
 		`{"title":"Test123"}`,
 		`"value" and "count" field is needed`)
+	// chart正确
+	assertPipeCmdByTestRunner(t, `chart("bar","a")`,
+		`{"value":"Test123","count":10}`,
+		"{\"value\":\"Test123\",\"count\":10}")
+	// chart正确
+	assertPipeCmdByTestRunner(t, `chart("pie","a")`,
+		`{"value":"Test123","count":10}`,
+		"{\"value\":\"Test123\",\"count\":10}")
 
 	assertPipeCmdByTestRunner(t, `cut("a")`, `{"a":1,"b":2}`, "{\"a\":1}\n")
 	//assertPipeCmd(t, `cut("a")`, `{"a":1,"b":2}`, "{\"a\":1}\n")
@@ -117,6 +129,12 @@ func TestNew(t *testing.T) {
 	assertPipeCmdByTestRunnerError(t, `rm("")`,
 		`{"a":1}`,
 		`path cannot be empty`)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world"))
+	}))
+	defer ts.Close()
+	assertPipeCmdByTestRunner(t, `gen("{\"host\":\"`+ts.URL+`\"}") | screenshot("host")`, ``, `{"host":"`+ts.URL+`"}`)
 
 	assertPipeCmdByTestRunner(t, `sort("a")`, `{"a":2}
 {"a":1}`, `{"a":1}
@@ -216,10 +234,23 @@ func TestLoad_fofa(t *testing.T) {
 }
 
 func TestPipeRunner_DumpTasks(t *testing.T) {
-	p := New()
-	_, err := p.Run(workflowast.NewParser().MustParse(`load("../../data/forktest.json") | [cut("a")&cut("b")]`))
+	tpl, err := template.New("tasks").Funcs(template.FuncMap{
+		"HasPrefix": func(s, prefix string) bool {
+			return strings.HasPrefix(s, prefix)
+		},
+	}).Parse(`{{ if HasPrefix . "aaa" }}yes{{ end }}`)
 	assert.Nil(t, err)
-	c := p.DumpTasks()
+	var out bytes.Buffer
+	err = tpl.Execute(&out, "aaa")
+	if err != nil {
+		panic(err)
+	}
+	assert.Equal(t, "yes", out.String())
+
+	p := New()
+	_, err = p.Run(workflowast.NewParser().MustParse(`load("../../data/forktest.json") | [cut("a")&cut("b")]`))
+	assert.Nil(t, err)
+	c := p.DumpTasks(false)
 	assert.Contains(t, c, "fork")
 }
 

@@ -22,6 +22,7 @@ var webCmd = &cli.Command{
 		},
 	},
 	Action: func(ctx *cli.Context) error {
+		web.FofaCli = fofaCli
 		return web.Start(listenAddr)
 	},
 }

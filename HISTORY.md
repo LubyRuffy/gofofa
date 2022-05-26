@@ -1,4 +1,4 @@
-## v0.0.6 pipeline exports
+## v0.0.6 pipeline run
 
 -   add chart workflow at pipeline, visit generated html file: ```./fofa pipeline -t a.html 'fofa(`title="hacked"`,`title,country`, 1000) | stats("country",10) | chart("line","test")'```
 -   pipeline add fork flow: ```./fofa pipeline -t a.html 'fofa("body=icon && body=link", "body,host,ip,port") | [cut("ip") & cut("host")]'```
@@ -6,6 +6,7 @@
 -   add screenshot workflow
 -   add web subcommand
 -   support workflow viz
+-   web support run workflow
   
 ## v0.0.5 data pipeline
 

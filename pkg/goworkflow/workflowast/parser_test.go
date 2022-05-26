@@ -93,12 +93,21 @@ func TestRegisterFunction(t *testing.T) {
 }
 
 func TestParser_ParseToGraph(t *testing.T) {
+
 	v, err := NewParser().ParseToGraph("test() | [ cut(`ip`) | [cut(`ip`) & cut(`port`)] & cut(`port`) ]")
 	assert.Nil(t, err)
-	assert.Equal(t, `graph TD
-test1-->cut2
-cut2-->cut3
-cut2-->cut4
-test1-->cut5
-`, v)
+	assert.Equal(t, "graph TD\ntest1[\"test()\"]-->cut2[\"cut(`ip`)\"]\ncut2[\"cut(`ip`)\"]-->cut3[\"cut(`ip`)\"]\ncut2[\"cut(`ip`)\"]-->cut4[\"cut(`port`)\"]\ntest1[\"test()\"]-->cut5[\"cut(`port`)\"]\n", v)
+
+	v, err = NewParser().ParseToGraph("fofa(`title=test`) | to_int(`port`) | sort(`port`) | [cut(`port`) & cut(`ip`)]")
+	assert.Nil(t, err)
+	assert.Equal(t, "graph TD\nfofa1[\"fofa(`title=test`)\"]-->to_int2[\"to_int(`port`)\"]\nto_int2[\"to_int(`port`)\"]-->sort3[\"sort(`port`)\"]\nsort3[\"sort(`port`)\"]-->cut4[\"cut(`port`)\"]\nsort3[\"sort(`port`)\"]-->cut5[\"cut(`ip`)\"]\n", v)
+
+	v, err = NewParser().ParseToGraph(`cut("ip")|cut("port")`)
+	assert.Nil(t, err)
+	assert.Equal(t, "graph TD\ncut1[\"cut(#quot;ip#quot;)\"]-->cut2[\"cut(#quot;port#quot;)\"]\n", v)
+
+	v, err = NewParser().ParseToGraph(`cut("ip")|cut("port")`, `graph LR`+"\n")
+	assert.Nil(t, err)
+	assert.Equal(t, "graph LR\ncut1[\"cut(#quot;ip#quot;)\"]-->cut2[\"cut(#quot;port#quot;)\"]\n", v)
+
 }

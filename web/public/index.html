@@ -3,16 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
 </head>
 <body>
+<div style="width:100%">workflow:
+    <input id="workflow" type="text" size="80" cols="5" style="width:90%" value="fofa(`title=test`) | to_int(`port`) | sort(`port`) | [cut(`port`) & cut(`ip`)]"/>
+    <input type="button" value="run" onclick="run()"/>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script>
-    mermaid.initialize({ startOnLoad: true });
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
 
 Here is one mermaid diagram:
-<div class="mermaid">
+<div class="mermaid" id="mermaid">
 {{ . }}
 </div>
+
+<div style="width: 100%">
+    <div style="float: left; width: 50%"><div id="output">
+    </div></div>
+    <div style="float: right; width: 50%"><pre><code id="raw"></code></pre></div>
+</div>
+
+<div style="width: 100%" id="message">
+
+</div>
+<div style="width: 100%" id="report">
+
+</div>
+
+<script>
+    function readTask(taskId) {
+        fetch('/fetchMsg?tid=' + taskId, {
+            method: 'get',
+        }).then(response => response.json())
+            .then(jsonData => {
+                finished = false;
+                for (const msg of jsonData.result.msgs) {
+                    document.getElementById("message").innerHTML += msg + "<br/>";
+                    if (msg == "<finished>") {
+                        finished = true
+                    }
+                }
+
+                if (jsonData.result.html.length >0) {
+                    document.getElementById("report").innerHTML = jsonData.result.html;
+                }
+                if (!finished) {
+                    setTimeout(readTask(taskId), 1000);
+                }
+            })
+            .catch(err => {
+                console.log(err);
+            })
+    }
+    // 运行
+    function run() {
+        document.getElementById("report").innerHTML = "";
+        document.getElementById("message").innerHTML = "";
+
+        fetch('/run', {
+            method: 'post',
+            body: document.getElementById("workflow").value.trim()
+        }).then(response => response.json())
+            .then(jsonData => {
+                taskId = jsonData.result;
+                document.getElementById("message").innerHTML += "taskid: "+taskId + "<br/>";
+                readTask(taskId)
+            })
+            .catch(err => {
+                console.log(err);
+            })
+    }
+    // 解析
+    function doParse() {
+        fetch('/parse', {
+            method: 'post',
+            body: document.getElementById("workflow").value.trim()
+        }).then(response => response.json())
+            .then(jsonData => {
+                console.log(jsonData);
+                document.querySelector('#raw').innerHTML = jsonData.result;
+                mermaid.render("mermaid", jsonData.result, (res) => {
+                    document.querySelector('#output').innerHTML = res;
+                });
+                hljs.highlightAll();
+            })
+            .catch(err => {
+                console.log(err);
+            })
+    }
+    document.getElementById("workflow").addEventListener("input", (e) => {
+        doParse();
+    });
+
+    mermaid.initialize({ startOnLoad: true });
+    doParse();
+</script>
 </body>
 </html>

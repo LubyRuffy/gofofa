@@ -54,6 +54,7 @@ package workflowast
 
 import (
 	"fmt"
+	"github.com/lubyruffy/gofofa/pkg/utils"
 	parsec "github.com/prataprc/goparsec"
 	"strconv"
 	"strings"
@@ -170,14 +171,6 @@ func pipeToRawString(node parsec.Queryable) string {
 	return ret
 }
 
-func escapeString(s string) string {
-	//s, _ = sjson.Set(`{"a":""}`, "a", s)
-	//return s[strings.Index(s, `:`)+1 : len(s)-1]
-	s = strings.ReplaceAll(s, `\`, `\\`)
-	s = strings.ReplaceAll(s, `"`, `\"`)
-	return s
-}
-
 func (p *Parser) parseFork(node parsec.Queryable) (string, error) {
 	var ret string
 	for _, child := range node.GetChildren() {
@@ -188,7 +181,7 @@ func (p *Parser) parseFork(node parsec.Queryable) (string, error) {
 				case "function":
 					ret += `Fork(` + pipe.GetValue() + ")\n"
 				case "pipe":
-					ret += `Fork("` + escapeString(pipeToRawString(pipe)) + "\")\n"
+					ret += `Fork("` + utils.EscapeString(pipeToRawString(pipe)) + "\")\n"
 				}
 			}
 		}

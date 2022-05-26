@@ -27,6 +27,7 @@ import (
 // Artifact 过程中生成的文件
 type Artifact struct {
 	FilePath string // 文件路径
+	FileName string // 文件路径
 	FileSize int    // 文件大小
 	FileType string // 文件类型
 	Memo     string // 备注，比如URL等
@@ -192,6 +193,7 @@ func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
 	return &funcResult{
 		Artifacts: []*Artifact{{
 			FilePath: f,
+			FileName: filepath.Base(f),
 			FileType: "",
 		}},
 	}
@@ -309,7 +311,7 @@ func loadFile(p *PipeRunner, params map[string]interface{}) *funcResult {
 	var err error
 	var options loadFileParams
 	if err = mapstructure.Decode(params, &options); err != nil {
-		panic(err)
+		panic(fmt.Errorf("loadFile failed: %w", err))
 	}
 
 	if len(options.File) == 0 {
@@ -321,7 +323,7 @@ func loadFile(p *PipeRunner, params map[string]interface{}) *funcResult {
 	path, _ = filepath.Abs(options.File)
 
 	if _, err = os.Stat(path); err != nil {
-		panic(err)
+		panic(fmt.Errorf("loadFile failed: %w", err))
 	}
 
 	//return path, nil
@@ -486,6 +488,7 @@ func screenShot(p *PipeRunner, params map[string]interface{}) *funcResult {
 				FilePath: fn,
 				FileSize: size,
 				FileType: "image/png",
+				FileName: filepath.Base(fn),
 				Memo:     u,
 			})
 		})

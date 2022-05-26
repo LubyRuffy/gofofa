@@ -2,6 +2,7 @@ package translater
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
 	"text/template"
 )
@@ -11,7 +12,7 @@ func loadHook(fi *workflowast.FuncInfo) string {
     "file": {{ .File }},
 })`)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("loadHook failed: %w", err))
 	}
 	var tpl bytes.Buffer
 	err = tmpl.Execute(&tpl, struct {
@@ -20,7 +21,7 @@ func loadHook(fi *workflowast.FuncInfo) string {
 		File: fi.Params[0].String(),
 	})
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("loadHook failed: %w", err))
 	}
 	return tpl.String()
 }

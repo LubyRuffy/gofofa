@@ -57,3 +57,8 @@ func TestWriteTempFile(t *testing.T) {
 	f, err = WriteTempFile("/../../../../../../.txt", writeF)
 	assert.Error(t, err) // os.errPatternHasSeparator
 }
+
+func TestEscapeString(t *testing.T) {
+	assert.Equal(t, `\"\"`, EscapeString(`""`))
+	assert.Equal(t, `#quot;#quot;`, EscapeDoubleQuoteStringOfHTML(`""`))
+}
