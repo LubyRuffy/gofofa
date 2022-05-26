@@ -6,6 +6,7 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
 	"github.com/lubyruffy/gofofa/pkg/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/xuri/excelize/v2"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -272,4 +273,23 @@ func TestPipeRunner_Close(t *testing.T) {
 	p.Close()
 	_, err = os.ReadFile(p.LastFile)
 	assert.Error(t, err)
+}
+
+func TestPipeRunner_toExcel(t *testing.T) {
+	p := New()
+	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\"}") & to_excel()`)
+	_, err := p.Run(code)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(p.LastTask.Artifacts))
+	f, err := excelize.OpenFile(p.LastTask.Artifacts[0].FilePath)
+	assert.Nil(t, err)
+	v, err := f.GetCellValue("Sheet1", "A1")
+	assert.Nil(t, err)
+	assert.Equal(t, "a", v)
+	v, err = f.GetCellValue("Sheet1", "A2")
+	assert.Nil(t, err)
+	assert.Equal(t, "1", v)
+	v, err = f.GetCellValue("Sheet1", "B2")
+	assert.Nil(t, err)
+	assert.Equal(t, "2", v)
 }

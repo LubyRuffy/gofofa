@@ -44,7 +44,7 @@ func parse(w http.ResponseWriter, r *http.Request) {
 	}
 	// 终止
 	finishWorkflow := []string{
-		"chart",
+		"chart", "to_excel",
 	}
 	graphCode, err := workflowast.NewParser().ParseToGraph(string(code), func(name, s string) string {
 		for _, src := range sourceWorkflow {
@@ -96,7 +96,7 @@ func run(w http.ResponseWriter, r *http.Request) {
 
 		p := goworkflow.New(goworkflow.WithHooks(&goworkflow.Hooks{
 			OnWorkflowFinished: func(pt *goworkflow.PipeTask) {
-				tm.addMsg("workflow finished:" + pt.Name)
+				tm.addMsg("workflow finished: " + pt.Name)
 			},
 			OnLog: func(level logrus.Level, format string, args ...interface{}) {
 				tm.addMsg(fmt.Sprintf("[%s] %s", level.String(), fmt.Sprintf(format, args...)))
@@ -139,6 +139,9 @@ func fetchMsg(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		msgs = append(msgs, info)
+		if len(msgs) >= 10 {
+			break
+		}
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{

@@ -57,8 +57,12 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   null
 -   支持嵌套：```cmd(cmd1())```
 -   数据源命令：
-    -   fofa(query, size, fields)
+    -   fofa(query, size, fields) 从fofa获取数据
     -   load(file) 从文件加载数据
+    -   gen(jsonstring) 生成一行json，调试用
+-   目标地址命令：
+    -   （未完成）to_mysql(dsn, table)
+    -   to_excel()
 -   数据操作命令：
     -   cut(fields) 只保留特定字段
     -   drop(fields) 删除字段，rm也可以
@@ -76,7 +80,9 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   screenshot(url) 网页截图
 -   通过 ```[ cmd1() | cmd2() ]``` 创建分支
     -   分支的数据留是分开的，比如```fofa(`port=80`,`ip,port`) & [ cut(`ip`) | cut(`port`) ]```将会生成两条数据流
-
+-   （未完成）能够追踪执行进度
+    -   日志
+    -   单个进度
 
 ## 设计原则：
 -   每一个底层函数对于奔溃的错误直接panic就好，由上层统一进行处理；
@@ -89,7 +95,7 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
 ./fofa pipeline -t a.html 'fofa("body=icon && body=link", "body,host,ip,port", 500) & grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") & drop("body") & flat("icon_tag") & sort() & uniq(true) & sort("count") & zq("tail 10")'
 ```
 
--   生成两个饼图：
+-   生成两个饼图并且截图：
 ```
-./fofa pipeline -t a.html 'fofa("title=test","host,ip,port,country", 1000) & [flat("port") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | flat("country") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | zq("tail 10") & screenshot("host")]'
+./fofa pipeline -t a.html 'fofa("title=test","host,ip,port,country", 1000) & [flat("port") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | flat("country") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | zq("tail 10") & screenshot("host") & to_excel()]'
 ```

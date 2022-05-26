@@ -216,6 +216,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"LoadFile", loadFile},
 		{"FlatArray", flatArray},
 		{"Screenshot", screenShot},
+		{"ToExcel", toExcel},
 	}
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
