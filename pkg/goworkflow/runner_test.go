@@ -20,8 +20,8 @@ func defaultErrorHandler(t *testing.T, err error) bool {
 	return false
 }
 
-func assertPipeCmdByTestRunner(t *testing.T, workflow string, testData string,
-	except string, options ...interface{}) {
+func assertPipeCmd(t *testing.T, workflow string, testData string,
+	options ...interface{}) string {
 	var err error
 	r := New()
 
@@ -37,27 +37,33 @@ func assertPipeCmdByTestRunner(t *testing.T, workflow string, testData string,
 			return err
 		})
 		if errHandler(t, err) {
-			return
+			return ""
 		}
 	}
 
 	// 执行代码
 	code, err := workflowast.NewParser().Parse(workflow)
 	if errHandler(t, err) {
-		return
+		return ""
 	}
 
 	_, err = r.Run(code)
 	if errHandler(t, err) {
-		return
+		return ""
 	}
 
 	var data []byte
 	data, err = os.ReadFile(r.GetLastFile())
 	if errHandler(t, err) {
-		return
+		return ""
 	}
-	assert.Equal(t, except, string(data))
+	return string(data)
+}
+
+func assertPipeCmdByTestRunner(t *testing.T, workflow string, testData string,
+	except string, options ...interface{}) {
+	data := assertPipeCmd(t, workflow, testData, options...)
+	assert.Equal(t, except, data)
 }
 
 func assertPipeCmdByTestRunnerError(t *testing.T,
@@ -134,7 +140,8 @@ func TestNew(t *testing.T) {
 		w.Write([]byte("hello world"))
 	}))
 	defer ts.Close()
-	assertPipeCmdByTestRunner(t, `gen("{\"host\":\"`+ts.URL+`\"}") | screenshot("host")`, ``, `{"host":"`+ts.URL+`"}`)
+
+	assert.Contains(t, assertPipeCmd(t, `gen("{\"host\":\"`+ts.URL+`\"}") | screenshot("host")`, ``), "screenshot_filepath")
 
 	assertPipeCmdByTestRunner(t, `sort("a")`, `{"a":2}
 {"a":1}`, `{"a":1}
