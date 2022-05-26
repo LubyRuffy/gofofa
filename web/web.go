@@ -163,7 +163,13 @@ func Start(addr string) error {
 	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
 		fn := filepath.Base(r.FormValue("url"))
 		f := filepath.Join(os.TempDir(), fn)
-		w.Header().Set("Content-Disposition", "attachment; filename="+fn)
+		switch filepath.Ext(fn) {
+		case ".sql", ".xlsx":
+			w.Header().Set("Content-Disposition", "attachment; filename="+fn)
+		}
+		if len(r.FormValue("dl")) > 0 {
+			w.Header().Set("Content-Disposition", "attachment; filename="+fn)
+		}
 		http.ServeFile(w, r, f)
 	})
 

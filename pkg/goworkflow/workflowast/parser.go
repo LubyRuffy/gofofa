@@ -144,6 +144,22 @@ func pipeListToRawString(node parsec.Queryable) string {
 	return ret
 }
 
+func parameterToRawString(node parsec.Queryable) string {
+	ret := ""
+	first := true
+	for _, child := range node.GetChildren() {
+		switch child.GetName() {
+		case "value", "QUOTESTRING", "DOUBLEQUOTESTRING", "BOOL":
+			if !first {
+				ret += ","
+			}
+			ret += child.GetValue()
+			first = false
+		}
+	}
+	return ret
+}
+
 func pipeToRawString(node parsec.Queryable) string {
 	//log.Println(node.GetName(), node.GetValue())
 	ret := ""
@@ -159,7 +175,7 @@ func pipeToRawString(node parsec.Queryable) string {
 		case "pipeList":
 			ret += pipeListToRawString(child)
 		case "parameter", "value":
-			ret += pipeToRawString(child)
+			ret += parameterToRawString(child)
 		case "missing":
 		case "IDENT", "OPENP", "CLOSEP", "QUOTESTRING", "OPENFORK", "CLOSEFORK", "DOUBLEQUOTESTRING", "BOOL":
 			ret += child.GetValue()

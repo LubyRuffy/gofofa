@@ -304,4 +304,16 @@ func TestPipeRunner_toMysql(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, `INSERT INTO tbl ("a","b") VALUES (1,"2")
 `, string(d))
+
+	// todo: bug???
+	//	p = New()
+	//	code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\"}") & [flat("a") | to_mysql("tbl","a,b")]`)
+	//	_, err = p.Run(code)
+	//	assert.Nil(t, err)
+	//	assert.Equal(t, 1, len(p.LastTask.Artifacts))
+	//	d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+	//	assert.Nil(t, err)
+	//	assert.Equal(t, `INSERT INTO tbl ("a","b") VALUES (1,"2")
+	//`, string(d))
+
 }
