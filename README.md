@@ -114,7 +114,7 @@ calc remote homepage icon hash:
 do workflow pipeline to process data:
 
 ```shell
-./fofa pipeline 'fofa(`title="hacked"`,`host,ip,port,title,server`) | cut(`host,ip,port`) | to_int(`port`) | sort(`port`)'
+./fofa pipeline 'fofa(`title="hacked"`,`host,ip,port,title,server`) & cut(`host,ip,port`) & to_int(`port`) & sort(`port`)'
 ```
 
 [PipeLine](doc/PipeLine.md)
@@ -215,7 +215,7 @@ every 500ms generate one line, never stop
 
 pipeline mode:
 ```shell
-./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | cut("body")'
+./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") & grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") & cut("body")'
 ```
 
 We can check fofa's bug like this:
