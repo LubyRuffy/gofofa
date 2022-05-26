@@ -33,7 +33,8 @@ func (p *PipeTask) Close() {
 
 // Hooks 消息通知
 type Hooks struct {
-	OnWorkflowFinished func(pt *PipeTask)
+	OnWorkflowFinished func(pt *PipeTask)                                           // 一个workflow完成时的处理
+	OnLog              func(level logrus.Level, format string, args ...interface{}) // 日志通知
 }
 
 // PipeRunner pipe运行器
@@ -44,8 +45,26 @@ type PipeRunner struct {
 	LastTask *PipeTask      // 最后执行的workflow
 	LastFile string         // 最后生成的文件名
 	FofaCli  *gofofa.Client // fofa客户端
+	logger   *logrus.Logger
 
 	gocodeRunner *coderunner.Runner
+}
+
+// Logf 打印日志
+func (p *PipeRunner) Logf(level logrus.Level, format string, args ...interface{}) {
+	if p.hooks != nil && p.hooks.OnLog != nil {
+		p.hooks.OnLog(level, format, args...)
+	}
+	p.logger.Logf(level, format, args...)
+}
+
+// Debugf 打印调试日志
+func (p *PipeRunner) Debugf(format string, args ...interface{}) {
+	p.Logf(logrus.DebugLevel, format, args...)
+}
+
+func (p *PipeRunner) Warnf(format string, args ...interface{}) {
+	p.logger.Logf(logrus.WarnLevel, format, args...)
 }
 
 // Run go code, not workflow
@@ -136,7 +155,7 @@ func (p *PipeRunner) urlFix(field string) error {
 	var err error
 
 	if len(field) == 0 {
-		return fmt.Errorf("urlfix must has a field")
+		return fmt.Errorf("urlFix must has a field")
 	}
 
 	fn, err = utils.WriteTempFile("", func(f *os.File) error {
@@ -158,7 +177,7 @@ func (p *PipeRunner) urlFix(field string) error {
 	}
 
 	pt := &PipeTask{
-		Name:    "gen",
+		Name:    "urlFix",
 		Content: fmt.Sprintf("%v", field),
 		Outfile: fn,
 	}
@@ -168,7 +187,9 @@ func (p *PipeRunner) urlFix(field string) error {
 
 // New create pipe runner
 func New(options ...RunnerOption) *PipeRunner {
-	r := &PipeRunner{}
+	r := &PipeRunner{
+		logger: logrus.New(),
+	}
 	var err error
 
 	// 注册底层函数

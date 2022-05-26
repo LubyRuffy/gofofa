@@ -38,7 +38,7 @@ func parse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	graphCode, err := workflowast.NewParser().ParseToGraph(string(code))
+	graphCode, err := workflowast.NewParser().ParseToGraph(string(code), "graph LR\n")
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":  true,
@@ -77,6 +77,9 @@ func run(w http.ResponseWriter, r *http.Request) {
 		p := goworkflow.New(goworkflow.WithHooks(&goworkflow.Hooks{
 			OnWorkflowFinished: func(pt *goworkflow.PipeTask) {
 				tm.addMsg("workflow finished:" + pt.Name)
+			},
+			OnLog: func(level logrus.Level, format string, args ...interface{}) {
+				tm.addMsg(fmt.Sprintf("[%s] %s", level.String(), fmt.Sprintf(format, args...)))
 			},
 		}))
 		p.FofaCli = FofaCli

@@ -12,7 +12,6 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/outformats"
 	"github.com/lubyruffy/gofofa/pkg/utils"
 	"github.com/mitchellh/mapstructure"
-	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"golang.org/x/net/context"
@@ -401,13 +400,14 @@ func flatArray(p *PipeRunner, params map[string]interface{}) *funcResult {
 }
 
 type screenshotParam struct {
-	URLField string `json:"urlField"` // url的字段名称，默认是url
-	Timeout  int    `json:"timeout"`  // 整个浏览器操作超时
-	Quality  int    `json:"quality"`  // 截图质量
+	URLField  string `json:"urlField"`  // url的字段名称，默认是url
+	Timeout   int    `json:"timeout"`   // 整个浏览器操作超时
+	Quality   int    `json:"quality"`   // 截图质量
+	SaveField string `json:"saveField"` // 保存截图地址的字段
 }
 
-func screenshotURL(u string, options *screenshotParam) (string, int, error) {
-	logrus.Debugf("screenshot url: %s", u)
+func screenshotURL(p *PipeRunner, u string, options *screenshotParam) (string, int, error) {
+	p.Debugf("screenshot url: %s", u)
 
 	var err error
 	// prepare the chrome options
@@ -426,7 +426,7 @@ func screenshotURL(u string, options *screenshotParam) (string, int, error) {
 	allocCtx, bcancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer bcancel()
 
-	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(logrus.Debugf))
+	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(p.Debugf))
 	ctx, cancel = context.WithTimeout(ctx, time.Duration(options.Timeout)*time.Second)
 	defer cancel()
 
@@ -463,44 +463,66 @@ func screenShot(p *PipeRunner, params map[string]interface{}) *funcResult {
 	if options.URLField == "" {
 		options.URLField = "url"
 	}
+	if options.SaveField == "" {
+		options.SaveField = "screenshot_filepath"
+	}
 
 	var artifacts []*Artifact
-	var fn string
 
 	wp := workerpool.New(5)
-	err = utils.EachLine(p.GetLastFile(), func(line string) error {
-		wp.Submit(func() {
-			u := gjson.Get(line, options.URLField).String()
-			if len(u) == 0 {
-				return
-			}
-			if !strings.Contains(u, "://") {
-				u = "http://" + u
-			}
-			var size int
-			fn, size, err = screenshotURL(u, &options)
-			if err != nil {
-				logrus.Warnf("screenshotURL failed: %s", err)
-				return
-			}
+	var fn string
+	fn, err = utils.WriteTempFile(".json", func(f *os.File) error {
+		err = utils.EachLine(p.GetLastFile(), func(line string) error {
+			wp.Submit(func() {
+				u := gjson.Get(line, options.URLField).String()
+				if len(u) == 0 {
+					return
+				}
+				if !strings.Contains(u, "://") {
+					u = "http://" + u
+				}
+				var size int
+				var sfn string
+				sfn, size, err = screenshotURL(p, u, &options)
+				if err != nil {
+					p.Warnf("screenshotURL failed: %s", err)
+					f.WriteString(line + "\n")
+					return
+				}
 
-			artifacts = append(artifacts, &Artifact{
-				FilePath: fn,
-				FileSize: size,
-				FileType: "image/png",
-				FileName: filepath.Base(fn),
-				Memo:     u,
+				// 不管是否成功都先把数据写入
+				line, err = sjson.Set(line, options.SaveField, sfn)
+				if err != nil {
+					return
+				}
+				_, err = f.WriteString(line + "\n")
+				if err != nil {
+					return
+				}
+
+				artifacts = append(artifacts, &Artifact{
+					FilePath: sfn,
+					FileSize: size,
+					FileType: "image/png",
+					FileName: filepath.Base(fn),
+					Memo:     u,
+				})
 			})
-		})
 
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		wp.StopWait()
 		return nil
 	})
 	if err != nil {
 		panic(fmt.Errorf("screenShot error: %w", err))
 	}
-	wp.StopWait()
 
 	return &funcResult{
+		OutFile:   fn,
 		Artifacts: artifacts,
 	}
 }

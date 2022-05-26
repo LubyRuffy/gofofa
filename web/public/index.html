@@ -2,32 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>GoFOFA Run Pipeline</title>
+    <style>
+        input[type=text] {
+            width: 80%;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            box-shadow: inset 0 1px 3px #ddd;
+            border-radius: 4px;
+            /* -webkit-box-sizing: border-box; */
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+        input[type=button] {font-size: 17px;font-family: 'Source Sans Pro', sans-serif;border:none;border-radius:5px;display:inline-block;padding:6px 18px;vertical-align:middle;overflow:hidden;text-decoration:none;color:inherit;;text-align:center;cursor:pointer;white-space:nowrap;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;background-color:#04AA6D;color:#ffffff}
+
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
 </head>
 <body>
 <div style="width:100%">workflow:
-    <input id="workflow" type="text" size="80" cols="5" style="width:90%" value="fofa(`title=test`) | to_int(`port`) | sort(`port`) | [cut(`port`) & cut(`ip`)]"/>
+    <input id="workflow" type="text" size="80" cols="5" value="fofa(`title=test`) | to_int(`port`) | sort(`port`) | [cut(`port`) & cut(`ip`)]"/>
     <input type="button" value="run" onclick="run()"/>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
 
-Here is one mermaid diagram:
 <div class="mermaid" id="mermaid">
 {{ . }}
 </div>
 
-<div style="width: 100%">
-    <div style="float: left; width: 50%"><div id="output">
-    </div></div>
-    <div style="float: right; width: 50%"><pre><code id="raw"></code></pre></div>
+<!--<div style="width:100%;display:block">-->
+<!--    <div style="float: left; width: 50%"><div id="output">-->
+<!--    </div></div>-->
+<!--    <div style="float: right; width: 50%"><pre><code id="raw"></code></pre></div>-->
+<!--</div>-->
+<div id="output">
 </div>
+<pre style="display: none"><code id="raw"></code></pre>
 
-<div style="width: 100%" id="message">
+<div style="width:100%;display:block;clear:both" id="message">
 
 </div>
-<div style="width: 100%" id="report">
+<div style="width:100%;display:block;clear:both" id="report">
 
 </div>
 
