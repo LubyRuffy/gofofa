@@ -7,18 +7,24 @@ import (
 )
 
 func TestLoad_to_msyql(t *testing.T) {
+	assert.Panics(t, func() {
+		workflowast.NewParser().MustParse(`to_mysql()`)
+	})
+
 	assert.Equal(t,
 		`ToMysql(GetRunner(), map[string]interface{}{
 	"fields": "",
+	"table": "tbl",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql()`))
+		workflowast.NewParser().MustParse(`to_mysql("tbl")`))
 
 	assert.Equal(t,
 		`ToMysql(GetRunner(), map[string]interface{}{
 	"fields": "a,b,c",
+	"table": "tbl1",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql("a,b,c")`))
+		workflowast.NewParser().MustParse(`to_mysql("tbl1", "a,b,c")`))
 
 }

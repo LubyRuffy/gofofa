@@ -161,7 +161,9 @@ func Start(addr string) error {
 	http.HandleFunc("/run", run)
 	http.HandleFunc("/fetchMsg", fetchMsg)
 	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
-		f := filepath.Join(os.TempDir(), filepath.Base(r.FormValue("url")))
+		fn := filepath.Base(r.FormValue("url"))
+		f := filepath.Join(os.TempDir(), fn)
+		w.Header().Set("Content-Disposition", "attachment; filename="+fn)
 		http.ServeFile(w, r, f)
 	})
 
