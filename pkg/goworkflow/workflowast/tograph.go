@@ -6,12 +6,23 @@ import (
 	"strconv"
 )
 
-func funcToGraphWithID(node parsec.Queryable, lastID *int) string {
+// 回调函数的参数是<函数名称> <值>
+func funcToGraphWithID(node parsec.Queryable, f func(string, string) string, lastID *int) string {
 
 	for _, child := range node.GetChildren() {
 		switch child.GetName() {
 		case "IDENT":
-			funcID := child.GetValue() + strconv.Itoa(*lastID) + `["` + utils.EscapeDoubleQuoteStringOfHTML(node.GetValue()) + `"]`
+			funcName := child.GetValue()
+			rawData := utils.EscapeDoubleQuoteStringOfHTML(node.GetValue())
+			funcID := funcName + strconv.Itoa(*lastID)
+			if f != nil {
+				funcID += f(funcName, rawData)
+			} else {
+				funcID += `["`
+				funcID += rawData
+				funcID += `"]`
+			}
+
 			*lastID += 1
 			return funcID
 		}
@@ -20,7 +31,7 @@ func funcToGraphWithID(node parsec.Queryable, lastID *int) string {
 	return ""
 }
 
-func parseToGraph(node parsec.Queryable, parent *string, lastID *int, ret *string) error {
+func parseToGraph(node parsec.Queryable, f func(string, string) string, parent *string, lastID *int, ret *string) error {
 	switch node.GetName() {
 	case "fork":
 		for _, child := range node.GetChildren() {
@@ -29,7 +40,7 @@ func parseToGraph(node parsec.Queryable, parent *string, lastID *int, ret *strin
 				for _, pipe := range child.GetChildren() {
 					newParent := *parent
 					var err error
-					err = parseToGraph(pipe, &newParent, lastID, ret)
+					err = parseToGraph(pipe, f, &newParent, lastID, ret)
 					if err != nil {
 						return err
 					}
@@ -37,7 +48,7 @@ func parseToGraph(node parsec.Queryable, parent *string, lastID *int, ret *strin
 			}
 		}
 	case "function":
-		funcID := funcToGraphWithID(node, lastID)
+		funcID := funcToGraphWithID(node, f, lastID)
 		if len(*parent) > 0 {
 			*ret += *parent + "-->" + funcID + "\n"
 		}
@@ -46,7 +57,7 @@ func parseToGraph(node parsec.Queryable, parent *string, lastID *int, ret *strin
 	case "pipe":
 		for _, child := range node.GetChildren() {
 			var err error
-			err = parseToGraph(child, parent, lastID, ret)
+			err = parseToGraph(child, f, parent, lastID, ret)
 			if err != nil {
 				return err
 			}
@@ -56,7 +67,7 @@ func parseToGraph(node parsec.Queryable, parent *string, lastID *int, ret *strin
 }
 
 // ParseToGraph to mermaid graph
-func (p *Parser) ParseToGraph(code string, graphInit ...string) (s string, err error) {
+func (p *Parser) ParseToGraph(code string, f func(string, string) string, graphInit ...string) (s string, err error) {
 	scanner := parsec.NewScanner([]byte(code))
 	node, _ := p.ast.Parsewith(p.parser, scanner)
 	parent := ""
@@ -67,6 +78,6 @@ func (p *Parser) ParseToGraph(code string, graphInit ...string) (s string, err e
 		s = graphInit[0]
 	}
 
-	err = parseToGraph(node, &parent, &id, &s)
+	err = parseToGraph(node, f, &parent, &id, &s)
 	return
 }

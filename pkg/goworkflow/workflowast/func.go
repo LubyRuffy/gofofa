@@ -1,6 +1,7 @@
 package workflowast
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 )
@@ -57,8 +58,14 @@ func (fp FuncParameter) ToString() string {
 		return strconv.FormatInt(fp.v.(int64), 10)
 	case *FuncInfo:
 		return fp.v.(*FuncInfo).String()
+	case bool:
+		if fp.v.(bool) {
+			return "true"
+		} else {
+			return "false"
+		}
 	default:
-		panic(fp.v)
+		panic(fmt.Errorf("FuncParameter.ToString failed, unknown type: %v", fp.v))
 	}
 }
 

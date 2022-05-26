@@ -26,7 +26,7 @@
 </head>
 <body>
 <div style="width:100%">workflow:
-    <input id="workflow" type="text" size="80" cols="5" value="fofa(`title=test`) | to_int(`port`) | sort(`port`) | [cut(`port`) & cut(`ip`)]"/>
+    <input id="workflow" type="text" size="80" cols="5" value="fofa(`title=test`) & to_int(`port`) & sort(`port`) & [cut(`port`) | cut(`ip`)]"/>
     <input type="button" value="run" onclick="run()"/>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>

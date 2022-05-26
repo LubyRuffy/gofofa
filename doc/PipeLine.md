@@ -30,7 +30,7 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
                 -   value 参数值
     -   RemoveField
         -   name 字段的名称
--   支持缩写模式: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | drop("body")'```
+-   支持缩写模式: ```./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") & grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") & drop("body")'```
 -   （未完成）每一步都支持配置是否保留文件
 -   （未完成）函数可以进行统一化的参数配置
 -   框架支持内嵌golang注册函数的扩展
@@ -45,7 +45,7 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
 ## simple模式
 
 按照如下规范进行设置：
--   用管道符号进行分隔：```cmd() | cmd2() | cmd3()```
+-   用管道符号进行分隔：```cmd() & cmd2() & cmd3()```
 -   参数支持多种格式：
     -   字符串
         -   双引号
@@ -63,19 +63,19 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   cut(fields) 只保留特定字段
     -   drop(fields) 删除字段，rm也可以
     -   grep_add(from_field, pattern, new_field_name) 通过对已有字段的正则提取到新的字段
-    -   to_int(field) 格式转换为int：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) | to_int(`port`)'```
-    -   sort(field) 排序：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) | to_int(`port`) | sort(`port`)'```
+    -   to_int(field) 格式转换为int：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) & to_int(`port`)'```
+    -   sort(field) 排序：```./fofa --verbose pipeline 'fofa(`title="test"`, `ip,port`) & to_int(`port`) & sort(`port`)'```
     -   （未完成）set(field_name, value)
     -   value(field) 取出值
     -   flat(field) 把数组打平，去掉空值
-    -   stats(field, top_size) 统计计数：```./fofa --verbose pipeline 'fofa(`title="hacked"`,`title`, 1000) | stats("title",10)'```
+    -   stats(field, top_size) 统计计数：```./fofa --verbose pipeline 'fofa(`title="hacked"`,`title`, 1000) & stats("title",10)'```
     -   uniq(true) 相邻的去重，注意：不会先排序
     -   zq(query) 调用原始的zq语句
     -   chart(type, title) 生成图表，支持pie/bar
     -   fork(pipelines) 原始的手动创建分支的方式
     -   screenshot(url) 网页截图
--   通过 ```[ cmd1() & cmd2() ]``` 创建分支
-    -   分支的数据留是分开的，比如```fofa(`port=80`,`ip,port`) | [ cut(`ip`) & cut(`port`) ]```将会生成两条数据流
+-   通过 ```[ cmd1() | cmd2() ]``` 创建分支
+    -   分支的数据留是分开的，比如```fofa(`port=80`,`ip,port`) & [ cut(`ip`) | cut(`port`) ]```将会生成两条数据流
 
 
 ## 设计原则：
@@ -86,5 +86,10 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
 
 -   用一个复杂的语句来验证任务列表：
 ```
-./fofa pipeline -t a.html 'fofa("body=icon && body=link", "body,host,ip,port", 500) | grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") | drop("body") | flat("icon_tag") | sort() | uniq(true) | sort("count") | zq("tail 10")'
+./fofa pipeline -t a.html 'fofa("body=icon && body=link", "body,host,ip,port", 500) & grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") & drop("body") & flat("icon_tag") & sort() & uniq(true) & sort("count") & zq("tail 10")'
+```
+
+-   生成两个饼图：
+```
+./fofa pipeline -t a.html 'fofa("title=test","host,ip,port,country", 1000) & [flat("port") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | flat("country") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | zq("tail 10") & screenshot("host")]'
 ```

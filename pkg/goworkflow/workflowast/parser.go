@@ -135,7 +135,7 @@ func pipeListToRawString(node parsec.Queryable) string {
 		switch child.GetName() {
 		case "pipe", "function", "fork":
 			if !first {
-				ret += "&"
+				ret += "|"
 			}
 			ret += pipeToRawString(child)
 			first = false
@@ -152,7 +152,7 @@ func pipeToRawString(node parsec.Queryable) string {
 		switch child.GetName() {
 		case "pipe", "function", "fork":
 			if !first {
-				ret += "|"
+				ret += "&"
 			}
 			ret += pipeToRawString(child)
 			first = false
@@ -161,10 +161,10 @@ func pipeToRawString(node parsec.Queryable) string {
 		case "parameter", "value":
 			ret += pipeToRawString(child)
 		case "missing":
-		case "IDENT", "OPENP", "CLOSEP", "QUOTESTRING", "OPENFORK", "CLOSEFORK", "DOUBLEQUOTESTRING":
+		case "IDENT", "OPENP", "CLOSEP", "QUOTESTRING", "OPENFORK", "CLOSEFORK", "DOUBLEQUOTESTRING", "BOOL":
 			ret += child.GetValue()
 		default:
-			panic(child.GetName())
+			panic(fmt.Errorf("pipeToRawString unknown type: %s", child.GetName()))
 		}
 	}
 
@@ -217,7 +217,7 @@ func (p *Parser) parseAST(node parsec.Queryable) (s string, err error) {
 		}
 	case "OPENFORK", "CLOSEFORK":
 	default:
-		panic(node.GetName())
+		panic(fmt.Errorf("parseAST unknown type: %s", node.GetName()))
 	}
 
 	return
@@ -240,7 +240,7 @@ func (p *Parser) Parse(code string) (s string, err error) {
 func (p *Parser) MustParse(code string) string {
 	v, err := p.Parse(code)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("MustParse failed: %w", err))
 	}
 	return v
 }

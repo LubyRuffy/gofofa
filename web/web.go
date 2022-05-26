@@ -26,7 +26,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func parse(w http.ResponseWriter, r *http.Request) {
-	// fofa(`title=test`) | to_int(`port`) | sort(`port`) | [cut(`port`) & cut("ip")]
+	// fofa(`title=test`) & to_int(`port`) & sort(`port`) & [cut(`port`) | cut("ip")]
 	w.Header().Set("Content-Type", "application/json")
 
 	code, err := ioutil.ReadAll(r.Body)
@@ -38,7 +38,27 @@ func parse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	graphCode, err := workflowast.NewParser().ParseToGraph(string(code), "graph LR\n")
+	// 输入源
+	sourceWorkflow := []string{
+		"load", "fofa",
+	}
+	// 终止
+	finishWorkflow := []string{
+		"chart",
+	}
+	graphCode, err := workflowast.NewParser().ParseToGraph(string(code), func(name, s string) string {
+		for _, src := range sourceWorkflow {
+			if src == name {
+				return `[("` + s + `")]`
+			}
+		}
+		for _, src := range finishWorkflow {
+			if src == name {
+				return `[["` + s + `"]]`
+			}
+		}
+		return `["` + s + `"]`
+	}, "graph LR\n")
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":  true,

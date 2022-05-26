@@ -193,7 +193,7 @@ func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
 		Artifacts: []*Artifact{{
 			FilePath: f,
 			FileName: filepath.Base(f),
-			FileType: "",
+			FileType: "chart_html",
 		}},
 	}
 }

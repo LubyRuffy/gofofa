@@ -141,7 +141,7 @@ func TestNew(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	assert.Contains(t, assertPipeCmd(t, `gen("{\"host\":\"`+ts.URL+`\"}") | screenshot("host")`, ``), "screenshot_filepath")
+	assert.Contains(t, assertPipeCmd(t, `gen("{\"host\":\"`+ts.URL+`\"}") & screenshot("host")`, ``), "screenshot_filepath")
 
 	assertPipeCmdByTestRunner(t, `sort("a")`, `{"a":2}
 {"a":1}`, `{"a":1}
@@ -188,7 +188,7 @@ func TestNew(t *testing.T) {
 `)
 
 	// 先sort再uniq
-	assertPipeCmdByTestRunner(t, `sort() | uniq(true)`, "1\n2\n1\n", `{"value":1,"count":2}
+	assertPipeCmdByTestRunner(t, `sort() & uniq(true)`, "1\n2\n1\n", `{"value":1,"count":2}
 {"value":2,"count":1}
 `)
 
@@ -198,7 +198,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestLoad_fork(t *testing.T) {
-	ast := workflowast.NewParser().MustParse(`load("../../data/forktest.json") | [cut("a") & cut("b")]`)
+	ast := workflowast.NewParser().MustParse(`load("../../data/forktest.json") & [cut("a") | cut("b")]`)
 	p := New()
 	_, err := p.Run(ast)
 	assert.Nil(t, err)
