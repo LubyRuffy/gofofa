@@ -293,3 +293,15 @@ func TestPipeRunner_toExcel(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "2", v)
 }
+
+func TestPipeRunner_toMysql(t *testing.T) {
+	p := New()
+	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\"}") & to_mysql("a,b")`)
+	_, err := p.Run(code)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(p.LastTask.Artifacts))
+	d, err := os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+	assert.Nil(t, err)
+	assert.Equal(t, `INSERT INTO  ("a","b") VALUES (1,"2")
+`, string(d))
+}

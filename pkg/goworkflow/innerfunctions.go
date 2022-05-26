@@ -1,6 +1,7 @@
 package goworkflow
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/chromedp/chromedp"
@@ -8,6 +9,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/render"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/lubyruffy/gofofa/pkg/fzq"
 	"github.com/lubyruffy/gofofa/pkg/outformats"
 	"github.com/lubyruffy/gofofa/pkg/utils"
@@ -20,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -572,11 +575,117 @@ func toExcel(p *PipeRunner, params map[string]interface{}) *funcResult {
 	}
 
 	return &funcResult{
-		OutFile: fn,
 		Artifacts: []*Artifact{
 			{
 				FilePath: fn,
 				FileType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			},
+		},
+	}
+}
+
+type mysqlParam struct {
+	DSN    string `json:"dsn"`    // 连接字符串: db_user:password@tcp(localhost:3306)/my_db
+	Table  string `json:"table"`  // 表名
+	Fields string `json:"fields"` // 写入的列名
+}
+
+// 写入mysql数据库
+func toMysql(p *PipeRunner, params map[string]interface{}) *funcResult {
+	var err error
+	var options mysqlParam
+	if err = mapstructure.Decode(params, &options); err != nil {
+		panic(fmt.Errorf("toMysql failed: %w", err))
+	}
+
+	var columns []string
+	if len(options.Fields) == 0 {
+		// 自动获取一次
+		db, err := sql.Open("mysql", options.DSN)
+		if err != nil {
+			panic(fmt.Errorf("toMysql failed: %w", err))
+		}
+		var rows *sql.Rows
+		rows, err = db.Query(fmt.Sprintf("select * from %s limit 1", options.Table))
+		if err != nil {
+			panic(fmt.Errorf("toMysql failed: %w", err))
+		}
+
+		var cols []string
+		cols, err = rows.Columns()
+		if err != nil {
+			panic(fmt.Errorf("toMysql failed: %w", err))
+		}
+
+		d, err := utils.ReadFirstLineOfFile(p.LastFile)
+		if err != nil {
+			panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
+		}
+		fields := utils.JSONLineFields(string(d))
+		if len(fields) == 0 {
+			panic(fmt.Errorf("toMysql failed: fields is empty"))
+		}
+
+		for _, col := range cols {
+			for _, field := range fields {
+				if strings.ToLower(col) == strings.ToLower(field) {
+					columns = append(columns, field)
+				}
+			}
+		}
+	} else {
+		columns = strings.Split(options.Fields, ",")
+	}
+
+	if len(columns) == 0 {
+		panic(fmt.Errorf("toMysql failed: no columns matched"))
+	}
+	var columnsString string
+	for _, field := range columns {
+		if len(columnsString) != 0 {
+			columnsString += `,`
+		}
+		columnsString += `"` + utils.EscapeString(field) + `"`
+	}
+
+	var fn string
+	fn, err = utils.WriteTempFile(".sql", func(f *os.File) error {
+		return utils.EachLine(p.GetLastFile(), func(line string) error {
+			var valueString string
+			for _, field := range columns {
+				var vs string
+				v := gjson.Get(line, field).Value()
+				switch t := v.(type) {
+				case string:
+					vs = `"` + utils.EscapeString(v.(string)) + `"`
+				case bool:
+					vs = strconv.FormatBool(v.(bool))
+				case float64:
+					vs = strconv.FormatInt(int64(v.(float64)), 10)
+				default:
+					return fmt.Errorf("toMysql failed: unknown data type %v", t)
+				}
+				if len(valueString) > 0 {
+					valueString += ","
+				}
+				valueString += vs
+			}
+
+			_, err = f.WriteString(fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)\n",
+				options.Table, columnsString, valueString))
+			return err
+		})
+	})
+
+	if err != nil {
+		panic(fmt.Errorf("toMysql failed: %w", err))
+	}
+
+	return &funcResult{
+		Artifacts: []*Artifact{
+			{
+				FilePath: fn,
+				FileType: "text/sql",
 			},
 		},
 	}

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bufio"
+	"github.com/tidwall/gjson"
 	"io"
 	"os"
 	"strings"
@@ -91,4 +92,40 @@ func EscapeString(s string) string {
 func EscapeDoubleQuoteStringOfHTML(s string) string {
 	s = strings.ReplaceAll(s, `"`, `#quot;`)
 	return s
+}
+
+// ReadFirstLineOfFile 读取文件的第一行
+func ReadFirstLineOfFile(fn string) ([]byte, error) {
+	f, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var b [1]byte
+	var data []byte
+	for {
+		_, err = f.Read(b[:])
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return data, err
+		}
+		if b[0] == '\n' {
+			break
+		}
+		data = append(data, b[0])
+	}
+	return data, nil
+}
+
+// JSONLineFields 获取json行的fields
+func JSONLineFields(line string) (fields []string) {
+	v := gjson.Parse(line)
+	v.ForEach(func(key, value gjson.Result) bool {
+		fields = append(fields, key.String())
+		return true
+	})
+	return
 }

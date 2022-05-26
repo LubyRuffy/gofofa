@@ -24,6 +24,7 @@ type PipeTask struct {
 	Artifacts []*Artifact   // files to archive 非json格式的文件不往后进行传递
 	Cost      time.Duration // time costs
 	Children  []*PipeRunner // fork children
+	Fields    []string      // fields list 列名
 }
 
 // Close remove tmp outfile
@@ -86,15 +87,25 @@ func (p *PipeRunner) GetWorkflows() []*PipeTask {
 
 // AddWorkflow 添加一次任务的日志
 func (p *PipeRunner) AddWorkflow(pt *PipeTask) {
-	p.Tasks = append(p.Tasks, pt)
-	p.LastTask = pt
-
 	// 可以不写文件
 	if len(pt.Outfile) > 0 {
 		p.LastFile = pt.Outfile
 
 		logrus.Debug(pt.Name+" write to file: ", pt.Outfile)
+
+		// 取字段列表
+		d, err := utils.ReadFirstLineOfFile(pt.Outfile)
+		if err != nil {
+			panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
+		}
+		v := gjson.ParseBytes(d)
+		v.ForEach(func(key, value gjson.Result) bool {
+			pt.Fields = append(pt.Fields, key.String())
+			return true
+		})
 	}
+	p.Tasks = append(p.Tasks, pt)
+	p.LastTask = pt
 }
 
 // GetFofaCli fofa client
@@ -217,6 +228,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"FlatArray", flatArray},
 		{"Screenshot", screenShot},
 		{"ToExcel", toExcel},
+		{"ToMysql", toMysql},
 	}
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
