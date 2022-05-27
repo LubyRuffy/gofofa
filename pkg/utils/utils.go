@@ -2,14 +2,21 @@ package utils
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/tidwall/gjson"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 )
 
 var (
 	defaultPipeTmpFilePrefix = "gofofa_pipeline_"
+	lastCheckDockerTime      time.Time // 最后检查docker路径的时间
+	dockerPath               = "docker"
 )
 
 func read(r *bufio.Reader) ([]byte, error) {
@@ -128,4 +135,102 @@ func JSONLineFields(line string) (fields []string) {
 		return true
 	})
 	return
+}
+
+// FileExists checks if a file exists and is not a directory before we
+// try using it to prevent further errors.
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// LoadFirstExistsFile 从文件列表中返回第一个存在的文件路径
+func LoadFirstExistsFile(paths []string) string {
+	for _, p := range paths {
+		if FileExists(p) {
+			return p
+		}
+	}
+	return ""
+}
+
+// GetCurrentProcessFileDir 获得当前程序所在的目录
+func GetCurrentProcessFileDir() string {
+	return filepath.Dir(os.Args[0])
+}
+
+// UserHomeDir 获得当前用户的主目录
+func UserHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
+// ExecCmdWithTimeout 在时间范围内执行系统命令，并且将输出返回（stdout和stderr）
+func ExecCmdWithTimeout(timeout time.Duration, arg ...string) (b []byte, err error) {
+	defer func() {
+		if x := recover(); x != nil {
+			err = fmt.Errorf("[WARNING] ExecCmdWithTimeout failed: %v", x)
+		}
+	}()
+
+	routeCmd := exec.Command(arg[0], arg[1:]...)
+
+	var timer *time.Timer
+	timer = time.AfterFunc(timeout, func() {
+		timer.Stop()
+		if routeCmd.Process != nil {
+			routeCmd.Process.Kill()
+		}
+	})
+
+	return routeCmd.CombinedOutput()
+}
+
+// DockerRun 运行docker，解决Windows找不到的问题
+func DockerRun(args ...string) ([]byte, error) {
+	// 缓存5分钟
+	if time.Now().Sub(lastCheckDockerTime) > 5*time.Minute {
+		return exec.Command(dockerPath, args...).CombinedOutput()
+	}
+
+	dockerPath = "docker"
+	d, err := exec.Command(dockerPath, "version").CombinedOutput()
+	if err != nil {
+		// 可能路径不在PATH环境变量，需要自己找
+		// https://docs.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
+		dockerPath := LoadFirstExistsFile([]string{
+			"docker.exe",
+			filepath.Join(os.Getenv("PROGRAMFILES"), "Docker", "Docker", "resources", "bin", "docker.exe"),
+			filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Docker", "Docker", "resources", "bin", "docker.exe"),
+		})
+		if len(dockerPath) > 0 {
+			dockerPath = dockerPath
+		}
+		d, err = exec.Command(dockerPath, "version").CombinedOutput()
+	}
+	if err == nil {
+		if strings.Contains(string(d), "API version") {
+			return exec.Command(dockerPath, args...).CombinedOutput()
+		}
+	}
+
+	return nil, err
+}
+
+// DockerStatusOk 检查是否安装
+func DockerStatusOk() bool {
+	_, err := DockerRun("version")
+	return err == nil
 }

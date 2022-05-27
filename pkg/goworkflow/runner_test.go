@@ -2,6 +2,7 @@ package goworkflow
 
 import (
 	"bytes"
+	"database/sql"
 	"github.com/lubyruffy/gofofa"
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
 	"github.com/lubyruffy/gofofa/pkg/utils"
@@ -11,8 +12,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // 返回值表明是错误并且匹配到了错误返回
@@ -294,26 +297,132 @@ func TestPipeRunner_toExcel(t *testing.T) {
 	assert.Equal(t, "2", v)
 }
 
-func TestPipeRunner_toMysql(t *testing.T) {
+func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
+
 	p := New()
-	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\"}") & to_mysql("tbl", "a,b")`)
+	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl")`)
 	_, err := p.Run(code)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(p.LastTask.Artifacts))
 	d, err := os.ReadFile(p.LastTask.Artifacts[0].FilePath)
 	assert.Nil(t, err)
-	assert.Equal(t, `INSERT INTO tbl ("a","b") VALUES (1,"2")
+	assert.Equal(t, `INSERT INTO tbl (a,b,c) VALUES (1,"2","3")
 `, string(d))
 
-	// todo: bug???
-	//	p = New()
-	//	code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\"}") & [flat("a") | to_mysql("tbl","a,b")]`)
-	//	_, err = p.Run(code)
-	//	assert.Nil(t, err)
-	//	assert.Equal(t, 1, len(p.LastTask.Artifacts))
-	//	d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
-	//	assert.Nil(t, err)
-	//	assert.Equal(t, `INSERT INTO tbl ("a","b") VALUES (1,"2")
-	//`, string(d))
+	// 分叉测试
+	p.Close()
+	code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & [flat("a") | ` + workFlowName + `("tbl","","a,b")]`)
+	_, err = p.Run(code)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(p.LastTask.Children))
+	d, err = os.ReadFile(p.LastTask.Children[1].LastTask.Artifacts[0].FilePath)
+	assert.Nil(t, err)
+	assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
+`, string(d))
 
+	if db != nil {
+		checkRow := func(rows *sql.Rows) {
+			if rows.Next() {
+				var a int
+				var b string
+				err = rows.Scan(&a, &b)
+				assert.Nil(t, err)
+
+				assert.Equal(t, `2`, b)
+				assert.Equal(t, 1, a)
+			}
+		}
+
+		var rows *sql.Rows
+		// 有字段
+		p.Close()
+		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl","` + dsn + `","a,b")`)
+		_, err = p.Run(code)
+		assert.Nil(t, err)
+		d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+		assert.Nil(t, err)
+		assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
+`, string(d))
+		rows, err = db.Query("select a,b from tbl")
+		checkRow(rows)
+
+		// 没有字段，自动提取
+		p.Close()
+		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl","` + dsn + `")`)
+		_, err = p.Run(code)
+		assert.Nil(t, err)
+		d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+		assert.Nil(t, err)
+		assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
+`, string(d))
+		rows, err = db.Query("select a,b from tbl")
+		checkRow(rows)
+	}
+}
+
+func TestPipeRunner_toSqlite(t *testing.T) {
+	dbFile, err := utils.WriteTempFile(".sqlite3", nil)
+	assert.Nil(t, err)
+	os.Remove(dbFile)
+
+	dsn := dbFile + "?cache=shared&_journal_mode=WAL&mode=rwc&_busy_timeout=9999999"
+	db, err := sql.Open("sqlite3", dsn)
+	assert.Nil(t, err)
+	defer os.Remove(dbFile)
+	_, err = db.Exec("CREATE TABLE tbl ( a varchar(255), b varchar(255));")
+	assert.Nil(t, err)
+	assertToSql(t, "to_sqlite", dsn, db)
+}
+
+func TestPipeRunner_toMysql(t *testing.T) {
+	var err error
+	var d []byte
+
+	var db *sql.DB
+	var dsn string
+
+	p := New()
+	if utils.DockerStatusOk() {
+		// 用docker来跑mysql进行测试
+		_, err = utils.DockerRun("run", "--rm", "--detach", "--name", "gofofamysqltest", "--env", "MARIADB_ROOT_PASSWORD=my-secret-pw", "-p", "3306:3306", "mariadb")
+		assert.Nil(t, err)
+		defer func() {
+			_, err = utils.DockerRun("stop", "gofofamysqltest")
+			assert.Nil(t, err)
+		}()
+
+		time.Sleep(time.Second)
+
+		// 取IP
+		d, err = utils.DockerRun("inspect", "gofofamysqltest")
+		assert.Nil(t, err)
+		var r *regexp.Regexp
+		r = regexp.MustCompile(`"IPAddress": "(.*?)"`)
+		matched := r.FindAllStringSubmatch(string(d), 1)
+		assert.True(t, len(matched) > 0)
+		cip := matched[0][1]
+		assert.True(t, len(cip) > 0)
+
+		// 等待启动,10s
+		for i := 0; i < 10; i++ {
+			d, err = utils.DockerRun("run", "--rm", "mariadb", "mysql", "-h", cip, "-uroot", "-pmy-secret-pw", "-e", "select @@version")
+			if strings.Contains(string(d), "-MariaDB-") {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+
+		d, err = utils.DockerRun("run", "--rm", "mariadb", "mysql", "-h", cip, "-uroot", "-pmy-secret-pw", "-e", "create database aaa; use aaa; CREATE TABLE tbl ( a varchar(255), b varchar(255)); select @@version")
+		assert.Nil(t, err)
+		assert.Contains(t, string(d), "-MariaDB-")
+
+		p.Close()
+		// docker run -it --rm --env MARIADB_ROOT_PASSWORD=my-secret-pw -p 3306:3306 mariadb
+		// docker run -it --rm mariadb mysql -h $(docker inspect $(docker ps | grep mariadb | awk '{print $1}') | jq -r '.[0].NetworkSettings.Networks.bridge.IPAddress') -u root -pmy-secret-pw -e 'create database aaa; use aaa; CREATE TABLE tbl ( a varchar(255), b varchar(255));'
+		dsn = "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa"
+		db, err = sql.Open("mysql", dsn)
+		assert.Nil(t, err)
+	}
+
+	assertToSql(t, "to_mysql", dsn, db)
 }

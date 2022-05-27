@@ -13,6 +13,7 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/fzq"
 	"github.com/lubyruffy/gofofa/pkg/outformats"
 	"github.com/lubyruffy/gofofa/pkg/utils"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -584,52 +585,67 @@ func toExcel(p *PipeRunner, params map[string]interface{}) *funcResult {
 	}
 }
 
-type mysqlParam struct {
+type sqlParam struct {
+	Driver string `json:"driver"` // 连接字符串: db_user:password@tcp(localhost:3306)/my_db
 	DSN    string `json:"dsn"`    // 连接字符串: db_user:password@tcp(localhost:3306)/my_db
 	Table  string `json:"table"`  // 表名
 	Fields string `json:"fields"` // 写入的列名
 }
 
-// 写入mysql数据库
-func toMysql(p *PipeRunner, params map[string]interface{}) *funcResult {
+// 写入sql数据库
+func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 	var err error
-	var options mysqlParam
+	var db *sql.DB
+	var options sqlParam
 	if err = mapstructure.Decode(params, &options); err != nil {
-		panic(fmt.Errorf("toMysql failed: %w", err))
+		panic(fmt.Errorf("toSql failed: %w", err))
+	}
+
+	if len(options.DSN) > 0 {
+		db, err = sql.Open(options.Driver, options.DSN)
+		if err != nil {
+			panic(fmt.Errorf("toSql failed: %w", err))
+		}
 	}
 
 	var columns []string
 	if len(options.Fields) == 0 {
-		// 自动获取一次
-		db, err := sql.Open("mysql", options.DSN)
-		if err != nil {
-			panic(fmt.Errorf("toMysql failed: %w", err))
-		}
-		var rows *sql.Rows
-		rows, err = db.Query(fmt.Sprintf("select * from %s limit 1", options.Table))
-		if err != nil {
-			panic(fmt.Errorf("toMysql failed: %w", err))
-		}
+		if db == nil {
+			// 没有配置db
+			var d []byte
+			d, err = utils.ReadFirstLineOfFile(p.LastFile)
+			gjson.ParseBytes(d).ForEach(func(key, value gjson.Result) bool {
+				columns = append(columns, key.String())
+				return true
+			})
+		} else {
+			// 自动获取一次
+			var rows *sql.Rows
+			rows, err = db.Query(fmt.Sprintf("select * from %s limit 1", options.Table))
+			if err != nil {
+				panic(fmt.Errorf("toSql failed: %w", err))
+			}
 
-		var cols []string
-		cols, err = rows.Columns()
-		if err != nil {
-			panic(fmt.Errorf("toMysql failed: %w", err))
-		}
+			var cols []string
+			cols, err = rows.Columns()
+			if err != nil {
+				panic(fmt.Errorf("toSql failed: %w", err))
+			}
 
-		d, err := utils.ReadFirstLineOfFile(p.LastFile)
-		if err != nil {
-			panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
-		}
-		fields := utils.JSONLineFields(string(d))
-		if len(fields) == 0 {
-			panic(fmt.Errorf("toMysql failed: fields is empty"))
-		}
+			d, err := utils.ReadFirstLineOfFile(p.LastFile)
+			if err != nil {
+				panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
+			}
+			fields := utils.JSONLineFields(string(d))
+			if len(fields) == 0 {
+				panic(fmt.Errorf("toSql failed: fields is empty"))
+			}
 
-		for _, col := range cols {
-			for _, field := range fields {
-				if strings.ToLower(col) == strings.ToLower(field) {
-					columns = append(columns, field)
+			for _, col := range cols {
+				for _, field := range fields {
+					if strings.ToLower(col) == strings.ToLower(field) {
+						columns = append(columns, field)
+					}
 				}
 			}
 		}
@@ -638,19 +654,13 @@ func toMysql(p *PipeRunner, params map[string]interface{}) *funcResult {
 	}
 
 	if len(columns) == 0 {
-		panic(fmt.Errorf("toMysql failed: no columns matched"))
+		panic(fmt.Errorf("toSql failed: no columns matched"))
 	}
-	var columnsString string
-	for _, field := range columns {
-		if len(columnsString) != 0 {
-			columnsString += `,`
-		}
-		columnsString += `"` + utils.EscapeString(field) + `"`
-	}
+	var columnsString = strings.Join(columns, ",")
 
 	var fn string
 	fn, err = utils.WriteTempFile(".sql", func(f *os.File) error {
-		return utils.EachLine(p.GetLastFile(), func(line string) error {
+		err = utils.EachLine(p.GetLastFile(), func(line string) error {
 			var valueString string
 			for _, field := range columns {
 				var vs string
@@ -663,7 +673,7 @@ func toMysql(p *PipeRunner, params map[string]interface{}) *funcResult {
 				case float64:
 					vs = strconv.FormatInt(int64(v.(float64)), 10)
 				default:
-					return fmt.Errorf("toMysql failed: unknown data type %v", t)
+					return fmt.Errorf("toSql failed: unknown data type %v", t)
 				}
 				if len(valueString) > 0 {
 					valueString += ","
@@ -671,14 +681,27 @@ func toMysql(p *PipeRunner, params map[string]interface{}) *funcResult {
 				valueString += vs
 			}
 
-			_, err = f.WriteString(fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)\n",
-				options.Table, columnsString, valueString))
+			sqlLine := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)\n",
+				options.Table, columnsString, valueString)
+			_, err = f.WriteString(sqlLine)
+			if err != nil {
+				return err
+			}
+
+			if db != nil {
+				_, err = db.Exec(sqlLine)
+				if err != nil {
+					return err
+				}
+			}
 			return err
 		})
+
+		return err
 	})
 
 	if err != nil {
-		panic(fmt.Errorf("toMysql failed: %w", err))
+		panic(fmt.Errorf("toSql failed: %w", err))
 	}
 
 	return &funcResult{

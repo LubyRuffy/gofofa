@@ -6,39 +6,39 @@ import (
 	"testing"
 )
 
-func TestLoad_to_mysql(t *testing.T) {
+func TestLoad_to_sqlite(t *testing.T) {
 	assert.Panics(t, func() {
-		workflowast.NewParser().MustParse(`to_mysql()`)
+		workflowast.NewParser().MustParse(`to_sqlite()`)
 	})
 
 	assert.Equal(t,
 		`ToSql(GetRunner(), map[string]interface{}{
-	"driver": "mysql",
+	"driver": "sqlite3",
 	"table": "tbl",
 	"dsn": "",
 	"fields": "",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql("tbl")`))
+		workflowast.NewParser().MustParse(`to_sqlite("tbl")`))
 
 	assert.Equal(t,
 		`ToSql(GetRunner(), map[string]interface{}{
-	"driver": "mysql",
+	"driver": "sqlite3",
 	"table": "tbl1",
-	"dsn": "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa",
+	"dsn": "a.sqlite3",
 	"fields": "",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql("tbl1", "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa")`))
+		workflowast.NewParser().MustParse(`to_sqlite("tbl1", "a.sqlite3")`))
 
 	assert.Equal(t,
 		`ToSql(GetRunner(), map[string]interface{}{
-	"driver": "mysql",
+	"driver": "sqlite3",
 	"table": "tbl1",
 	"dsn": "",
 	"fields": "a,b,c",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql("tbl1", "", "a,b,c")`))
+		workflowast.NewParser().MustParse(`to_sqlite("tbl1", "", "a,b,c")`))
 
 }

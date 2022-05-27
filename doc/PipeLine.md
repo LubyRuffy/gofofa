@@ -61,7 +61,8 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   load(file) 从文件加载数据
     -   gen(jsonstring) 生成一行json，调试用
 -   目标地址命令：
-    -   （未完成）to_mysql(dsn, table)
+    -   to_mysql(table,dsn,fields) 入库mysql，table必须填写；dns可选；如果没有那么就只生成sql文件；fields可选，如果没有，那么就从数据库中进行获取，没有配置dsn的话按照全字段
+    -   to_sqlite(table,dsn,fields) 入库sqlite，table必须填写；dns可选；如果没有那么就只生成sql文件；fields可选，如果没有，那么就从数据库中进行获取，没有配置dsn的话按照全字段
     -   to_excel()
 -   数据操作命令：
     -   cut(fields) 只保留特定字段

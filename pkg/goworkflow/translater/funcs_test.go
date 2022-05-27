@@ -6,5 +6,5 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	assert.Equal(t, 19, len(Translators))
+	assert.Equal(t, 20, len(Translators))
 }

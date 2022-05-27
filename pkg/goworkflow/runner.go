@@ -30,6 +30,7 @@ type PipeTask struct {
 // Close remove tmp outfile
 func (p *PipeTask) Close() {
 	os.Remove(p.Outfile)
+	p.Children = nil
 }
 
 // Hooks 消息通知
@@ -47,6 +48,7 @@ type PipeRunner struct {
 	LastFile string         // 最后生成的文件名
 	FofaCli  *gofofa.Client // fofa客户端
 	logger   *logrus.Logger
+	children []*PipeRunner
 
 	gocodeRunner *coderunner.Runner
 }
@@ -75,6 +77,9 @@ func (p *PipeRunner) Run(code string) (reflect.Value, error) {
 
 // Close remove tmp outfile
 func (p *PipeRunner) Close() {
+	p.children = nil
+	p.LastFile = ""
+	p.LastTask = nil
 	for _, task := range p.Tasks {
 		task.Close()
 	}
@@ -136,6 +141,7 @@ func (p *PipeRunner) fork(pipe string) error {
 	if err != nil {
 		return err
 	}
+	p.children = append(p.children, forkRunner)
 	_, err = forkRunner.Run(code)
 	return err
 }
@@ -228,7 +234,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"FlatArray", flatArray},
 		{"Screenshot", screenShot},
 		{"ToExcel", toExcel},
-		{"ToMysql", toMysql},
+		{"ToSql", toSql},
 	}
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
