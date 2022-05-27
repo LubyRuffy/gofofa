@@ -24,15 +24,21 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 			return template.URL(u)
 		},
 		"GetTasks": func(p *PipeRunner) []*PipeTask {
-			return p.GetWorkflows()
+			var ts []*PipeTask
+			for _, wf := range p.GetWorkflows() {
+				if wf.Runner != p {
+					break
+				}
+				ts = append(ts, wf)
+			}
+			return ts
 		},
 	}).Parse(`
 
-{{range .}}
-	{{ template "task.tmpl" . }}
-{{end}}
+{{ template "task.tmpl" (GetTasks .) }}
 
 {{ define "task.tmpl" }}
+{{ range . }}
 <ul>
 	<li>{{ .Name }} ({{ .Content }}) </li>
 
@@ -63,12 +69,11 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 
 	{{ range .Children }}
 	<li> fork children:
-		{{ range . | GetTasks }}
-			{{ template "task.tmpl" . }}
-		{{ end }}
+		{{ template "task.tmpl" (GetTasks .) }}
 	</li>
 	{{ end }}
 </ul>
+{{ end }}
 {{ end }}
 `)
 	if err != nil {
@@ -76,7 +81,7 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 	}
 
 	var out bytes.Buffer
-	err = t.Execute(&out, p.Tasks)
+	err = t.Execute(&out, p)
 	if err != nil {
 		panic(err)
 	}
