@@ -29,7 +29,7 @@
     <input id="workflow" type="text" size="80" cols="5" value="fofa(`title=test`) & to_int(`port`) & sort(`port`) & [cut(`port`) | cut(`ip`)]"/>
     <input type="button" value="run" onclick="run()"/>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.1.1/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
 
 <div class="mermaid" id="mermaid">
@@ -63,19 +63,24 @@
             method: 'get',
         }).then(response => response.json())
             .then(jsonData => {
+
                 finished = false;
-                for (const msg of jsonData.result.msgs) {
-                    document.getElementById("message").innerHTML += msg + "<br/>";
-                    if (msg == "<finished>") {
-                        finished = true
+                if (jsonData.result.msgs != null) {
+                    for (const msg of jsonData.result.msgs) {
+                        document.getElementById("message").innerHTML += msg + "<br/>";
+                        if (msg == "<finished>") {
+                            finished = true
+                        }
                     }
                 }
-
+                
                 if (jsonData.result.html.length >0) {
                     document.getElementById("report").innerHTML = jsonData.result.html;
                 }
                 if (!finished) {
-                    setTimeout(readTask(taskId), 1000);
+                    setTimeout(() => {
+                        readTask(taskId)
+                        }, 1000);
                 }
             })
             .catch(err => {

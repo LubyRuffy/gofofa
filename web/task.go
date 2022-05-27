@@ -1,9 +1,10 @@
 package web
 
 import (
-	"github.com/google/uuid"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -39,8 +40,9 @@ func (t *taskInfo) receiveMsg() (string, bool) {
 	select {
 	case msg, ok := <-t.msgCh:
 		return msg, ok
+	default:
+		return "", false
 	}
-	return "", false
 }
 
 type taskMonitor struct {

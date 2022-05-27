@@ -1,20 +1,22 @@
 package web
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/lubyruffy/gofofa"
-	"github.com/lubyruffy/gofofa/pkg/goworkflow"
-	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"text/template"
-)
+	"time"
 
-import "embed"
+	"github.com/lubyruffy/gofofa"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
+	"github.com/sirupsen/logrus"
+)
 
 //go:embed public
 var webFs embed.FS
@@ -153,15 +155,14 @@ func fetchMsg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var msgs []string
+	s := time.Now()
 	for {
+		log.Println(time.Since(s))
 		info, ok := task.receiveMsg()
 		if !ok {
 			break
 		}
 		msgs = append(msgs, info)
-		if len(msgs) >= 10 {
-			break
-		}
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{

@@ -8,6 +8,9 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/gammazero/workerpool v1.1.2
 	github.com/go-echarts/go-echarts/v2 v2.2.4
+	github.com/go-sql-driver/mysql v1.6.0
+	github.com/google/uuid v1.3.0
+	github.com/mattn/go-sqlite3 v1.14.13
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/prataprc/goparsec v0.0.0-20211219142520-daac0e635e7e
@@ -19,6 +22,7 @@ require (
 	github.com/twmb/murmur3 v1.1.6
 	github.com/urfave/cli/v2 v2.6.0
 	github.com/vincent-petithory/dataurl v1.0.0
+	github.com/xuri/excelize/v2 v2.6.0
 	golang.org/x/net v0.0.0-20220517181318-183a9ca12b87
 )
 
@@ -35,12 +39,10 @@ require (
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/fraugster/parquet-go v0.10.1-0.20220222153523-e6b70a8a7212 // indirect
 	github.com/gammazero/deque v0.1.0 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -48,7 +50,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mattn/go-sqlite3 v1.14.13 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/pbnjay/memory v0.0.0-20190104145345-974d429e7ae4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
@@ -60,7 +61,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/xuri/efp v0.0.0-20220407160117-ad0f7a785be8 // indirect
-	github.com/xuri/excelize/v2 v2.6.0 // indirect
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect

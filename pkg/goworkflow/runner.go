@@ -2,6 +2,11 @@ package goworkflow
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"time"
+
 	"github.com/lubyruffy/gofofa"
 	"github.com/lubyruffy/gofofa/pkg/coderunner"
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/translater"
@@ -10,10 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-	"os"
-	"reflect"
-	"strings"
-	"time"
 )
 
 // PipeTask 每一个pipe执行的任务统计信息
@@ -23,6 +24,7 @@ type PipeTask struct {
 	Outfile   string        // tmp json file 统一格式
 	Artifacts []*Artifact   // files to archive 非json格式的文件不往后进行传递
 	Cost      time.Duration // time costs
+	Runner    *PipeRunner   // runner
 	Children  []*PipeRunner // fork children
 	Fields    []string      // fields list 列名
 	CallID    int           // 调用序列
@@ -50,7 +52,7 @@ type PipeRunner struct {
 	FofaCli  *gofofa.Client // fofa客户端
 	logger   *logrus.Logger
 	children []*PipeRunner
-	parent   *PipeRunner
+	Parent   *PipeRunner
 
 	gocodeRunner *coderunner.Runner
 }
@@ -115,10 +117,10 @@ func (p *PipeRunner) AddWorkflow(pt *PipeTask) {
 	node := p
 	for {
 		node.Tasks = append(node.Tasks, pt)
-		if node.parent == nil {
+		if node.Parent == nil {
 			break
 		}
-		node = node.parent
+		node = node.Parent
 	}
 
 	p.LastTask = pt
@@ -146,7 +148,7 @@ func WithHooks(hooks *Hooks) RunnerOption {
 // WithParent from hook
 func WithParent(parent *PipeRunner) RunnerOption {
 	return func(r *PipeRunner) {
-		r.parent = parent
+		r.Parent = parent
 	}
 }
 
@@ -247,10 +249,10 @@ func New(options ...RunnerOption) *PipeRunner {
 			node := p
 			for {
 				callID = len(node.Tasks) + 1
-				if node.parent == nil {
+				if node.Parent == nil {
 					break
 				}
-				node = node.parent
+				node = node.Parent
 			}
 			pt := &PipeTask{
 				Name:      funcName,
@@ -259,6 +261,7 @@ func New(options ...RunnerOption) *PipeRunner {
 				Artifacts: result.Artifacts,
 				Cost:      time.Since(s),
 				CallID:    callID,
+				Runner:    p,
 			}
 
 			p.AddWorkflow(pt)
