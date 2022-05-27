@@ -713,3 +713,19 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 		},
 	}
 }
+
+func genData(p *PipeRunner, params map[string]interface{}) *funcResult {
+	var fn string
+	var err error
+	fn, err = utils.WriteTempFile("", func(f *os.File) error {
+		_, err = f.WriteString(params["data"].(string))
+		return err
+	})
+	if err != nil {
+		panic(fmt.Errorf("genData failed: %w", err))
+	}
+
+	return &funcResult{
+		OutFile: fn,
+	}
+}

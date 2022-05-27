@@ -38,6 +38,32 @@ func TestNewParser(t *testing.T) {
 	// char
 	assert.Equal(t, "a('a')\n", NewParser().MustParse(`a('a')`))
 
+	// calls测试
+	p := NewParser()
+	assert.Equal(t, "a('a')\n", p.MustParse(`a('a')`))
+	assert.Equal(t, 1, len(p.CallList))
+	assert.Equal(t, "a", p.CallList[0].Name)
+
+	assert.Equal(t, "a()\nb(1)\nc(\"2\")\n", p.MustParse(`a() & b(1) & c("2")`))
+	assert.Equal(t, 3, len(p.CallList))
+	assert.Equal(t, "a", p.CallList[0].Name)
+	assert.Equal(t, "b", p.CallList[1].Name)
+	assert.Equal(t, "c", p.CallList[2].Name)
+
+	assert.Equal(t, "a()\nFork(\"b(1)\")\nFork(\"c(\\\"2\\\")\")\n", p.MustParse(`a() & [b(1) | c("2")]`))
+	assert.Equal(t, 3, len(p.CallList))
+	assert.Equal(t, "a", p.CallList[0].Name)
+	assert.Equal(t, "b", p.CallList[1].Name)
+	assert.Equal(t, "c", p.CallList[2].Name)
+
+	assert.Equal(t, "a()\nFork(\"b(1)\")\nFork(\"c(\\\"2\\\")\")\nFork(\"[d(1)|e(\\\"2\\\")]\")\n", p.MustParse(`a() & [b(1) | c("2") | [d(1) | e("2")]]`))
+	assert.Equal(t, 5, len(p.CallList))
+	assert.Equal(t, "a", p.CallList[0].Name)
+	assert.Equal(t, "b", p.CallList[1].Name)
+	assert.Equal(t, "c", p.CallList[2].Name)
+	assert.Equal(t, "d", p.CallList[3].Name)
+	assert.Equal(t, "e", p.CallList[4].Name)
+
 }
 
 func TestParser_Fork(t *testing.T) {

@@ -64,6 +64,9 @@ import (
 type Parser struct {
 	ast    *parsec.AST
 	parser parsec.Parser
+	parent *Parser // fork的父节点
+
+	CallList []*FuncInfo // 调用的底层函数列表
 }
 
 func (p *Parser) parseValue(node parsec.Queryable) (interface{}, error) {
@@ -108,6 +111,30 @@ func (p *Parser) parseParameter(node parsec.Queryable) ([]*FuncParameter, error)
 	return fps, nil
 }
 
+func (p *Parser) updateCallList(fis ...*FuncInfo) {
+	for _, fi := range fis {
+		index := 1
+		node := p
+		for {
+			index = len(node.CallList) + 1
+			if node.parent == nil {
+				break
+			}
+			node = node.parent
+		}
+		fi.UUID = index
+
+		node = p
+		for {
+			node.CallList = append(node.CallList, fi)
+			if node.parent == nil {
+				break
+			}
+			node = node.parent
+		}
+	}
+}
+
 func (p *Parser) parseFunc(node parsec.Queryable) (*FuncInfo, error) {
 	var fi FuncInfo
 	for _, child := range node.GetChildren() {
@@ -125,6 +152,7 @@ func (p *Parser) parseFunc(node parsec.Queryable) (*FuncInfo, error) {
 			return nil, fmt.Errorf("parseFunc failed: unknown field %s", child.GetName())
 		}
 	}
+	p.updateCallList(&fi)
 	return &fi, nil
 }
 
@@ -193,11 +221,23 @@ func (p *Parser) parseFork(node parsec.Queryable) (string, error) {
 		switch child.GetName() {
 		case "pipeList":
 			for _, pipe := range child.GetChildren() {
+				var newPipe string
 				switch pipe.GetName() {
 				case "function":
-					ret += `Fork(` + pipe.GetValue() + ")\n"
+					newPipe = pipe.GetValue()
+					ret += `Fork("` + rawString(pipe.GetValue()) + "\")\n"
 				case "pipe":
-					ret += `Fork("` + utils.EscapeString(pipeToRawString(pipe)) + "\")\n"
+					newPipe = pipeToRawString(pipe)
+					ret += `Fork("` + utils.EscapeString(newPipe) + "\")\n"
+				}
+
+				if len(newPipe) > 0 {
+					newP := NewParser()
+					newP.parent = p
+					_, err := newP.Parse(newPipe)
+					if err != nil {
+						return "", err
+					}
 				}
 			}
 		}
@@ -247,6 +287,7 @@ func (p *Parser) Parse(code string) (s string, err error) {
 			err = r.(error)
 		}
 	}()
+	p.CallList = nil //先清空
 	scanner := parsec.NewScanner([]byte(code))
 	node, _ := p.ast.Parsewith(p.parser, scanner)
 	return p.parseAST(node)

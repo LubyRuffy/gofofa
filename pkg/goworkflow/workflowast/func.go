@@ -32,9 +32,7 @@ func (fp FuncParameter) String() string {
 //	return fp.v.(bool)
 //}
 
-// RawString 不要引号
-func (fp FuncParameter) RawString() string {
-	s := fp.v.(string)
+func rawString(s string) string {
 	l := len(s)
 	if l == 0 {
 		return s
@@ -47,6 +45,11 @@ func (fp FuncParameter) RawString() string {
 		return s[1 : l-1]
 	}
 	return s
+}
+
+// RawString 不要引号
+func (fp FuncParameter) RawString() string {
+	return rawString(fp.v.(string))
 }
 
 // ToString 转换成字符串
@@ -73,6 +76,7 @@ func (fp FuncParameter) ToString() string {
 type FuncInfo struct {
 	Name   string           // 函数名称
 	Params []*FuncParameter // 参数列表
+	UUID   int              // 唯一的ID
 }
 
 // String func id string

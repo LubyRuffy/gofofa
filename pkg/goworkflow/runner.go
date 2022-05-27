@@ -25,6 +25,7 @@ type PipeTask struct {
 	Cost      time.Duration // time costs
 	Children  []*PipeRunner // fork children
 	Fields    []string      // fields list 列名
+	CallID    int           // 调用序列
 }
 
 // Close remove tmp outfile
@@ -49,6 +50,7 @@ type PipeRunner struct {
 	FofaCli  *gofofa.Client // fofa客户端
 	logger   *logrus.Logger
 	children []*PipeRunner
+	parent   *PipeRunner
 
 	gocodeRunner *coderunner.Runner
 }
@@ -109,7 +111,16 @@ func (p *PipeRunner) AddWorkflow(pt *PipeTask) {
 			return true
 		})
 	}
-	p.Tasks = append(p.Tasks, pt)
+
+	node := p
+	for {
+		node.Tasks = append(node.Tasks, pt)
+		if node.parent == nil {
+			break
+		}
+		node = node.parent
+	}
+
 	p.LastTask = pt
 }
 
@@ -132,9 +143,16 @@ func WithHooks(hooks *Hooks) RunnerOption {
 	}
 }
 
+// WithParent from hook
+func WithParent(parent *PipeRunner) RunnerOption {
+	return func(r *PipeRunner) {
+		r.parent = parent
+	}
+}
+
 // 核心函数
 func (p *PipeRunner) fork(pipe string) error {
-	forkRunner := New(WithHooks(p.hooks))
+	forkRunner := New(WithHooks(p.hooks), WithParent(p))
 	forkRunner.LastFile = p.LastFile // 从这里开始分叉
 	p.LastTask.Children = append(p.LastTask.Children, forkRunner)
 	code, err := workflowast.NewParser().Parse(pipe)
@@ -143,26 +161,6 @@ func (p *PipeRunner) fork(pipe string) error {
 	}
 	p.children = append(p.children, forkRunner)
 	_, err = forkRunner.Run(code)
-	return err
-}
-
-func (p *PipeRunner) genData(s string) error {
-	var fn string
-	var err error
-	fn, err = utils.WriteTempFile("", func(f *os.File) error {
-		_, err = f.WriteString(s)
-		return err
-	})
-	if err != nil {
-		return err
-	}
-
-	pt := &PipeTask{
-		Name:    "gen",
-		Content: fmt.Sprintf("%v", s),
-		Outfile: fn,
-	}
-	p.AddWorkflow(pt)
 	return err
 }
 
@@ -218,7 +216,6 @@ func New(options ...RunnerOption) *PipeRunner {
 		panic(err)
 	}
 	err = gf.Register("Fork", r.fork)
-	err = gf.Register("gen", r.genData)
 	err = gf.Register("urlfix", r.urlFix)
 	if err != nil {
 		panic(err)
@@ -235,6 +232,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"Screenshot", screenShot},
 		{"ToExcel", toExcel},
 		{"ToSql", toSql},
+		{"GenData", genData},
 	}
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
@@ -245,13 +243,24 @@ func New(options ...RunnerOption) *PipeRunner {
 			s := time.Now()
 			result := funcBody(p, params)
 
+			callID := 1
+			node := p
+			for {
+				callID = len(node.Tasks) + 1
+				if node.parent == nil {
+					break
+				}
+				node = node.parent
+			}
 			pt := &PipeTask{
 				Name:      funcName,
 				Content:   fmt.Sprintf("%v", params),
 				Outfile:   result.OutFile,
 				Artifacts: result.Artifacts,
 				Cost:      time.Since(s),
+				CallID:    callID,
 			}
+
 			p.AddWorkflow(pt)
 			if p.hooks != nil {
 				p.hooks.OnWorkflowFinished(pt)

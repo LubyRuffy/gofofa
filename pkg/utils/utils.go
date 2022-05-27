@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"hash/fnv"
 	"io"
 	"os"
 	"os/exec"
@@ -233,4 +234,11 @@ func DockerRun(args ...string) ([]byte, error) {
 func DockerStatusOk() bool {
 	_, err := DockerRun("version")
 	return err == nil
+}
+
+// SimpleHash hashes using fnv32a algorithm
+func SimpleHash(text string) uint32 {
+	algorithm := fnv.New32a()
+	algorithm.Write([]byte(text))
+	return algorithm.Sum32()
 }

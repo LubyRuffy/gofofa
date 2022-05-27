@@ -426,3 +426,28 @@ func TestPipeRunner_toMysql(t *testing.T) {
 
 	assertToSql(t, "to_mysql", dsn, db)
 }
+
+func TestPipeRunner_Run(t *testing.T) {
+	// callid测试
+	p := New()
+	ast := workflowast.NewParser()
+	code := ast.MustParse("gen(`{\"port\":1,\"ip\":\"1.1.1.1\"}`) & to_int(`port`) & sort(`port`) & [cut(`port`) | cut(`ip`)]")
+	_, err := p.Run(code)
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(ast.CallList))
+	assert.Equal(t, 5, len(p.Tasks))
+	for i := range ast.CallList {
+		assert.Equal(t, ast.CallList[i].UUID, p.Tasks[i].CallID)
+	}
+
+	//p = New()
+	//ast = workflowast.NewParser()
+	//code = ast.MustParse("fofa(\"title=test\",\"host,ip,port,country\", 1000) & [flat(\"port\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | flat(\"country\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | zq(\"tail 1\") & screenshot(\"host\") & to_excel() | to_mysql(\"tbl\", \"host,ip,port\")]")
+	//_, err = p.Run(code)
+	//assert.Nil(t, err)
+	//assert.Equal(t, 5, len(ast.CallList))
+	//assert.Equal(t, 5, len(p.Tasks))
+	//for i := range ast.CallList {
+	//	assert.Equal(t, ast.CallList[i].UUID, p.Tasks[i].CallID)
+	//}
+}

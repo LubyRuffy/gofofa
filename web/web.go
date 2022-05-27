@@ -46,7 +46,22 @@ func parse(w http.ResponseWriter, r *http.Request) {
 	finishWorkflow := []string{
 		"chart", "to_excel",
 	}
-	graphCode, err := workflowast.NewParser().ParseToGraph(string(code), func(name, s string) string {
+
+	ast := workflowast.NewParser()
+	realCode, err := ast.Parse(string(code))
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  true,
+			"result": fmt.Sprintf("workflow parsed err: %v", err),
+		})
+		return
+	}
+	var calls []string
+	for _, fi := range ast.CallList {
+		calls = append(calls, fi.Name)
+	}
+
+	graphCode, err := ast.ParseToGraph(string(code), func(name, s string) string {
 		for _, src := range sourceWorkflow {
 			if src == name {
 				return `[("` + s + `")]`
@@ -69,8 +84,12 @@ func parse(w http.ResponseWriter, r *http.Request) {
 	logrus.Println(graphCode)
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"error":  false,
-		"result": graphCode,
+		"error": false,
+		"result": map[string]interface{}{
+			"realCode":  realCode,
+			"graphCode": graphCode,
+			"calls":     calls,
+		},
 	})
 }
 
@@ -89,14 +108,15 @@ func run(w http.ResponseWriter, r *http.Request) {
 	tm := globalTaskMonitor.new()
 	go func() {
 		var code string
-		code, err = workflowast.NewParser().Parse(string(workflow))
+		ast := workflowast.NewParser()
+		code, err = ast.Parse(string(workflow))
 		if err != nil {
 			tm.addMsg("run err: " + err.Error())
 		}
 
 		p := goworkflow.New(goworkflow.WithHooks(&goworkflow.Hooks{
 			OnWorkflowFinished: func(pt *goworkflow.PipeTask) {
-				tm.addMsg("workflow finished: " + pt.Name)
+				tm.addMsg(fmt.Sprintf("workflow finished: %s, %d", pt.Name, pt.CallID))
 			},
 			OnLog: func(level logrus.Level, format string, args ...interface{}) {
 				tm.addMsg(fmt.Sprintf("[%s] %s", level.String(), fmt.Sprintf(format, args...)))

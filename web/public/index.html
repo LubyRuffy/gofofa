@@ -36,14 +36,19 @@
 {{ . }}
 </div>
 
-<!--<div style="width:100%;display:block">-->
-<!--    <div style="float: left; width: 50%"><div id="output">-->
-<!--    </div></div>-->
-<!--    <div style="float: right; width: 50%"><pre><code id="raw"></code></pre></div>-->
-<!--</div>-->
-<div id="output">
+<div style="width:100%;display:block">
+    <div style="float: left; width: 50%">
+        <div id="output" class="language-mermaid"></div>
+        <pre><code id="raw"></code></pre>
+    </div>
+    <div style="float: right; width: 50%">
+        <pre><code id="realCode" class="language-golang"></code></pre>
+        <div id="calls"></div>
+    </div>
 </div>
-<pre style="display: none"><code id="raw"></code></pre>
+<!--<div id="output">-->
+<!--</div>-->
+<!--<pre style="display: none"><code id="raw"></code></pre>-->
 
 <div style="width:100%;display:block;clear:both" id="message">
 
@@ -103,8 +108,10 @@
         }).then(response => response.json())
             .then(jsonData => {
                 console.log(jsonData);
-                document.querySelector('#raw').innerHTML = jsonData.result;
-                mermaid.render("mermaid", jsonData.result, (res) => {
+                document.querySelector('#raw').innerHTML = jsonData.result.graphCode;
+                document.querySelector('#calls').innerHTML = jsonData.result.calls;
+                document.querySelector('#realCode').innerHTML = jsonData.result.realCode;
+                mermaid.render("mermaid", jsonData.result.graphCode, (res) => {
                     document.querySelector('#output').innerHTML = res;
                 });
                 hljs.highlightAll();
