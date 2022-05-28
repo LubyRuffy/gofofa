@@ -364,11 +364,20 @@ func TestPipeRunner_toExcel(t *testing.T) {
 
 func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 
+	// 只生成文件
 	p := New()
 	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":true}") & ` + workFlowName + `("tbl")`)
 	_, err := p.Run(code)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(p.LastTask.Artifacts))
+	switch workFlowName {
+	case "to_sqlite":
+		assert.Equal(t, 2, len(p.LastTask.Artifacts))
+	case "to_mysql":
+		assert.Equal(t, 1, len(p.LastTask.Artifacts))
+	default:
+		panic("unknown workFlowName: " + workFlowName)
+	}
+
 	d, err := os.ReadFile(p.LastTask.Artifacts[0].FilePath)
 	assert.Nil(t, err)
 	assert.Equal(t, `INSERT INTO tbl (a,b,c) VALUES (1,"2",true)
@@ -376,10 +385,19 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 
 	// 分叉测试
 	p.Close()
-	code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & [flat("a") | ` + workFlowName + `("tbl","","a,b")]`)
+	code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & [flat("a") | ` + workFlowName + `("tbl","a,b")]`)
 	_, err = p.Run(code)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(p.LastTask.Children))
+	switch workFlowName {
+	case "to_sqlite":
+		assert.Equal(t, 2, len(p.LastTask.Children[1].LastTask.Artifacts))
+	case "to_mysql":
+		assert.Equal(t, 1, len(p.LastTask.Children[1].LastTask.Artifacts))
+	default:
+		panic("unknown workFlowName: " + workFlowName)
+	}
+
 	d, err = os.ReadFile(p.LastTask.Children[1].LastTask.Artifacts[0].FilePath)
 	assert.Nil(t, err)
 	assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
@@ -401,7 +419,7 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 		var rows *sql.Rows
 		// 有字段
 		p.Close()
-		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl","` + dsn + `","a,b")`)
+		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl","a,b","` + dsn + `")`)
 		_, err = p.Run(code)
 		assert.Nil(t, err)
 		d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
@@ -413,7 +431,16 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 
 		// 没有字段，自动提取
 		p.Close()
-		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl","` + dsn + `")`)
+		params := ""
+		switch workFlowName {
+		case "to_sqlite":
+			params = `"` + dsn + `"`
+		case "to_mysql":
+			params = `"","` + dsn + `"`
+		default:
+			panic("unknown workFlowName: " + workFlowName)
+		}
+		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl",` + params + `)`)
 		_, err = p.Run(code)
 		assert.Nil(t, err)
 		d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
@@ -426,17 +453,7 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 }
 
 func TestPipeRunner_toSqlite(t *testing.T) {
-	dbFile, err := utils.WriteTempFile(".sqlite3", nil)
-	assert.Nil(t, err)
-	os.Remove(dbFile)
-
-	dsn := dbFile + "?cache=shared&_journal_mode=WAL&mode=rwc&_busy_timeout=9999999"
-	db, err := sql.Open("sqlite3", dsn)
-	assert.Nil(t, err)
-	defer os.Remove(dbFile)
-	_, err = db.Exec("CREATE TABLE tbl ( a varchar(255), b varchar(255));")
-	assert.Nil(t, err)
-	assertToSql(t, "to_sqlite", dsn, db)
+	assertToSql(t, "to_sqlite", "", nil)
 }
 
 func TestPipeRunner_toMysql(t *testing.T) {
@@ -446,7 +463,6 @@ func TestPipeRunner_toMysql(t *testing.T) {
 	var db *sql.DB
 	var dsn string
 
-	p := New()
 	if utils.DockerStatusOk() {
 		// 用docker来跑mysql进行测试
 		d, err = utils.DockerRun("run", "--rm", "--detach", "--name", "gofofamysqltest", "--env", "MARIADB_ROOT_PASSWORD=my-secret-pw", "--env", "MYSQL_ROOT_PASSWORD=my-secret-pw", "-p", "3306:3306", "mariadb")
@@ -486,16 +502,21 @@ func TestPipeRunner_toMysql(t *testing.T) {
 			time.Sleep(time.Second)
 		}
 
-		d, err = utils.DockerRun("run", "--rm", "mariadb", "mysql", "-h", cip, "-uroot", "-pmy-secret-pw", "-e", "create database aaa; use aaa; CREATE TABLE tbl ( a varchar(255), b varchar(255)); select @@version")
+		d, err = utils.DockerRun("run", "--rm", "mariadb", "mysql", "-h", cip, "-uroot", "-pmy-secret-pw", "-e", "create database aaa; create database bbb; use aaa; CREATE TABLE tbl ( a varchar(255), b varchar(255)); select @@version")
 		assert.Nil(t, err)
 		assert.Contains(t, string(d), "-MariaDB-")
 
-		p.Close()
-		// docker run -it --rm --env MARIADB_ROOT_PASSWORD=my-secret-pw --env MYSQL_ROOT_PASSWORD=my-secret-pw -p 3306:3306 mariadb
-		// docker run -it --rm mariadb mysql -h $(docker inspect $(docker ps | grep mariadb | awk '{print $1}') | jq -r '.[0].NetworkSettings.Networks.bridge.IPAddress') -u root -pmy-secret-pw -e 'create database aaa; use aaa; CREATE TABLE tbl ( a varchar(255), b varchar(255));'
+		// 创建数据表测试
 		dsn = "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa"
 		db, err = sql.Open("mysql", dsn)
 		assert.Nil(t, err)
+		assertToSql(t, "to_mysql", dsn, db)
+
+		// 不创建数据表测试
+		dsn = "root:my-secret-pw@tcp(127.0.0.1:3306)/bbb"
+		db, err = sql.Open("mysql", dsn)
+		assert.Nil(t, err)
+		assertToSql(t, "to_mysql", dsn, db)
 	}
 
 	assertToSql(t, "to_mysql", dsn, db)
@@ -553,17 +574,9 @@ func TestPipeRunner_Run(t *testing.T) {
 			})
 		},
 	}))
-	dbFile, err := utils.WriteTempFile(".sqlite3", nil)
-	assert.Nil(t, err)
-	os.Remove(dbFile)
-	dsn := dbFile + "?cache=shared&_journal_mode=WAL&mode=rwc&_busy_timeout=9999999"
-	db, err := sql.Open("sqlite3", dsn)
-	assert.Nil(t, err)
-	defer os.Remove(dbFile)
-	_, err = db.Exec("CREATE TABLE tbl ( host varchar(255), ip varchar(255), port integer);")
-	assert.Nil(t, err)
+
 	ast = workflowast.NewParser()
-	code = ast.MustParse("fofa(\"title=test\",\"host,ip,port,country\", 1000) & [flat(\"port\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | flat(\"country\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | zq(\"tail 1\") & screenshot(\"host\") & to_excel() | to_sqlite(\"tbl\", \"" + dsn + "\", \"host,ip,port\")]")
+	code = ast.MustParse("fofa(\"title=test\",\"host,ip,port,country\", 1000) & [flat(\"port\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | flat(\"country\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | zq(\"tail 1\") & screenshot(\"host\") & to_excel() | to_sqlite(\"tbl\", \"host,ip,port\")]")
 	_, err = p.Run(code)
 	assert.Nil(t, err)
 

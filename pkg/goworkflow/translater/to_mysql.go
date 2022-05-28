@@ -12,20 +12,21 @@ func toMysqlHook(fi *workflowast.FuncInfo) string {
 	}
 	table := fi.Params[0].RawString()
 
-	dsn := ""
+	field := ""
 	if len(fi.Params) > 1 {
-		dsn = fi.Params[1].RawString()
+		field = fi.Params[1].RawString()
 	}
 
-	field := ""
+	dsn := ""
 	if len(fi.Params) > 2 {
-		field = fi.Params[2].RawString()
+		dsn = fi.Params[2].RawString()
 	}
+
 	return `ToSql(GetRunner(), map[string]interface{}{
 	"driver": "mysql",
 	"table": "` + table + `",
-	"dsn": "` + dsn + `",
 	"fields": "` + field + `",
+	"dsn": "` + dsn + `",
 })`
 }
 

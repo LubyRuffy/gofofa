@@ -130,13 +130,29 @@ func ReadFirstLineOfFile(fn string) ([]byte, error) {
 	return data, nil
 }
 
-// JSONLineFields 获取json行的fields
-func JSONLineFields(line string) (fields []string) {
+// JSONLineFieldsWithType 获取json行的fields，包含属性信息
+func JSONLineFieldsWithType(line string) (fields [][]string) {
 	v := gjson.Parse(line)
 	v.ForEach(func(key, value gjson.Result) bool {
-		fields = append(fields, key.String())
+		typeStr := "text"
+		switch value.Type {
+		case gjson.True, gjson.False:
+			typeStr = "boolean"
+		case gjson.Number:
+			typeStr = "int"
+		}
+		fields = append(fields, []string{key.String(), typeStr})
 		return true
 	})
+	return
+}
+
+// JSONLineFields 获取json行的fields
+func JSONLineFields(line string) (fields []string) {
+	fs := JSONLineFieldsWithType(line)
+	for _, f := range fs {
+		fields = append(fields, f[0])
+	}
 	return
 }
 

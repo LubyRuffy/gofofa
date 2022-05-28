@@ -81,9 +81,10 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
     -   screenshot(url) 网页截图
 -   通过 ```[ cmd1() | cmd2() ]``` 创建分支
     -   分支的数据留是分开的，比如```fofa(`port=80`,`ip,port`) & [ cut(`ip`) | cut(`port`) ]```将会生成两条数据流
--   （未完成）能够追踪执行进度
+-   能够追踪执行进度
     -   日志
     -   单个进度
+    -   （未完成）记录错误
 
 ## 设计原则：
 -   每一个底层函数对于奔溃的错误直接panic就好，由上层统一进行处理；
@@ -103,5 +104,4 @@ Fofa的本质是数据，因此数据的编排是从获取Fofa的数据作为输
 
 -   四个并行：
 ```
-fofa("title=test","host,ip,port,country", 1000) & [flat("port") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | flat("country") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | zq("tail 1") & screenshot("host") & to_excel() | to_mysql("tbl", "", "host,ip,port")]
-```
+fofa("title=test","host,ip,port,country", 1000) & [flat("port") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | flat("country") & sort() & uniq(true) & sort("count") & zq("tail 10") & chart("pie") | zq("tail 1") & screenshot("host") & to_excel() | to_sqlite("tbl", "host,ip,port")]```

@@ -216,11 +216,15 @@ func Start(addr string) error {
 	http.HandleFunc("/file", func(w http.ResponseWriter, r *http.Request) {
 		fn := filepath.Base(r.FormValue("url"))
 		f := filepath.Join(os.TempDir(), fn)
+		needRawFilename := false
 		switch filepath.Ext(fn) {
-		case ".sql", ".xlsx":
-			w.Header().Set("Content-Disposition", "attachment; filename="+fn)
+		case ".sql", ".xlsx", ".sqlite3":
+			needRawFilename = true
 		}
 		if len(r.FormValue("dl")) > 0 {
+			needRawFilename = true
+		}
+		if needRawFilename {
 			w.Header().Set("Content-Disposition", "attachment; filename="+fn)
 		}
 		http.ServeFile(w, r, f)

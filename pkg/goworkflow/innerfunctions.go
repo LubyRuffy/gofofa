@@ -594,6 +594,11 @@ type sqlParam struct {
 	Fields string `json:"fields"` // 写入的列名
 }
 
+func sqliteDSNToFilePath(dsn string) string {
+	fqs := strings.SplitN(dsn, "?", 2)
+	return fqs[0]
+}
+
 // 写入sql数据库
 func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 	var err error
@@ -603,6 +608,7 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("toSql failed: %w", err))
 	}
 
+	// 打开数据库
 	if len(options.DSN) > 0 {
 		switch options.Driver {
 		case "sqlite3":
@@ -621,51 +627,105 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 		if err != nil {
 			panic(fmt.Errorf("toSql failed: %w", err))
 		}
+	} else {
+		switch options.Driver {
+		case "sqlite3":
+			fn, err := utils.WriteTempFile(".sqlite3", nil)
+			if err != nil {
+				panic(fmt.Errorf("toSql failed: %w", err))
+			}
+			options.DSN = fn
+			db, err = sql.Open(options.Driver, options.DSN)
+			if err != nil {
+				panic(fmt.Errorf("toSql failed: %w", err))
+			}
+		}
 	}
 
+	// 获取数据的列
+	line, err := utils.ReadFirstLineOfFile(p.LastFile)
+	if err != nil {
+		panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
+	}
+	fieldsWithType := utils.JSONLineFieldsWithType(string(line))
+	if len(fieldsWithType) == 0 {
+		return &funcResult{}
+	}
+
+	var tableNotExist bool
 	var columns []string
 	if len(options.Fields) == 0 {
 		if db == nil {
-			// 没有配置db
-			var d []byte
-			d, err = utils.ReadFirstLineOfFile(p.LastFile)
-			gjson.ParseBytes(d).ForEach(func(key, value gjson.Result) bool {
-				columns = append(columns, key.String())
-				return true
-			})
+			// 没有配置db，从文件读取
+			for _, key := range fieldsWithType {
+				columns = append(columns, key[0])
+			}
 		} else {
-			// 自动获取一次
+			// 自动从数据库获取一次
 			var rows *sql.Rows
 			rows, err = db.Query(fmt.Sprintf("select * from %s limit 1", options.Table))
 			if err != nil {
-				panic(fmt.Errorf("toSql failed: %w", err))
-			}
+				// 表格不存在的错误提示
+				// sqlite3: no such table: tbl
+				// mysql: 1146 table doesn’t exists
+				if !strings.Contains(err.Error(), "no such table") &&
+					!strings.Contains(err.Error(), "table doesn’t exist") {
+					panic(fmt.Errorf("toSql failed: %w", err))
+				}
+				tableNotExist = true
+			} else {
+				var cols []string
+				cols, err = rows.Columns()
+				if err != nil {
+					panic(fmt.Errorf("toSql failed: %w", err))
+				}
 
-			var cols []string
-			cols, err = rows.Columns()
-			if err != nil {
-				panic(fmt.Errorf("toSql failed: %w", err))
-			}
-
-			d, err := utils.ReadFirstLineOfFile(p.LastFile)
-			if err != nil {
-				panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
-			}
-			fields := utils.JSONLineFields(string(d))
-			if len(fields) == 0 {
-				panic(fmt.Errorf("toSql failed: fields is empty"))
-			}
-
-			for _, col := range cols {
-				for _, field := range fields {
-					if strings.ToLower(col) == strings.ToLower(field) {
-						columns = append(columns, field)
+				for _, col := range cols {
+					for _, field := range fieldsWithType {
+						if strings.ToLower(col) == strings.ToLower(field[0]) {
+							columns = append(columns, field[0])
+						}
 					}
 				}
 			}
 		}
 	} else {
 		columns = strings.Split(options.Fields, ",")
+	}
+
+	// 创建表结构
+	if db != nil {
+		// 还没有取到列，可能是表不存在
+		if columns == nil {
+			for _, f := range fieldsWithType {
+				columns = append(columns, f[0])
+			}
+		}
+		// 创建表结构
+		var sqlColumnDesc []string
+		for _, f := range fieldsWithType {
+			needField := false
+			if tableNotExist {
+				needField = true
+			}
+			for _, col := range columns {
+				// 两边都有，才创建
+				if col == f[0] {
+					needField = true
+					break
+				}
+			}
+			if needField {
+				sqlColumnDesc = append(sqlColumnDesc, fmt.Sprintf("%s %s", f[0], f[1]))
+			}
+		}
+		if db != nil {
+			sqlString := fmt.Sprintf("create table if not exists %s (%s);", options.Table, strings.Join(sqlColumnDesc, ","))
+			_, err = db.Exec(sqlString)
+			if err != nil {
+				panic(fmt.Errorf("create table failed: %w", err))
+			}
+		}
 	}
 
 	if len(columns) == 0 {
@@ -719,13 +779,23 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("toSql failed: %w", err))
 	}
 
-	return &funcResult{
-		Artifacts: []*Artifact{
-			{
-				FilePath: fn,
-				FileType: "text/sql",
-			},
+	artifacts := []*Artifact{
+		{
+			FilePath: fn,
+			FileType: "text/sql",
 		},
+	}
+	switch options.Driver {
+	case "sqlite3":
+		fn = sqliteDSNToFilePath(options.DSN)
+		artifacts = append(artifacts, &Artifact{
+			FilePath: fn,
+			FileType: "application/vnd.sqlite3",
+		})
+	}
+
+	return &funcResult{
+		Artifacts: artifacts,
 	}
 }
 

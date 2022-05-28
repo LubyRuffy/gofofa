@@ -15,8 +15,8 @@ func TestLoad_to_mysql(t *testing.T) {
 		`ToSql(GetRunner(), map[string]interface{}{
 	"driver": "mysql",
 	"table": "tbl",
-	"dsn": "",
 	"fields": "",
+	"dsn": "",
 })
 `,
 		workflowast.NewParser().MustParse(`to_mysql("tbl")`))
@@ -25,20 +25,20 @@ func TestLoad_to_mysql(t *testing.T) {
 		`ToSql(GetRunner(), map[string]interface{}{
 	"driver": "mysql",
 	"table": "tbl1",
-	"dsn": "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa",
 	"fields": "",
+	"dsn": "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql("tbl1", "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa")`))
+		workflowast.NewParser().MustParse(`to_mysql("tbl1", "", "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa")`))
 
 	assert.Equal(t,
 		`ToSql(GetRunner(), map[string]interface{}{
 	"driver": "mysql",
 	"table": "tbl1",
-	"dsn": "",
 	"fields": "a,b,c",
+	"dsn": "",
 })
 `,
-		workflowast.NewParser().MustParse(`to_mysql("tbl1", "", "a,b,c")`))
+		workflowast.NewParser().MustParse(`to_mysql("tbl1", "a,b,c", "")`))
 
 }

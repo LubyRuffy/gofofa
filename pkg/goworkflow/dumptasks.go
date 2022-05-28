@@ -16,9 +16,9 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 		"HasPrefix": func(s, prefix string) bool {
 			return strings.HasPrefix(s, prefix)
 		},
-		"safeURL": func(u string) template.URL {
+		"safeURL": func(u string, t string) template.URL {
 			if server {
-				return template.URL("/file?url=" + filepath.Base(u))
+				return template.URL("/file?url=" + filepath.Base(u) + "&t=" + t)
 			}
 			u = strings.ReplaceAll(u, "\\", "/")
 			return template.URL(u)
@@ -43,7 +43,7 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 	<li>{{ .Name }} ({{ .Content }}) </li>
 
 	{{ if gt (len .Outfile) 0 }}
-	<li><a href="{{ .Outfile | safeURL }}" target="_blank">{{ .Outfile | toFileName }}</a></li>
+	<li><a href="{{ safeURL .Outfile "" }}" target="_blank">{{ .Outfile | toFileName }}</a></li>
 	{{ end }}
 
 	{{ if gt (len .Artifacts) 0 }}
@@ -51,11 +51,11 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 		generate files:
 		{{ range .Artifacts }}
 			<ul>
-				<li><a href="{{ .FilePath | safeURL }}" target="_blank">
+				<li><a href="{{ safeURL .FilePath .FileType  }}" target="_blank">
 					{{ if HasPrefix .FileType "image/" }}
-						<img src="{{ .FilePath | safeURL }}" height="80px">
+						<img src="{{ safeURL .FilePath .FileType }}" height="80px">
 					{{ else if eq .FileType "chart_html"}}
-						show <iframe width="640" height="480" src="{{ .FilePath | safeURL }}" frameBorder="0"></iframe>
+						show <iframe width="640" height="480" src="{{ safeURL .FilePath .FileType }}" frameBorder="0"></iframe>
 					{{ else }}
 						{{ .FilePath | toFileName }}
 					{{ end }}
