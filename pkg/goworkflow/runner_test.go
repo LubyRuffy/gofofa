@@ -3,11 +3,6 @@ package goworkflow
 import (
 	"bytes"
 	"database/sql"
-	"github.com/lubyruffy/gofofa"
-	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
-	"github.com/lubyruffy/gofofa/pkg/utils"
-	"github.com/stretchr/testify/assert"
-	"github.com/xuri/excelize/v2"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +11,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/lubyruffy/gofofa"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
+	"github.com/lubyruffy/gofofa/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/xuri/excelize/v2"
 )
 
 // 返回值表明是错误并且匹配到了错误返回
@@ -242,6 +243,37 @@ func TestLoad_fofa(t *testing.T) {
 	assert.Equal(t, `{"domain":"fofa1.info"}
 `,
 		string(content))
+}
+
+func assertFileContent(t *testing.T, filename string, content string) {
+	data, err := os.ReadFile(filename)
+	assert.Nil(t, err)
+	assert.Equal(t, content, string(data))
+}
+
+func assertPipeRunnerContent(t *testing.T, p *PipeRunner, content string) {
+	assertFileContent(t, p.LastFile, content)
+}
+
+func TestPipeRunner_urlfix(t *testing.T) {
+	var err error
+	var code string
+
+	p := New()
+	code, err = workflowast.NewParser().Parse(`gen("{\"url\":\"1.1.1.1:81\"}") & urlfix()`)
+	assert.Nil(t, err)
+	_, err = p.Run(code)
+	assert.Nil(t, err)
+	assertPipeRunnerContent(t, p, "{\"url\":\"http://1.1.1.1:81\"}\n")
+
+	p = New()
+	_, err = p.Run(workflowast.NewParser().MustParse(`gen("{\"host\":\"1.1.1.1:81\"}") & urlfix("host")`))
+	assert.Nil(t, err)
+	assertPipeRunnerContent(t, p, "{\"host\":\"http://1.1.1.1:81\"}\n")
+
+	p = New()
+	_, err = p.Run(workflowast.NewParser().MustParse(`gen("{\"host\":\"1.1.1.1:81\"}") & urlfix("")`))
+	assert.Error(t, err)
 }
 
 func TestPipeRunner_DumpTasks(t *testing.T) {

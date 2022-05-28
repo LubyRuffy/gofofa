@@ -167,12 +167,15 @@ func (p *PipeRunner) fork(pipe string) error {
 }
 
 // 自动补齐url
-func (p *PipeRunner) urlFix(field string) error {
+func (p *PipeRunner) urlFix(fields ...string) {
 	var fn string
 	var err error
-
+	field := "url"
+	if len(fields) > 0 {
+		field = fields[0]
+	}
 	if len(field) == 0 {
-		return fmt.Errorf("urlFix must has a field")
+		panic(fmt.Errorf("urlFix must has a field"))
 	}
 
 	fn, err = utils.WriteTempFile("", func(f *os.File) error {
@@ -190,7 +193,7 @@ func (p *PipeRunner) urlFix(field string) error {
 		})
 	})
 	if err != nil {
-		return err
+		panic(fmt.Errorf("urlFix failed: %w", err))
 	}
 
 	pt := &PipeTask{
@@ -199,7 +202,6 @@ func (p *PipeRunner) urlFix(field string) error {
 		Outfile: fn,
 	}
 	p.AddWorkflow(pt)
-	return err
 }
 
 // New create pipe runner
