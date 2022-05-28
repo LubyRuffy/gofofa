@@ -13,7 +13,7 @@ type GoFunction struct {
 }
 
 // Range 遍历用户自定义的函数
-func (u *GoFunction) Range(f func(key, value any) bool) {
+func (u *GoFunction) Range(f func(key, value interface{}) bool) {
 	u.functions.Range(f)
 }
 

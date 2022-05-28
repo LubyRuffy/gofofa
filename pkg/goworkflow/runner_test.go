@@ -146,7 +146,10 @@ func TestNew(t *testing.T) {
 	}))
 	defer ts.Close()
 
+	// 截图正确
 	assert.Contains(t, assertPipeCmd(t, `gen("{\"host\":\"`+ts.URL+`\"}") & screenshot("host")`, ``), "screenshot_filepath")
+	// 截图异常
+	assert.NotContains(t, assertPipeCmd(t, `gen("{\"host\":\"http://127.0.0.1:55\"}") & screenshot("host")`, ``), "screenshot_filepath")
 
 	assertPipeCmdByTestRunner(t, `sort("a")`, `{"a":2}
 {"a":1}`, `{"a":1}
@@ -291,10 +294,24 @@ func TestPipeRunner_DumpTasks(t *testing.T) {
 	assert.Equal(t, "yes", out.String())
 
 	p := New()
-	_, err = p.Run(workflowast.NewParser().MustParse(`load("../../data/forktest.json") | [cut("a")&cut("b")]`))
+	_, err = p.Run(workflowast.NewParser().MustParse(`gen("{\"a\":\"1\",\"b\":2}") & [cut("a") | cut("b")]`))
 	assert.Nil(t, err)
 	c := p.DumpTasks(false)
 	assert.Contains(t, c, "fork")
+
+	// 截图
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world"))
+	}))
+	defer ts.Close()
+
+	p.Close()
+	_, err = p.Run(workflowast.NewParser().MustParse(`gen("{\"host\":\"` + ts.URL + `\"}") & screenshot("host")`))
+	assert.Nil(t, err)
+	assert.Equal(t, "image/png", p.LastTask.Artifacts[0].FileType)
+	c = p.DumpTasks(true)
+	assert.Contains(t, c, "<img")
+
 }
 
 func TestPipeRunner_Close(t *testing.T) {
@@ -332,13 +349,13 @@ func TestPipeRunner_toExcel(t *testing.T) {
 func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 
 	p := New()
-	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl")`)
+	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":true}") & ` + workFlowName + `("tbl")`)
 	_, err := p.Run(code)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(p.LastTask.Artifacts))
 	d, err := os.ReadFile(p.LastTask.Artifacts[0].FilePath)
 	assert.Nil(t, err)
-	assert.Equal(t, `INSERT INTO tbl (a,b,c) VALUES (1,"2","3")
+	assert.Equal(t, `INSERT INTO tbl (a,b,c) VALUES (1,"2",true)
 `, string(d))
 
 	// 分叉测试
@@ -416,14 +433,23 @@ func TestPipeRunner_toMysql(t *testing.T) {
 	p := New()
 	if utils.DockerStatusOk() {
 		// 用docker来跑mysql进行测试
-		_, err = utils.DockerRun("run", "--rm", "--detach", "--name", "gofofamysqltest", "--env", "MARIADB_ROOT_PASSWORD=my-secret-pw", "-p", "3306:3306", "mariadb")
+		d, err = utils.DockerRun("run", "--rm", "--detach", "--name", "gofofamysqltest", "--env", "MARIADB_ROOT_PASSWORD=my-secret-pw", "--env", "MYSQL_ROOT_PASSWORD=my-secret-pw", "-p", "3306:3306", "mariadb")
 		assert.Nil(t, err)
+		assert.Regexp(t, "^[0-9a-f]{64}\n$", string(d))
 		defer func() {
 			_, err = utils.DockerRun("stop", "gofofamysqltest")
 			assert.Nil(t, err)
 		}()
 
-		time.Sleep(time.Second)
+		// 等待mariadb下载完成
+		s := time.Now()
+		for time.Since(s) < time.Minute {
+			d, err = utils.RunCmdNoExitError(utils.DockerRun("images"))
+			if err == nil && strings.Contains(string(d), "mariadb") {
+				break
+			}
+			time.Sleep(time.Second)
+		}
 
 		// 取IP
 		d, err = utils.DockerRun("inspect", "gofofamysqltest")
@@ -449,7 +475,7 @@ func TestPipeRunner_toMysql(t *testing.T) {
 		assert.Contains(t, string(d), "-MariaDB-")
 
 		p.Close()
-		// docker run -it --rm --env MARIADB_ROOT_PASSWORD=my-secret-pw -p 3306:3306 mariadb
+		// docker run -it --rm --env MARIADB_ROOT_PASSWORD=my-secret-pw --env MYSQL_ROOT_PASSWORD=my-secret-pw -p 3306:3306 mariadb
 		// docker run -it --rm mariadb mysql -h $(docker inspect $(docker ps | grep mariadb | awk '{print $1}') | jq -r '.[0].NetworkSettings.Networks.bridge.IPAddress') -u root -pmy-secret-pw -e 'create database aaa; use aaa; CREATE TABLE tbl ( a varchar(255), b varchar(255));'
 		dsn = "root:my-secret-pw@tcp(127.0.0.1:3306)/aaa"
 		db, err = sql.Open("mysql", dsn)

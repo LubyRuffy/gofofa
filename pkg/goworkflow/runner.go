@@ -87,6 +87,7 @@ func (p *PipeRunner) Close() {
 	for _, task := range p.Tasks {
 		task.Close()
 	}
+	p.Tasks = nil
 }
 
 // GetWorkflows all workflows

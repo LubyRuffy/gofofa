@@ -4,20 +4,22 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/tidwall/gjson"
+	"golang.org/x/net/context"
 	"hash/fnv"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 )
 
 var (
-	defaultPipeTmpFilePrefix = "gofofa_pipeline_"
-	lastCheckDockerTime      time.Time // 最后检查docker路径的时间
-	dockerPath               = "docker"
+	defaultPipeTmpFilePrefix   = "gofofa_pipeline_"
+	lastCheckDockerTime        time.Time // 最后检查docker路径的时间
+	defaultDockerPath          = "docker"
+	defaultCheckDockerDuration = 5 * time.Minute
+	globalDockerOK             = false
 )
 
 func read(r *bufio.Reader) ([]byte, error) {
@@ -161,69 +163,81 @@ func LoadFirstExistsFile(paths []string) string {
 	return ""
 }
 
-// GetCurrentProcessFileDir 获得当前程序所在的目录
-func GetCurrentProcessFileDir() string {
-	return filepath.Dir(os.Args[0])
-}
-
-// UserHomeDir 获得当前用户的主目录
-func UserHomeDir() string {
-	if runtime.GOOS == "windows" {
-		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
-		if home == "" {
-			home = os.Getenv("USERPROFILE")
-		}
-		return home
-	}
-	return os.Getenv("HOME")
-}
+//// GetCurrentProcessFileDir 获得当前程序所在的目录
+//func GetCurrentProcessFileDir() string {
+//	return filepath.Dir(os.Args[0])
+//}
+//
+//// UserHomeDir 获得当前用户的主目录
+//func UserHomeDir() string {
+//	if runtime.GOOS == "windows" {
+//		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+//		if home == "" {
+//			home = os.Getenv("USERPROFILE")
+//		}
+//		return home
+//	}
+//	return os.Getenv("HOME")
+//}
 
 // ExecCmdWithTimeout 在时间范围内执行系统命令，并且将输出返回（stdout和stderr）
 func ExecCmdWithTimeout(timeout time.Duration, arg ...string) (b []byte, err error) {
-	defer func() {
-		if x := recover(); x != nil {
-			err = fmt.Errorf("[WARNING] ExecCmdWithTimeout failed: %v", x)
-		}
-	}()
+	// Create a new context and add a timeout to it
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel() // The cancel should be deferred so resources are cleaned up
 
-	routeCmd := exec.Command(arg[0], arg[1:]...)
-
-	var timer *time.Timer
-	timer = time.AfterFunc(timeout, func() {
-		timer.Stop()
-		if routeCmd.Process != nil {
-			routeCmd.Process.Kill()
-		}
-	})
+	routeCmd := exec.CommandContext(ctx, arg[0], arg[1:]...)
 
 	return routeCmd.CombinedOutput()
 }
 
+// RunCmdNoExitError 将exec.ExitError不作为错误，通常配合exec.Command使用
+func RunCmdNoExitError(d []byte, err error) ([]byte, error) {
+	if err != nil {
+		if _, ok := err.(*exec.ExitError); ok {
+			err = nil
+		}
+	}
+	return d, err
+}
+
 // DockerRun 运行docker，解决Windows找不到的问题
+// 注意：exec.ExitError 错误会被忽略，我们只关心所有的字符串返回，不关注进程的错误代码
 func DockerRun(args ...string) ([]byte, error) {
 	// 缓存5分钟
-	if time.Now().Sub(lastCheckDockerTime) > 5*time.Minute {
-		return exec.Command(dockerPath, args...).CombinedOutput()
-	}
-
-	dockerPath = "docker"
-	d, err := exec.Command(dockerPath, "version").CombinedOutput()
-	if err != nil {
-		// 可能路径不在PATH环境变量，需要自己找
-		// https://docs.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
-		dockerPath := LoadFirstExistsFile([]string{
-			"docker.exe",
-			filepath.Join(os.Getenv("PROGRAMFILES"), "Docker", "Docker", "resources", "bin", "docker.exe"),
-			filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Docker", "Docker", "resources", "bin", "docker.exe"),
-		})
-		if len(dockerPath) > 0 {
-			dockerPath = dockerPath
+	if time.Now().Sub(lastCheckDockerTime) < defaultCheckDockerDuration {
+		if globalDockerOK {
+			return RunCmdNoExitError(exec.Command(defaultDockerPath, args...).CombinedOutput())
+		} else {
+			return nil, fmt.Errorf("docker status is not ok")
 		}
-		d, err = exec.Command(dockerPath, "version").CombinedOutput()
+	}
+	lastCheckDockerTime = time.Now()
+
+	d, err := RunCmdNoExitError(exec.Command(defaultDockerPath, "version").CombinedOutput())
+	if err != nil {
+		if _, ok := err.(*exec.ExitError); ok {
+			err = nil
+		} else {
+			// 可能路径不在PATH环境变量，需要自己找，主要是windows
+			// https://docs.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
+			defaultDockerPath = LoadFirstExistsFile([]string{
+				"docker.exe",
+				filepath.Join(os.Getenv("PROGRAMFILES"), "Docker", "Docker", "resources", "bin", "docker.exe"),
+				filepath.Join(os.Getenv("PROGRAMFILES(X86)"), "Docker", "Docker", "resources", "bin", "docker.exe"),
+			})
+			if len(defaultDockerPath) == 0 {
+				return nil, fmt.Errorf("could not find docker")
+			}
+			d, err = RunCmdNoExitError(exec.Command(defaultDockerPath, "version").CombinedOutput())
+		}
 	}
 	if err == nil {
 		if strings.Contains(string(d), "API version") {
-			return exec.Command(dockerPath, args...).CombinedOutput()
+			globalDockerOK = true
+			return RunCmdNoExitError(exec.Command(defaultDockerPath, args...).CombinedOutput())
+		} else {
+			err = fmt.Errorf("docker is invalid")
 		}
 	}
 
@@ -237,8 +251,8 @@ func DockerStatusOk() bool {
 }
 
 // SimpleHash hashes using fnv32a algorithm
-func SimpleHash(text string) uint32 {
+func SimpleHash(text string) string {
 	algorithm := fnv.New32a()
 	algorithm.Write([]byte(text))
-	return algorithm.Sum32()
+	return fmt.Sprintf("0x%08x", algorithm.Sum32())
 }

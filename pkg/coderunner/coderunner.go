@@ -27,7 +27,7 @@ func (p *Runner) Run(code string) (reflect.Value, error) {
 	}
 
 	if p.functions != nil {
-		p.functions.Range(func(key, value any) bool {
+		p.functions.Range(func(key, value interface{}) bool {
 			exports["this/this"][key.(string)] = reflect.ValueOf(value)
 			return true
 		})
