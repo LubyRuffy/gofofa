@@ -44,12 +44,13 @@ type Hooks struct {
 
 // PipeRunner pipe运行器
 type PipeRunner struct {
-	content  string
-	hooks    *Hooks         // 消息通知
-	Tasks    []*PipeTask    // 执行的所有workflow
-	LastTask *PipeTask      // 最后执行的workflow
-	LastFile string         // 最后生成的文件名
-	FofaCli  *gofofa.Client // fofa客户端
+	gf       *coderunner.GoFunction // 函数注册
+	content  string                 // 运行的内容
+	hooks    *Hooks                 // 消息通知
+	Tasks    []*PipeTask            // 执行的所有workflow
+	LastTask *PipeTask              // 最后执行的workflow
+	LastFile string                 // 最后生成的文件名
+	FofaCli  *gofofa.Client         // fofa客户端
 	logger   *logrus.Logger
 	children []*PipeRunner
 	Parent   *PipeRunner
@@ -76,6 +77,7 @@ func (p *PipeRunner) Warnf(format string, args ...interface{}) {
 
 // Run go code, not workflow
 func (p *PipeRunner) Run(code string) (reflect.Value, error) {
+	p.content = code
 	return p.gocodeRunner.Run(code)
 }
 
@@ -153,6 +155,13 @@ func WithParent(parent *PipeRunner) RunnerOption {
 	}
 }
 
+// WithUserFunction Function to register
+func WithUserFunction(funcs ...[]interface{}) RunnerOption {
+	return func(r *PipeRunner) {
+		r.registerFunctions(funcs...)
+	}
+}
+
 // 核心函数
 func (p *PipeRunner) fork(pipe string) error {
 	forkRunner := New(WithHooks(p.hooks), WithParent(p))
@@ -205,44 +214,11 @@ func (p *PipeRunner) urlFix(fields ...string) {
 	p.AddWorkflow(pt)
 }
 
-// New create pipe runner
-func New(options ...RunnerOption) *PipeRunner {
-	r := &PipeRunner{
-		logger: logrus.New(),
-	}
-	var err error
-
-	// 注册底层函数
-	var gf coderunner.GoFunction
-	err = gf.Register("GetRunner", func() *PipeRunner {
-		return r
-	})
-	if err != nil {
-		panic(err)
-	}
-	err = gf.Register("Fork", r.fork)
-	err = gf.Register("urlfix", r.urlFix)
-	if err != nil {
-		panic(err)
-	}
-
-	funcs := [][]interface{}{
-		{"RemoveField", removeField},
-		{"FetchFofa", fetchFofa},
-		{"GenerateChart", generateChart},
-		{"ZqQuery", zqQuery},
-		{"AddField", addField},
-		{"LoadFile", loadFile},
-		{"FlatArray", flatArray},
-		{"Screenshot", screenShot},
-		{"ToExcel", toExcel},
-		{"ToSql", toSql},
-		{"GenData", genData},
-	}
+func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
 		funcBody := funcs[i][1].(func(*PipeRunner, map[string]interface{}) *funcResult)
-		gf.Register(funcName, func(p *PipeRunner, params map[string]interface{}) {
+		p.gf.Register(funcName, func(p *PipeRunner, params map[string]interface{}) {
 			logrus.Debug(funcName+" params:", params)
 
 			s := time.Now()
@@ -273,12 +249,50 @@ func New(options ...RunnerOption) *PipeRunner {
 			}
 		})
 	}
+}
+
+// New create pipe runner
+func New(options ...RunnerOption) *PipeRunner {
+	r := &PipeRunner{
+		logger: logrus.New(),
+		gf:     &coderunner.GoFunction{},
+	}
+	var err error
+
+	// 注册底层函数
+	err = r.gf.Register("GetRunner", func() *PipeRunner {
+		return r
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = r.gf.Register("Fork", r.fork)
+	err = r.gf.Register("urlfix", r.urlFix)
+	if err != nil {
+		panic(err)
+	}
+
+	innerFuncs := [][]interface{}{
+		{"RemoveField", removeField},
+		{"FetchFofa", fetchFofa},
+		{"GenerateChart", generateChart},
+		{"ZqQuery", zqQuery},
+		{"AddField", addField},
+		{"LoadFile", loadFile},
+		{"FlatArray", flatArray},
+		{"Screenshot", screenShot},
+		{"ToExcel", toExcel},
+		{"ToSql", toSql},
+		{"GenData", genData},
+	}
+	r.registerFunctions(innerFuncs...)
 
 	logrus.Debug("ast support workflows:", translater.Translators)
 
-	r.gocodeRunner = coderunner.New(coderunner.WithFunctions(&gf))
+	r.gocodeRunner = coderunner.New(coderunner.WithFunctions(r.gf))
 	for _, opt := range options {
 		opt(r)
 	}
+
 	return r
 }

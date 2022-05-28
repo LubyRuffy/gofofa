@@ -602,6 +602,19 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 	}
 
 	if len(options.DSN) > 0 {
+		switch options.Driver {
+		case "sqlite3":
+			// 文件名进行替换，只能写在临时目录吗？？？
+			fqs := strings.SplitN(options.DSN, "?", 2)
+			dir := filepath.Dir(fqs[0])
+			if dir != os.TempDir() {
+				if len(fqs) > 1 {
+					options.DSN = filepath.Join(os.TempDir(), filepath.Base(fqs[0])) + "?" + fqs[1]
+				} else {
+					options.DSN = filepath.Join(os.TempDir(), filepath.Base(options.DSN))
+				}
+			}
+		}
 		db, err = sql.Open(options.Driver, options.DSN)
 		if err != nil {
 			panic(fmt.Errorf("toSql failed: %w", err))

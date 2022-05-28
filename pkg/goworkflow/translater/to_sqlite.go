@@ -16,7 +16,16 @@ func toSqilteHook(fi *workflowast.FuncInfo) string {
 	dsn := ""
 	if len(fi.Params) > 1 {
 		dsn = fi.Params[1].RawString()
-		dsn = strings.ReplaceAll(dsn, "\\", "/") // windows文件
+		fqs := strings.SplitN(fi.Params[1].RawString(), "?", 2)
+		if len(fqs[0]) == 0 {
+			dsn = ""
+		}
+		//if len(fqs[0]) > 0 {
+		//	dsn = filepath.Base(fqs[0]) // 只取文件名
+		//	if len(fqs) > 1 {
+		//		dsn += "?" + fqs[1]
+		//	}
+		//}
 	}
 
 	field := ""

@@ -3,6 +3,10 @@ package goworkflow
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/mitchellh/mapstructure"
+	"github.com/tidwall/sjson"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -497,6 +501,32 @@ func TestPipeRunner_toMysql(t *testing.T) {
 	assertToSql(t, "to_mysql", dsn, db)
 }
 
+func genFofaFieldData(fieldStr string, size int) string {
+	var res string
+	fields := strings.Split(fieldStr, ",")
+	for i := 0; i < size; i++ {
+		v := `{}`
+		for _, f := range fields {
+			var value interface{}
+			switch f {
+			case "host":
+				value = gofakeit.FirstName() + "." + gofakeit.DomainName()
+			case "domain":
+				value = gofakeit.DomainName()
+			case "ip":
+				value = gofakeit.IPv4Address()
+			case "port":
+				value = gofakeit.IntRange(21, 65534)
+			case "country":
+				value = gofakeit.CountryAbr()
+			}
+			v, _ = sjson.Set(v, f, value)
+		}
+		res += v + "\n"
+	}
+	return res
+}
+
 func TestPipeRunner_Run(t *testing.T) {
 	// callid测试
 	p := New()
@@ -510,14 +540,36 @@ func TestPipeRunner_Run(t *testing.T) {
 		assert.Equal(t, ast.CallList[i].UUID, p.Tasks[i].CallID)
 	}
 
-	//p = New()
-	//ast = workflowast.NewParser()
-	//code = ast.MustParse("fofa(\"title=test\",\"host,ip,port,country\", 1000) & [flat(\"port\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | flat(\"country\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | zq(\"tail 1\") & screenshot(\"host\") & to_excel() | to_mysql(\"tbl\", \"host,ip,port\")]")
-	//_, err = p.Run(code)
-	//assert.Nil(t, err)
-	//assert.Equal(t, 5, len(ast.CallList))
-	//assert.Equal(t, 5, len(p.Tasks))
-	//for i := range ast.CallList {
-	//	assert.Equal(t, ast.CallList[i].UUID, p.Tasks[i].CallID)
-	//}
+	p = New(WithUserFunction([]interface{}{
+		"FetchFofa", func(p *PipeRunner, params map[string]interface{}) *funcResult {
+			var err error
+			var options fetchFofaParams
+			if err = mapstructure.Decode(params, &options); err != nil {
+				panic(fmt.Errorf("fetchFofa failed: %w", err))
+			}
+
+			return genData(p, map[string]interface{}{
+				"data": genFofaFieldData(options.Fields, options.Size),
+			})
+		},
+	}))
+	dbFile, err := utils.WriteTempFile(".sqlite3", nil)
+	assert.Nil(t, err)
+	os.Remove(dbFile)
+	dsn := dbFile + "?cache=shared&_journal_mode=WAL&mode=rwc&_busy_timeout=9999999"
+	db, err := sql.Open("sqlite3", dsn)
+	assert.Nil(t, err)
+	defer os.Remove(dbFile)
+	_, err = db.Exec("CREATE TABLE tbl ( host varchar(255), ip varchar(255), port integer);")
+	assert.Nil(t, err)
+	ast = workflowast.NewParser()
+	code = ast.MustParse("fofa(\"title=test\",\"host,ip,port,country\", 1000) & [flat(\"port\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | flat(\"country\") & sort() & uniq(true) & sort(\"count\") & zq(\"tail 10\") & chart(\"pie\") | zq(\"tail 1\") & screenshot(\"host\") & to_excel() | to_sqlite(\"tbl\", \"" + dsn + "\", \"host,ip,port\")]")
+	_, err = p.Run(code)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 17, len(ast.CallList))
+	assert.Equal(t, 17, len(p.Tasks))
+	for i := range ast.CallList {
+		assert.Equal(t, ast.CallList[i].UUID, p.Tasks[i].CallID)
+	}
 }
