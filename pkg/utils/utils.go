@@ -246,8 +246,11 @@ func DockerRun(args ...string) ([]byte, error) {
 
 // DockerStatusOk 检查是否安装
 func DockerStatusOk() bool {
-	_, err := DockerRun("version")
-	return err == nil
+	data, err := DockerRun("images")
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), "REPOSITORY")
 }
 
 // SimpleHash hashes using fnv32a algorithm

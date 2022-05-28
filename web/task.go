@@ -12,12 +12,15 @@ var (
 )
 
 type taskInfo struct {
-	monitor *taskMonitor
-	taskId  string
-	msgCh   chan string
-	started time.Time
-	ended   time.Time
-	html    string
+	monitor        *taskMonitor
+	taskId         string
+	code           string // 运行的代码
+	msgCh          chan string
+	started        time.Time
+	ended          time.Time
+	html           string
+	callIDFinished int // 已经完成最后的callID
+	callIDRunning  int // 当前运行的callID
 }
 
 func (t *taskInfo) finish() {
@@ -57,10 +60,11 @@ func (t *taskMonitor) del(taskId string) {
 	t.m.Delete(taskId)
 }
 
-func (t *taskMonitor) new() *taskInfo {
+func (t *taskMonitor) new(code string) *taskInfo {
 	tid := uuid.New().String()
 	ti := &taskInfo{
 		taskId:  tid,
+		code:    code,
 		msgCh:   make(chan string, 1000),
 		started: time.Now(),
 		monitor: t,

@@ -22,32 +22,32 @@
         input[type=button] {font-size: 17px;font-family: 'Source Sans Pro', sans-serif;border:none;border-radius:5px;display:inline-block;padding:6px 18px;vertical-align:middle;overflow:hidden;text-decoration:none;color:inherit;;text-align:center;cursor:pointer;white-space:nowrap;-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;background-color:#04AA6D;color:#ffffff}
 
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+<!--    <link rel="stylesheet" href="/public/assets/libs//highlight.js/default.min.css">-->
 </head>
 <body>
 <div style="width:100%">workflow:
     <input id="workflow" type="text" size="80" cols="5" value="fofa(`title=test`) & to_int(`port`) & sort(`port`) & [cut(`port`) | cut(`ip`)]"/>
     <input type="button" value="run" onclick="run()"/>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/9.1.1/mermaid.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+<script src="/public/assets/libs/mermaid/mermaid.min.js"></script>
+<!--<script src="/public/assets/libs/highlight.js/highlight.min.js"></script>-->
 
 <div class="mermaid" id="mermaid">
 {{ . }}
 </div>
 
-<div style="width:100%;display:block">
-    <div style="float: left; width: 50%">
-        <div id="output" class="language-mermaid"></div>
-        <pre><code id="raw"></code></pre>
-    </div>
-    <div style="float: right; width: 50%">
-        <pre><code id="realCode" class="language-golang"></code></pre>
-        <div id="calls"></div>
-    </div>
-</div>
-<!--<div id="output">-->
+<!--<div style="width:100%;display:block">-->
+<!--    <div style="float: left; width: 50%">-->
+<!--        <div id="output" class="language-mermaid"></div>-->
+<!--        <pre><code id="raw"></code></pre>-->
+<!--    </div>-->
+<!--    <div style="float: right; width: 50%">-->
+<!--        <pre><code id="realCode" class="language-golang"></code></pre>-->
+<!--        <div id="calls"></div>-->
+<!--    </div>-->
 <!--</div>-->
+<div id="output">
+</div>
 <!--<pre style="display: none"><code id="raw"></code></pre>-->
 
 <div style="width:100%;display:block;clear:both" id="message">
@@ -77,6 +77,16 @@
                 if (jsonData.result.html.length >0) {
                     document.getElementById("report").innerHTML = jsonData.result.html;
                 }
+
+
+                if (jsonData.result.graphCode.length >0) {
+                    // document.querySelector('#raw').innerHTML = jsonData.result.graphCode;
+                    mermaid.render("mermaid", jsonData.result.graphCode, (res) => {
+                        document.querySelector('#output').innerHTML = res;
+                    });
+                    // hljs.highlightAll();
+                }
+
                 if (!finished) {
                     setTimeout(() => {
                         readTask(taskId)
@@ -112,14 +122,14 @@
             body: document.getElementById("workflow").value.trim()
         }).then(response => response.json())
             .then(jsonData => {
-                console.log(jsonData);
-                document.querySelector('#raw').innerHTML = jsonData.result.graphCode;
-                document.querySelector('#calls').innerHTML = jsonData.result.calls;
-                document.querySelector('#realCode').innerHTML = jsonData.result.realCode;
+                // console.log(jsonData);
+                // document.querySelector('#raw').innerHTML = jsonData.result.graphCode;
+                // document.querySelector('#calls').innerHTML = jsonData.result.calls;
+                // document.querySelector('#realCode').innerHTML = jsonData.result.realCode;
                 mermaid.render("mermaid", jsonData.result.graphCode, (res) => {
                     document.querySelector('#output').innerHTML = res;
                 });
-                hljs.highlightAll();
+                // hljs.highlightAll();
             })
             .catch(err => {
                 console.log(err);

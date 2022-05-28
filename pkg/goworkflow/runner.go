@@ -39,6 +39,7 @@ func (p *PipeTask) Close() {
 // Hooks 消息通知
 type Hooks struct {
 	OnWorkflowFinished func(pt *PipeTask)                                           // 一个workflow完成时的处理
+	OnWorkflowStart    func(funcName string, callID int)                            // 一个workflow完成时的处理
 	OnLog              func(level logrus.Level, format string, args ...interface{}) // 日志通知
 }
 
@@ -221,9 +222,6 @@ func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 		p.gf.Register(funcName, func(p *PipeRunner, params map[string]interface{}) {
 			logrus.Debug(funcName+" params:", params)
 
-			s := time.Now()
-			result := funcBody(p, params)
-
 			callID := 1
 			node := p
 			for {
@@ -233,6 +231,14 @@ func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 				}
 				node = node.Parent
 			}
+
+			if p.hooks != nil {
+				p.hooks.OnWorkflowStart(funcName, callID)
+			}
+
+			s := time.Now()
+			result := funcBody(p, params)
+
 			pt := &PipeTask{
 				Name:      funcName,
 				Content:   fmt.Sprintf("%v", params),

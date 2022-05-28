@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -27,6 +28,30 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, "")
 }
 
+func genMermaidCode(ast *workflowast.Parser, code string) (s string, err error) {
+	// 输入源
+	sourceWorkflow := []string{
+		"load", "fofa",
+	}
+	// 终止
+	finishWorkflow := []string{
+		"chart", "to_excel",
+	}
+	return ast.ParseToGraph(string(code), func(name string, callId int, s string) string {
+		for _, src := range sourceWorkflow {
+			if src == name {
+				return `F` + strconv.Itoa(callId) + `[("` + s + `")]`
+			}
+		}
+		for _, src := range finishWorkflow {
+			if src == name {
+				return `F` + strconv.Itoa(callId) + `[["` + s + `"]]`
+			}
+		}
+		return `F` + strconv.Itoa(callId) + `["` + s + `"]`
+	}, "graph LR\n")
+}
+
 func parse(w http.ResponseWriter, r *http.Request) {
 	// fofa(`title=test`) & to_int(`port`) & sort(`port`) & [cut(`port`) | cut("ip")]
 	w.Header().Set("Content-Type", "application/json")
@@ -38,15 +63,6 @@ func parse(w http.ResponseWriter, r *http.Request) {
 			"result": fmt.Sprintf("workflow parsed err: %v", err),
 		})
 		return
-	}
-
-	// 输入源
-	sourceWorkflow := []string{
-		"load", "fofa",
-	}
-	// 终止
-	finishWorkflow := []string{
-		"chart", "to_excel",
 	}
 
 	ast := workflowast.NewParser()
@@ -63,19 +79,7 @@ func parse(w http.ResponseWriter, r *http.Request) {
 		calls = append(calls, fi.Name)
 	}
 
-	graphCode, err := ast.ParseToGraph(string(code), func(name, s string) string {
-		for _, src := range sourceWorkflow {
-			if src == name {
-				return `[("` + s + `")]`
-			}
-		}
-		for _, src := range finishWorkflow {
-			if src == name {
-				return `[["` + s + `"]]`
-			}
-		}
-		return `["` + s + `"]`
-	}, "graph LR\n")
+	graphCode, err := genMermaidCode(ast, string(code))
 	if err != nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":  true,
@@ -107,17 +111,27 @@ func run(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tm := globalTaskMonitor.new()
-	go func() {
-		var code string
-		ast := workflowast.NewParser()
-		code, err = ast.Parse(string(workflow))
-		if err != nil {
-			tm.addMsg("run err: " + err.Error())
-		}
+	var code string
+	ast := workflowast.NewParser()
+	code, err = ast.Parse(string(workflow))
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  true,
+			"result": fmt.Sprintf("workflow parsed err: %v", err),
+		})
+		return
+	}
 
+	tm := globalTaskMonitor.new(string(workflow))
+
+	go func() {
 		p := goworkflow.New(goworkflow.WithHooks(&goworkflow.Hooks{
+			OnWorkflowStart: func(funcName string, callID int) {
+				tm.callIDRunning = callID
+				tm.addMsg(fmt.Sprintf("workflow start: %s, %d", funcName, callID))
+			},
 			OnWorkflowFinished: func(pt *goworkflow.PipeTask) {
+				tm.callIDFinished = pt.CallID
 				tm.addMsg(fmt.Sprintf("workflow finished: %s, %d", pt.Name, pt.CallID))
 			},
 			OnLog: func(level logrus.Level, format string, args ...interface{}) {
@@ -165,11 +179,29 @@ func fetchMsg(w http.ResponseWriter, r *http.Request) {
 		msgs = append(msgs, info)
 	}
 
+	ast := workflowast.NewParser()
+	graphCode, err := genMermaidCode(ast, task.code)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  true,
+			"result": fmt.Sprintf("workflow parsed err: %v", err),
+		})
+		return
+	}
+
+	if task.callIDRunning > 0 {
+		graphCode += fmt.Sprintf("\nstyle F%d fill:#57d3e3", task.callIDRunning)
+	}
+	for i := 1; i <= task.callIDFinished; i++ {
+		graphCode += fmt.Sprintf("\nstyle F%d fill:#65d9ae", i)
+	}
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"error": false,
 		"result": map[string]interface{}{
-			"msgs": msgs,
-			"html": task.html,
+			"msgs":      msgs,
+			"html":      task.html,
+			"graphCode": graphCode,
 		},
 	})
 }

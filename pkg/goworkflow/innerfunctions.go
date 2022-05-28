@@ -163,6 +163,7 @@ func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
 		chart.SetGlobalOptions(
 			charts.WithTitleOpts(opts.Title{Title: options.Title, Left: "center"}),
 			charts.WithTooltipOpts(opts.Tooltip{Show: true}),
+			charts.WithInitializationOpts(opts.Initialization{AssetsHost: "/public/assets/libs/echarts/"}),
 		)
 		chart.AddSeries("data", barItems)
 		chartRender = chart
@@ -171,6 +172,7 @@ func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
 		chart.SetGlobalOptions(
 			charts.WithTitleOpts(opts.Title{Title: options.Title, Left: "center"}),
 			charts.WithTooltipOpts(opts.Tooltip{Show: true}),
+			charts.WithInitializationOpts(opts.Initialization{AssetsHost: "/public/assets/libs/echarts/"}),
 		)
 		chart.AddSeries("data", pieItems)
 		chartRender = chart
