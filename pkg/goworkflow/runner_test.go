@@ -447,7 +447,7 @@ func TestPipeRunner_toMysql(t *testing.T) {
 		// 用docker来跑mysql进行测试
 		d, err = utils.DockerRun("run", "--rm", "--detach", "--name", "gofofamysqltest", "--env", "MARIADB_ROOT_PASSWORD=my-secret-pw", "--env", "MYSQL_ROOT_PASSWORD=my-secret-pw", "-p", "3306:3306", "mariadb")
 		assert.Nil(t, err)
-		assert.Regexp(t, "^[0-9a-f]{64}\n$", string(d))
+		assert.Regexp(t, "^[0-9a-f]{64}", string(d))
 		defer func() {
 			_, err = utils.DockerRun("stop", "gofofamysqltest")
 			assert.Nil(t, err)
