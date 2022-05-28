@@ -10,6 +10,7 @@ func TestLoad_screenshot(t *testing.T) {
 	assert.Equal(t,
 		`Screenshot(GetRunner(), map[string]interface{}{
 	"urlField": "host",
+	"saveField": "screenshot_filepath",
 	"timeout": 30,
 	"quality": 80,
 })
@@ -19,6 +20,7 @@ func TestLoad_screenshot(t *testing.T) {
 	assert.Equal(t,
 		`Screenshot(GetRunner(), map[string]interface{}{
 	"urlField": "url",
+	"saveField": "screenshot_filepath",
 	"timeout": 30,
 	"quality": 80,
 })
@@ -28,10 +30,31 @@ func TestLoad_screenshot(t *testing.T) {
 	assert.Equal(t,
 		`Screenshot(GetRunner(), map[string]interface{}{
 	"urlField": "url",
+	"saveField": "screenshot_filepath",
 	"timeout": 30,
 	"quality": 80,
 })
 `,
 		workflowast.NewParser().MustParse(`screenshot("")`))
+
+	assert.Equal(t,
+		`Screenshot(GetRunner(), map[string]interface{}{
+	"urlField": "host",
+	"saveField": "sc_filepath",
+	"timeout": 30,
+	"quality": 80,
+})
+`,
+		workflowast.NewParser().MustParse(`screenshot("host", "sc_filepath")`))
+
+	assert.Equal(t,
+		`Screenshot(GetRunner(), map[string]interface{}{
+	"urlField": "host",
+	"saveField": "sc_filepath",
+	"timeout": 1,
+	"quality": 80,
+})
+`,
+		workflowast.NewParser().MustParse(`screenshot("host", "sc_filepath", 1)`))
 
 }

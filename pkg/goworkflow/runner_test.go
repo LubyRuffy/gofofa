@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -141,16 +142,6 @@ func TestNew(t *testing.T) {
 		`{"a":1}`,
 		`path cannot be empty`)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello world"))
-	}))
-	defer ts.Close()
-
-	// 截图正确
-	assert.Contains(t, assertPipeCmd(t, `gen("{\"host\":\"`+ts.URL+`\"}") & screenshot("host")`, ``), "screenshot_filepath")
-	// 截图异常
-	assert.NotContains(t, assertPipeCmd(t, `gen("{\"host\":\"http://127.0.0.1:55\"}") & screenshot("host")`, ``), "screenshot_filepath")
-
 	assertPipeCmdByTestRunner(t, `sort("a")`, `{"a":2}
 {"a":1}`, `{"a":1}
 {"a":2}
@@ -203,6 +194,27 @@ func TestNew(t *testing.T) {
 	assertPipeCmdByTestRunner(t, `value("a")`, `{"a":1}`, "1\n")
 
 	assertPipeCmdByTestRunner(t, `zq("a")`, `{"a":1}`, "{\"a\":1}\n")
+}
+
+func TestLoad_screenshot(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		wait, _ := strconv.Atoi(r.FormValue("wait"))
+		if wait > 0 {
+			time.Sleep(time.Second * time.Duration(wait))
+		}
+		w.Write([]byte("hello world"))
+	}))
+	defer ts.Close()
+
+	// 截图正确
+	assert.Contains(t, assertPipeCmd(t, `gen("{\"host\":\"`+ts.URL+`\"}") & screenshot("host")`, ``), "screenshot_filepath")
+	assert.Contains(t, assertPipeCmd(t, `gen("{\"url\":\"`+ts.URL+`\"}") & screenshot()`, ``), "screenshot_filepath")
+	assert.Contains(t, assertPipeCmd(t, `gen("{\"url\":\"`+ts.URL+`\"}") & screenshot("url","sc_filepath")`, ``), "sc_filepath")
+	assert.Contains(t, assertPipeCmd(t, `gen("{\"url\":\"`+ts.URL+`\"}") & screenshot("url","sc_filepath",10)`, ``), "sc_filepath")
+	// 超时
+	assert.NotContains(t, assertPipeCmd(t, `gen("{\"url\":\"`+ts.URL+`?wait=10\"}") & screenshot("url","sc_filepath",1)`, ``), "sc_filepath")
+	// 截图异常
+	assert.NotContains(t, assertPipeCmd(t, `gen("{\"host\":\"http://127.0.0.1:55\"}") & screenshot("host")`, ``), "screenshot_filepath")
 }
 
 func TestLoad_fork(t *testing.T) {

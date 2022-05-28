@@ -462,14 +462,14 @@ func screenShot(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("screenShot failed: %w", err))
 	}
 
-	if options.Timeout == 0 {
-		options.Timeout = 30
-	}
 	if options.URLField == "" {
 		options.URLField = "url"
 	}
 	if options.SaveField == "" {
 		options.SaveField = "screenshot_filepath"
+	}
+	if options.Timeout == 0 {
+		options.Timeout = 30
 	}
 
 	var artifacts []*Artifact
