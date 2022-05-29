@@ -3,7 +3,9 @@ package gocodefuncs
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/lubyruffy/gofofa/pkg/utils"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/mitchellh/mapstructure"
 	"github.com/tidwall/gjson"
 	"os"
