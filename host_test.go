@@ -1,6 +1,7 @@
 package gofofa
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -18,20 +19,20 @@ func TestClient_HostSearch(t *testing.T) {
 
 	// 注册用户，没有F币
 	account = validAccounts[0]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
 	assert.Contains(t, err.Error(), "insufficient privileges")
 	// 注册用户，有F币
 	account = validAccounts[4]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
 	assert.Contains(t, err.Error(), "DeductModeFCoin")
 
 	// 参数错误
 	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
 	res, err = cli.HostSearch("", 10, []string{"ip", "port"})
@@ -42,13 +43,13 @@ func TestClient_HostSearch(t *testing.T) {
 	res, err = cli.HostSearch("port=80", 10000, []string{"ip", "port"})
 	assert.Equal(t, 100, len(res))
 	account = validAccounts[2]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	res, err = cli.HostSearch("port=80", 10000, []string{"ip", "port"})
 	assert.Equal(t, 10000, len(res))
 
 	// 多字段
 	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	res, err = cli.HostSearch("port=80", 10, []string{"ip", "port"})
 	assert.Equal(t, 10, len(res))
 	assert.Equal(t, "94.130.128.248", res[0][0])
@@ -94,6 +95,7 @@ func TestClient_HostSearch(t *testing.T) {
 			IsVIP:    true,
 			VIPLevel: 1,
 		},
+		logger: logrus.New(),
 	}
 	res, err = cli.HostSearch("port=80", 10, []string{"host"})
 	assert.Error(t, err)
@@ -109,7 +111,7 @@ func TestClient_HostSize(t *testing.T) {
 	var count int
 
 	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	count, err = cli.HostSize("port=80")
 	assert.Nil(t, err)
@@ -119,6 +121,7 @@ func TestClient_HostSize(t *testing.T) {
 	cli = &Client{
 		Server:     "http://fofa.info:66666",
 		httpClient: &http.Client{},
+		logger:     logrus.New(),
 	}
 	count, err = cli.HostSize("port=80")
 	assert.Error(t, err)

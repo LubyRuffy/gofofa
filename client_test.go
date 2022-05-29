@@ -148,13 +148,13 @@ func TestNewClient(t *testing.T) {
 
 	// 异常的环境变量
 	os.Setenv("FOFA_CLIENT_URL", "\x7f")
-	cli, err = NewClient("")
+	cli, err = NewClient(WithURL(""))
 	assert.Error(t, err)
 	assert.Nil(t, cli)
 
 	// url异常
 	os.Unsetenv("FOFA_CLIENT_URL")
-	cli, err = NewClient("\x7F")
+	cli, err = NewClient(WithURL("\x7F"))
 	assert.Error(t, err)
 	assert.Nil(t, cli)
 
@@ -165,7 +165,7 @@ func TestNewClient(t *testing.T) {
 	account := validAccounts[1]
 	fofaURL := ts.URL + "/?email=" + account.Email + "&key=" + account.Key + "&version=v1"
 	os.Setenv("FOFA_CLIENT_URL", fofaURL)
-	cli, err = NewClient("")
+	cli, err = NewClient(WithURL(""))
 	assert.Nil(t, err)
 	assert.Equal(t, fofaURL, cli.URL())
 
@@ -173,7 +173,7 @@ func TestNewClient(t *testing.T) {
 	account = validAccounts[2]
 	fofaURLNew := ts.URL + "/?email=" + account.Email + "&key=" + account.Key + "&version=v1"
 	os.Setenv("FOFA_CLIENT_URL", fofaURL)
-	cli, err = NewClient(fofaURLNew)
+	cli, err = NewClient(WithURL(fofaURLNew))
 	assert.Nil(t, err)
 	assert.Equal(t, fofaURLNew, cli.URL())
 }

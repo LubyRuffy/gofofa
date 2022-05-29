@@ -3,6 +3,7 @@ package gofofa
 import (
 	"compress/gzip"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net"
 	"net/http"
@@ -82,7 +83,7 @@ func newTcpTestServer(handler func(conn net.Conn, data []byte) error) *tcpTestSe
 }
 
 func TestClient_Fetch(t *testing.T) {
-	_, err := NewClient("http://127.0.0.1:55")
+	_, err := NewClient(WithURL("http://127.0.0.1:55"))
 	assert.Error(t, err)
 
 	ts := httptest.NewServer(http.HandlerFunc(fetchHander))
@@ -92,6 +93,7 @@ func TestClient_Fetch(t *testing.T) {
 		Server:     ts.URL,
 		APIVersion: "v1",
 		httpClient: &http.Client{},
+		logger:     logrus.New(),
 	}
 
 	// 解析异常
@@ -118,6 +120,7 @@ func TestClient_Fetch(t *testing.T) {
 		Server:     s.URL(),
 		APIVersion: "v1",
 		httpClient: &http.Client{},
+		logger:     logrus.New(),
 	}
 	err = cli.Fetch("/", nil, &a)
 	assert.Contains(t, err.Error(), "unexpected EOF")
@@ -132,6 +135,7 @@ func TestClient_Fetch(t *testing.T) {
 		Server:     s1.URL(),
 		APIVersion: "v1",
 		httpClient: &http.Client{},
+		logger:     logrus.New(),
 	}
 	err = cli.Fetch("/", nil, &a)
 	assert.Contains(t, err.Error(), "bad Content-Length")
@@ -146,6 +150,7 @@ func TestClient_Fetch(t *testing.T) {
 		Server:     s2.URL(),
 		APIVersion: "v1",
 		httpClient: &http.Client{},
+		logger:     logrus.New(),
 	}
 	err = cli.Fetch("/", nil, &a)
 	assert.Contains(t, err.Error(), "unexpected EOF")

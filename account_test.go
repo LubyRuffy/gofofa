@@ -48,13 +48,13 @@ func TestClient_AccountInfo(t *testing.T) {
 
 	var cli *Client
 	var err error
-	_, err = NewClient(ts.URL + "?email=a@a.com&key=wrong")
+	_, err = NewClient(WithURL(ts.URL + "?email=a@a.com&key=wrong"))
 	assert.Contains(t, err.Error(), "[-700] Account Invalid")
 
 	// 注册用户
 	var account accountInfo
 	account = validAccounts[0]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.False(t, cli.Account.IsVIP)
 	assert.Equal(t, 0, cli.Account.FCoin)
@@ -62,7 +62,7 @@ func TestClient_AccountInfo(t *testing.T) {
 
 	// 普通会员
 	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
 	assert.Equal(t, 1, cli.Account.VIPLevel)
@@ -71,7 +71,7 @@ func TestClient_AccountInfo(t *testing.T) {
 
 	// 高级会员
 	account = validAccounts[2]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
 	assert.Equal(t, 2, cli.Account.VIPLevel)
@@ -80,7 +80,7 @@ func TestClient_AccountInfo(t *testing.T) {
 
 	// 企业会员
 	account = validAccounts[3]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
 	assert.Equal(t, 3, cli.Account.VIPLevel)

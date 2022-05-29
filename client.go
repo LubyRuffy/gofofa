@@ -96,7 +96,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	for _, opt := range options {
 		err = opt(c)
 		if err != nil {
-			return c, err
+			return nil, err
 		}
 	}
 

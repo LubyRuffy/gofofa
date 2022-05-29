@@ -259,7 +259,7 @@ func (t *logHook) Levels() []logrus.Level {
 func (t *logHook) Fire(e *logrus.Entry) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if t.runner.hooks.OnLog != nil {
+	if t.runner != nil && t.runner.hooks != nil && t.runner.hooks.OnLog != nil {
 		t.runner.hooks.OnLog(e.Level, e.Message)
 	}
 	return nil

@@ -1,6 +1,7 @@
 package gofofa
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +18,7 @@ func TestClient_Stats(t *testing.T) {
 	var res []StatsObject
 
 	account = validAccounts[1]
-	cli, err = NewClient(ts.URL + "?email=" + account.Email + "&key=" + account.Key)
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 
 	// 错误
@@ -48,6 +49,7 @@ func TestClient_Stats(t *testing.T) {
 	cli = &Client{
 		Server:     "http://fofa.info:66666",
 		httpClient: &http.Client{},
+		logger:     logrus.New(),
 	}
 	res, err = cli.Stats("port=80", 5, nil)
 	assert.Error(t, err)

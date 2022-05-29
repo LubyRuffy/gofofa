@@ -252,7 +252,7 @@ func TestLoad_fofa(t *testing.T) {
 	var err error
 	code := workflowast.NewParser().MustParse(`fofa("host=\"https://fofa1.info\"", "domain", 1)`)
 	p := New()
-	p.FofaCli, err = gofofa.NewClient(ts.URL)
+	p.FofaCli, err = gofofa.NewClient(gofofa.WithURL(ts.URL))
 	assert.Nil(t, err)
 	_, err = p.Run(code)
 	assert.Nil(t, err)
