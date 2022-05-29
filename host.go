@@ -3,7 +3,6 @@ package gofofa
 import (
 	"encoding/base64"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"math"
 	"strconv"
 	"strings"
@@ -39,7 +38,7 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 		switch c.DeductMode {
 		case DeductModeFree:
 			size = c.freeSize()
-			logrus.Warnf("size is larger than your account free limit, "+
+			c.logger.Warnf("size is larger than your account free limit, "+
 				"just fetch %d instead, if you want deduct fcoin automatically, set mode to 1(DeductModeFCoin) manually", size)
 		}
 	}

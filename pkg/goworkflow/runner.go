@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/gocodefuncs"
@@ -62,9 +63,6 @@ type PipeRunner struct {
 
 // Logf 打印日志
 func (p *PipeRunner) Logf(level logrus.Level, format string, args ...interface{}) {
-	if p.hooks != nil && p.hooks.OnLog != nil {
-		p.hooks.OnLog(level, format, args...)
-	}
 	p.logger.Logf(level, format, args...)
 }
 
@@ -74,7 +72,7 @@ func (p *PipeRunner) Debugf(format string, args ...interface{}) {
 }
 
 func (p *PipeRunner) Warnf(format string, args ...interface{}) {
-	p.logger.Logf(logrus.WarnLevel, format, args...)
+	p.Logf(logrus.WarnLevel, format, args...)
 }
 
 // Run go code, not workflow
@@ -146,6 +144,18 @@ type RunnerOption func(*PipeRunner)
 func WithHooks(hooks *Hooks) RunnerOption {
 	return func(r *PipeRunner) {
 		r.hooks = hooks
+	}
+}
+
+// WithFofaURL user defined hooks
+func WithFofaURL(u string) RunnerOption {
+	return func(r *PipeRunner) {
+		var err error
+		r.logger.Level = logrus.GetLevel()
+		r.FofaCli, err = gofofa.NewClient(gofofa.WithURL(u), gofofa.WithLogger(r.logger))
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -236,12 +246,33 @@ func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 	}
 }
 
+// logHook is a hook designed for dealing with logs in test scenarios.
+type logHook struct {
+	runner *PipeRunner
+	mu     sync.RWMutex
+}
+
+func (t *logHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (t *logHook) Fire(e *logrus.Entry) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.runner.hooks.OnLog != nil {
+		t.runner.hooks.OnLog(e.Level, e.Message)
+	}
+	return nil
+}
+
 // New create pipe runner
 func New(options ...RunnerOption) *PipeRunner {
 	r := &PipeRunner{
 		logger: logrus.New(),
 		gf:     &coderunner.GoFunction{},
 	}
+	r.logger.AddHook(&logHook{runner: r}) // fofa日志打到前端
+
 	var err error
 
 	// 注册底层函数

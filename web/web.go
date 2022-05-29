@@ -137,8 +137,8 @@ func run(w http.ResponseWriter, r *http.Request) {
 				OnLog: func(level logrus.Level, format string, args ...interface{}) {
 					tm.addMsg(fmt.Sprintf("[%s] %s", level.String(), fmt.Sprintf(format, args...)))
 				},
-			}))
-		p.FofaCli = FofaCli
+			}),
+			goworkflow.WithFofaURL(FofaCli.URL()))
 		tm.runner = p
 		_, err = p.Run(code)
 		if err != nil {
@@ -193,16 +193,19 @@ func fetchMsg(w http.ResponseWriter, r *http.Request) {
 	if task.callIDRunning > 0 {
 		graphCode += fmt.Sprintf("\nstyle F%d fill:#57d3e3", task.callIDRunning)
 	}
-	for i := range task.runner.Tasks {
-		ti := task.runner.Tasks[i]
-		color := ""
-		if ti.Error != nil {
-			color = "#fc8fa3"
-		} else {
-			color = "#65d9ae"
-		}
-		graphCode += fmt.Sprintf("\nstyle F%d fill:%s", ti.CallID, color)
 
+	if task.runner != nil {
+		for i := range task.runner.Tasks {
+			ti := task.runner.Tasks[i]
+			color := ""
+			if ti.Error != nil {
+				color = "#fc8fa3"
+			} else {
+				color = "#65d9ae"
+			}
+			graphCode += fmt.Sprintf("\nstyle F%d fill:%s", ti.CallID, color)
+
+		}
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{

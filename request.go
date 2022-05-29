@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io"
 	"math"
 	"net/http"
@@ -43,7 +42,8 @@ func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte
 	var resp *http.Response
 
 	fullURL := c.buildURL(apiURI, params)
-	logrus.Debugln("fetch fofa:", fullURL)
+	c.logger.Debugf("fetch fofa: %s", apiURI)
+	//c.logger.Debugf("fetch fofa: %s", fullURL)
 
 	req, err = http.NewRequest("GET", fullURL, nil)
 	req.Header.Set("Accept-Encoding", "gzip")

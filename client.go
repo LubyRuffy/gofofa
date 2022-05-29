@@ -10,6 +10,7 @@ package gofofa
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 )
@@ -30,6 +31,7 @@ type Client struct {
 	DeductMode DeductMode  // 扣费提醒默认
 
 	httpClient *http.Client //
+	logger     *logrus.Logger
 }
 
 // Update merge config from config url
@@ -60,20 +62,41 @@ func (c *Client) URL() string {
 	return fmt.Sprintf("%s/?email=%s&key=%s&version=%s", c.Server, c.Email, c.Key, c.APIVersion)
 }
 
+type ClientOption func(c *Client) error
+
+// WithURL configURL format: <url>/?email=<email>&key=<key>&version=<v2>&tlsdisabled=false&debuglevel=0
+func WithURL(configURL string) ClientOption {
+	return func(c *Client) error {
+		// merge from config
+		if len(configURL) > 0 {
+			return c.Update(configURL)
+		}
+		return nil
+	}
+}
+
+// WithLogger set logger
+func WithLogger(logger *logrus.Logger) ClientOption {
+	return func(c *Client) error {
+		c.logger = logger
+		return nil
+	}
+}
+
 // NewClient from fofa connection string to config
 // and with env config merge
-// configURL format: <url>/?email=<email>&key=<key>&version=<v2>&tlsdisabled=false&debuglevel=0
-func NewClient(configURL string) (*Client, error) {
+func NewClient(options ...ClientOption) (*Client, error) {
 	// read from env
 	c, err := newClientFromEnv()
 	if err != nil {
 		return c, err
 	}
 
-	// merge from config
-	if len(configURL) > 0 {
-		if err = c.Update(configURL); err != nil {
-			return nil, err
+	c.logger = logrus.New()
+	for _, opt := range options {
+		err = opt(c)
+		if err != nil {
+			return c, err
 		}
 	}
 

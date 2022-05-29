@@ -111,7 +111,7 @@ func BeforAction(context *cli.Context) error {
 	//	return nil
 	//}
 
-	fofaCli, err = gofofa.NewClient(fofaURL)
+	fofaCli, err = gofofa.NewClient(gofofa.WithURL(fofaURL))
 	if err != nil {
 		return err
 	}

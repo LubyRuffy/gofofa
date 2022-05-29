@@ -29,14 +29,19 @@ func chromeActions(u string, logf func(string, ...interface{}), timeout int, act
 	// prepare the chrome options
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
 		chromedp.Flag("headless", true),
+		chromedp.Flag("incognito", true), // 隐身模式
 		chromedp.Flag("ignore-certificate-errors", true),
-		chromedp.Flag("disable-gpu", true),
 		chromedp.Flag("enable-automation", true),
 		chromedp.Flag("disable-extensions", true),
 		chromedp.Flag("disable-setuid-sandbox", true),
 		chromedp.Flag("disable-web-security", true),
-		chromedp.Flag("no-first-run", true),
-		chromedp.Flag("no-default-browser-check", true),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.IgnoreCertErrors,
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
+		chromedp.NoSandbox,
+		chromedp.DisableGPU,
+		chromedp.WindowSize(1024, 768),
 	)
 
 	allocCtx, bcancel := chromedp.NewExecAllocator(context.Background(), opts...)
