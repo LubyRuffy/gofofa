@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/lubyruffy/gofofa"
@@ -13,26 +12,25 @@ import (
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
 	"github.com/lubyruffy/gofofa/pkg/utils"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
-	"github.com/tidwall/sjson"
 )
 
 // PipeTask 每一个pipe执行的任务统计信息
 type PipeTask struct {
-	Name      string        // pipe name
-	Content   string        // raw content
-	Outfile   string        // tmp json file 统一格式
-	Artifacts []*Artifact   // files to archive 非json格式的文件不往后进行传递
-	Cost      time.Duration // time costs
-	Runner    *PipeRunner   // runner
-	Children  []*PipeRunner // fork children
-	Fields    []string      // fields list 列名
-	CallID    int           // 调用序列
+	Name         string        // pipe name
+	WorkFlowName string        // workflow name
+	Content      string        // raw content
+	Runner       *PipeRunner   // runner
+	CallID       int           // 调用序列
+	Cost         time.Duration // time costs
+	Result       *FuncResult   // 结果
+	Children     []*PipeRunner // fork children
+	Fields       []string      // fields list 列名
+	Error        error         // 错误信息
 }
 
 // Close remove tmp outfile
 func (p *PipeTask) Close() {
-	os.Remove(p.Outfile)
+	os.Remove(p.Result.OutFile)
 	p.Children = nil
 }
 
@@ -46,6 +44,7 @@ type Hooks struct {
 // PipeRunner pipe运行器
 type PipeRunner struct {
 	gf       *coderunner.GoFunction // 函数注册
+	ast      *workflowast.Parser    // ast
 	content  string                 // 运行的内容
 	hooks    *Hooks                 // 消息通知
 	Tasks    []*PipeTask            // 执行的所有workflow
@@ -101,23 +100,17 @@ func (p *PipeRunner) GetWorkflows() []*PipeTask {
 // AddWorkflow 添加一次任务的日志
 func (p *PipeRunner) AddWorkflow(pt *PipeTask) {
 	// 可以不写文件
-	if len(pt.Outfile) > 0 {
-		p.LastFile = pt.Outfile
+	if pt.Result != nil && len(pt.Result.OutFile) > 0 {
+		p.LastFile = pt.Result.OutFile
 
-		logrus.Debug(pt.Name+" write to file: ", pt.Outfile)
+		logrus.Debug(pt.Name+" write to file: ", pt.Result.OutFile)
 
 		// 取字段列表
-		d, err := utils.ReadFirstLineOfFile(pt.Outfile)
-		if err != nil {
-			panic(fmt.Errorf("ReadFirstLineOfFile failed: %w", err))
-		}
-		v := gjson.ParseBytes(d)
-		v.ForEach(func(key, value gjson.Result) bool {
-			pt.Fields = append(pt.Fields, key.String())
-			return true
-		})
+		pt.Fields = utils.JSONLineFields(pt.Result.OutFile)
 	}
+	p.LastTask = pt
 
+	// 把任务也加到上层所有的父节点
 	node := p
 	for {
 		node.Tasks = append(node.Tasks, pt)
@@ -127,7 +120,12 @@ func (p *PipeRunner) AddWorkflow(pt *PipeTask) {
 		node = node.Parent
 	}
 
-	p.LastTask = pt
+	if p.hooks != nil {
+		if pt.Error != nil {
+			p.hooks.OnLog(logrus.ErrorLevel, "task error: %v", pt.Error)
+		}
+		p.hooks.OnWorkflowFinished(pt)
+	}
 }
 
 // GetFofaCli fofa client
@@ -163,6 +161,13 @@ func WithUserFunction(funcs ...[]interface{}) RunnerOption {
 	}
 }
 
+// WithAST Function to register
+func WithAST(ast *workflowast.Parser) RunnerOption {
+	return func(r *PipeRunner) {
+		r.ast = ast
+	}
+}
+
 // 核心函数
 func (p *PipeRunner) fork(pipe string) error {
 	forkRunner := New(WithHooks(p.hooks), WithParent(p))
@@ -177,51 +182,12 @@ func (p *PipeRunner) fork(pipe string) error {
 	return err
 }
 
-// 自动补齐url
-func (p *PipeRunner) urlFix(fields ...string) {
-	var fn string
-	var err error
-	field := "url"
-	if len(fields) > 0 {
-		field = fields[0]
-	}
-	if len(field) == 0 {
-		panic(fmt.Errorf("urlFix must has a field"))
-	}
-
-	fn, err = utils.WriteTempFile("", func(f *os.File) error {
-		return utils.EachLine(p.GetLastFile(), func(line string) error {
-			v := gjson.Get(line, field).String()
-			if !strings.Contains(v, "://") {
-				v = "http://" + gjson.Get(line, field).String()
-			}
-			line, err := sjson.Set(line, field, v)
-			if err != nil {
-				return err
-			}
-			_, err = f.WriteString(line + "\n")
-			return err
-		})
-	})
-	if err != nil {
-		panic(fmt.Errorf("urlFix failed: %w", err))
-	}
-
-	pt := &PipeTask{
-		Name:    "urlFix",
-		Content: fmt.Sprintf("%v", field),
-		Outfile: fn,
-	}
-	p.AddWorkflow(pt)
-}
-
+// registerFunctions 注册用户自定义函数，做一层PipeTask封装
 func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
-		funcBody := funcs[i][1].(func(*PipeRunner, map[string]interface{}) *funcResult)
+		funcBody := funcs[i][1].(func(*PipeRunner, map[string]interface{}) *FuncResult)
 		p.gf.Register(funcName, func(p *PipeRunner, params map[string]interface{}) {
-			logrus.Debug(funcName+" params:", params)
-
 			callID := 1
 			node := p
 			for {
@@ -231,28 +197,38 @@ func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 				}
 				node = node.Parent
 			}
-
+			logrus.Debug(funcName+" params:", params)
 			if p.hooks != nil {
 				p.hooks.OnWorkflowStart(funcName, callID)
 			}
-
 			s := time.Now()
-			result := funcBody(p, params)
 
-			pt := &PipeTask{
-				Name:      funcName,
-				Content:   fmt.Sprintf("%v", params),
-				Outfile:   result.OutFile,
-				Artifacts: result.Artifacts,
-				Cost:      time.Since(s),
-				CallID:    callID,
-				Runner:    p,
+			workflowName := ""
+			if p.ast != nil {
+				workflowName = p.ast.CallList[callID-1].Name
 			}
+			pt := &PipeTask{
+				Name:         funcName,
+				WorkFlowName: workflowName,
+				Content:      fmt.Sprintf("%v", params),
+				CallID:       callID,
+				Runner:       p,
+			}
+
+			// 异常捕获
+			defer func() {
+				if r := recover(); r != nil {
+					pt.Error = r.(error)
+					pt.Cost = time.Since(s)
+					p.AddWorkflow(pt)
+				}
+			}()
+
+			result := funcBody(p, params)
+			pt.Result = result
+			pt.Cost = time.Since(s)
 
 			p.AddWorkflow(pt)
-			if p.hooks != nil {
-				p.hooks.OnWorkflowFinished(pt)
-			}
 		})
 	}
 }
@@ -273,7 +249,6 @@ func New(options ...RunnerOption) *PipeRunner {
 		panic(err)
 	}
 	err = r.gf.Register("Fork", r.fork)
-	err = r.gf.Register("urlfix", r.urlFix)
 	if err != nil {
 		panic(err)
 	}
@@ -290,6 +265,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"ToExcel", toExcel},
 		{"ToSql", toSql},
 		{"GenData", genData},
+		{"urlfix", urlFix},
 	}
 	r.registerFunctions(innerFuncs...)
 

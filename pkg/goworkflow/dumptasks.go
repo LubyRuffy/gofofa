@@ -40,16 +40,18 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 {{ define "task.tmpl" }}
 {{ range . }}
 <ul>
-	<li>{{ .Name }} ({{ .Content }}) </li>
+	<li>{{ .WorkFlowName }} {{ .Name }} ({{ .Content }}) </li>
 
-	{{ if gt (len .Outfile) 0 }}
-	<li><a href="{{ safeURL .Outfile "" }}" target="_blank">{{ .Outfile | toFileName }}</a></li>
+	{{ if .Result }}
+
+	{{ if gt (len .Result.OutFile) 0 }}
+	<li><a href="{{ safeURL .Result.OutFile "" }}" target="_blank">{{ .Result.OutFile | toFileName }}</a></li>
 	{{ end }}
 
-	{{ if gt (len .Artifacts) 0 }}
+	{{ if gt (len .Result.Artifacts) 0 }}
 		<li>
 		generate files:
-		{{ range .Artifacts }}
+		{{ range .Result.Artifacts }}
 			<ul>
 				<li><a href="{{ safeURL .FilePath .FileType  }}" target="_blank">
 					{{ if HasPrefix .FileType "image/" }}
@@ -63,6 +65,7 @@ func (p *PipeRunner) DumpTasks(server bool) string {
 			</ul>
 		{{ end }}
 		</li>
+	{{ end }}
 	{{ end }}
 
 	<li>{{ .Cost }}</li>

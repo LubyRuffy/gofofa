@@ -125,20 +125,21 @@ func run(w http.ResponseWriter, r *http.Request) {
 	tm := globalTaskMonitor.new(string(workflow))
 
 	go func() {
-		p := goworkflow.New(goworkflow.WithHooks(&goworkflow.Hooks{
-			OnWorkflowStart: func(funcName string, callID int) {
-				tm.callIDRunning = callID
-				tm.addMsg(fmt.Sprintf("workflow start: %s, %d", funcName, callID))
-			},
-			OnWorkflowFinished: func(pt *goworkflow.PipeTask) {
-				tm.callIDFinished = pt.CallID
-				tm.addMsg(fmt.Sprintf("workflow finished: %s, %d", pt.Name, pt.CallID))
-			},
-			OnLog: func(level logrus.Level, format string, args ...interface{}) {
-				tm.addMsg(fmt.Sprintf("[%s] %s", level.String(), fmt.Sprintf(format, args...)))
-			},
-		}))
+		p := goworkflow.New(goworkflow.WithAST(ast),
+			goworkflow.WithHooks(&goworkflow.Hooks{
+				OnWorkflowStart: func(funcName string, callID int) {
+					tm.callIDRunning = callID
+					tm.addMsg(fmt.Sprintf("workflow start: %s, %s, %d", ast.CallList[callID-1].Name, funcName, callID))
+				},
+				OnWorkflowFinished: func(pt *goworkflow.PipeTask) {
+					tm.addMsg(fmt.Sprintf("workflow finished: %s, %s, %d", pt.WorkFlowName, pt.Name, pt.CallID))
+				},
+				OnLog: func(level logrus.Level, format string, args ...interface{}) {
+					tm.addMsg(fmt.Sprintf("[%s] %s", level.String(), fmt.Sprintf(format, args...)))
+				},
+			}))
 		p.FofaCli = FofaCli
+		tm.runner = p
 		_, err = p.Run(code)
 		if err != nil {
 			tm.addMsg("run err: " + err.Error())
@@ -192,8 +193,16 @@ func fetchMsg(w http.ResponseWriter, r *http.Request) {
 	if task.callIDRunning > 0 {
 		graphCode += fmt.Sprintf("\nstyle F%d fill:#57d3e3", task.callIDRunning)
 	}
-	for i := 1; i <= task.callIDFinished; i++ {
-		graphCode += fmt.Sprintf("\nstyle F%d fill:#65d9ae", i)
+	for i := range task.runner.Tasks {
+		ti := task.runner.Tasks[i]
+		color := ""
+		if ti.Error != nil {
+			color = "#fc8fa3"
+		} else {
+			color = "#65d9ae"
+		}
+		graphCode += fmt.Sprintf("\nstyle F%d fill:%s", ti.CallID, color)
+
 	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{

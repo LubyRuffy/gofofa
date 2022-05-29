@@ -37,15 +37,15 @@ type Artifact struct {
 	Memo     string // 备注，比如URL等
 }
 
-// funcResult 返回的结构
-type funcResult struct {
+// FuncResult 返回的结构
+type FuncResult struct {
 	OutFile   string // 往后传递的文件
 	Artifacts []*Artifact
 }
 
 //type innerFunction func(*PipeRunner, map[string]interface{}) (string, []string)
 
-func removeField(p *PipeRunner, params map[string]interface{}) *funcResult {
+func removeField(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	if len(p.GetLastFile()) == 0 {
 		panic(fmt.Errorf("removeField need input pipe"))
 	}
@@ -75,7 +75,7 @@ func removeField(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("removeField error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile: fn,
 	}
 }
@@ -86,7 +86,7 @@ type fetchFofaParams struct {
 	Fields string
 }
 
-func fetchFofa(p *PipeRunner, params map[string]interface{}) *funcResult {
+func fetchFofa(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	var options fetchFofaParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -117,7 +117,7 @@ func fetchFofa(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("fetchFofa error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile: fn,
 	}
 }
@@ -128,7 +128,7 @@ type chartParams struct {
 }
 
 // 每一个json行格式必须有value和count字段，对应name和value之，比如：{"value":"US","count":435}
-func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
+func generateChart(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	var options chartParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -185,7 +185,7 @@ func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
 	//	chart.AddSeries("data", lineItems)
 	//	chartRender = chart
 	default:
-		panic("unknown chart type: [" + options.Type + "]")
+		panic(fmt.Errorf("unknown chart type: [" + options.Type + "]"))
 	}
 
 	f, err := utils.WriteTempFile(".html", func(f *os.File) error {
@@ -196,7 +196,7 @@ func generateChart(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("generateChart error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		Artifacts: []*Artifact{{
 			FilePath: f,
 			FileName: filepath.Base(f),
@@ -209,7 +209,7 @@ type zqQueryParams struct {
 	Query string `json:"query"`
 }
 
-func zqQuery(p *PipeRunner, params map[string]interface{}) *funcResult {
+func zqQuery(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var fn string
 	var err error
 	var options zqQueryParams
@@ -227,7 +227,7 @@ func zqQuery(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("zqQuery error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile: fn,
 	}
 }
@@ -245,7 +245,7 @@ type addFieldParams struct {
 	From  *addFieldFrom // 可以没有，就取Value
 }
 
-func addField(p *PipeRunner, params map[string]interface{}) *funcResult {
+func addField(p *PipeRunner, params map[string]interface{}) *FuncResult {
 
 	var err error
 	var options addFieldParams
@@ -304,7 +304,7 @@ func addField(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("addField error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile: fn,
 	}
 }
@@ -313,7 +313,7 @@ type loadFileParams struct {
 	File string
 }
 
-func loadFile(p *PipeRunner, params map[string]interface{}) *funcResult {
+func loadFile(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	var options loadFileParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -348,7 +348,7 @@ func loadFile(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("loadFile error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile: fn,
 	}
 }
@@ -371,7 +371,7 @@ func jsonArrayEnum(node gjson.Result, f func(result gjson.Result) error) error {
 	return nil
 }
 
-func flatArray(p *PipeRunner, params map[string]interface{}) *funcResult {
+func flatArray(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	var options flatParams
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -401,7 +401,7 @@ func flatArray(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("flatArray error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile: fn,
 	}
 }
@@ -457,7 +457,7 @@ func screenshotURL(p *PipeRunner, u string, options *screenshotParam) (string, i
 }
 
 // 截图
-func screenShot(p *PipeRunner, params map[string]interface{}) *funcResult {
+func screenShot(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	var options screenshotParam
 	if err = mapstructure.Decode(params, &options); err != nil {
@@ -528,14 +528,14 @@ func screenShot(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("screenShot error: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		OutFile:   fn,
 		Artifacts: artifacts,
 	}
 }
 
 // 写excel文件
-func toExcel(p *PipeRunner, params map[string]interface{}) *funcResult {
+func toExcel(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var fn string
 	var err error
 
@@ -577,7 +577,7 @@ func toExcel(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("toExcel failed: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		Artifacts: []*Artifact{
 			{
 				FilePath: fn,
@@ -600,7 +600,7 @@ func sqliteDSNToFilePath(dsn string) string {
 }
 
 // 写入sql数据库
-func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
+func toSql(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	var db *sql.DB
 	var options sqlParam
@@ -649,7 +649,7 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 	}
 	fieldsWithType := utils.JSONLineFieldsWithType(string(line))
 	if len(fieldsWithType) == 0 {
-		return &funcResult{}
+		return &FuncResult{}
 	}
 
 	var tableNotExist bool
@@ -794,12 +794,12 @@ func toSql(p *PipeRunner, params map[string]interface{}) *funcResult {
 		})
 	}
 
-	return &funcResult{
+	return &FuncResult{
 		Artifacts: artifacts,
 	}
 }
 
-func genData(p *PipeRunner, params map[string]interface{}) *funcResult {
+func genData(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var fn string
 	var err error
 	fn, err = utils.WriteTempFile("", func(f *os.File) error {
@@ -810,7 +810,42 @@ func genData(p *PipeRunner, params map[string]interface{}) *funcResult {
 		panic(fmt.Errorf("genData failed: %w", err))
 	}
 
-	return &funcResult{
+	return &FuncResult{
+		OutFile: fn,
+	}
+}
+
+// 自动补齐url
+func urlFix(p *PipeRunner, params map[string]interface{}) *FuncResult {
+	var fn string
+	var err error
+	field := "url"
+	if len(params) > 0 {
+		field = params["url"].(string)
+	}
+	if len(field) == 0 {
+		panic(fmt.Errorf("urlFix must has a field"))
+	}
+
+	fn, err = utils.WriteTempFile("", func(f *os.File) error {
+		return utils.EachLine(p.GetLastFile(), func(line string) error {
+			v := gjson.Get(line, field).String()
+			if !strings.Contains(v, "://") {
+				v = "http://" + gjson.Get(line, field).String()
+			}
+			line, err := sjson.Set(line, field, v)
+			if err != nil {
+				return err
+			}
+			_, err = f.WriteString(line + "\n")
+			return err
+		})
+	})
+	if err != nil {
+		panic(fmt.Errorf("urlFix failed: %w", err))
+	}
+
+	return &FuncResult{
 		OutFile: fn,
 	}
 }

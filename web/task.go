@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/lubyruffy/gofofa/pkg/goworkflow"
 	"sync"
 	"time"
 
@@ -12,15 +13,15 @@ var (
 )
 
 type taskInfo struct {
-	monitor        *taskMonitor
-	taskId         string
-	code           string // 运行的代码
-	msgCh          chan string
-	started        time.Time
-	ended          time.Time
-	html           string
-	callIDFinished int // 已经完成最后的callID
-	callIDRunning  int // 当前运行的callID
+	monitor       *taskMonitor
+	runner        *goworkflow.PipeRunner
+	taskId        string
+	code          string // 运行的代码
+	msgCh         chan string
+	started       time.Time
+	ended         time.Time
+	html          string
+	callIDRunning int // 当前运行的callID
 }
 
 func (t *taskInfo) finish() {
