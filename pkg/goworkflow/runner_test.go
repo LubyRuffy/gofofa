@@ -3,10 +3,7 @@ package goworkflow
 import (
 	"bytes"
 	"database/sql"
-	"fmt"
-	"github.com/brianvoe/gofakeit/v6"
-	"github.com/mitchellh/mapstructure"
-	"github.com/tidwall/sjson"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/gocodefuncs"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -87,6 +84,11 @@ func assertPipeCmdByTestRunnerError(t *testing.T,
 	})
 }
 
+func TestNew_cut(t *testing.T) {
+	assertPipeCmdByTestRunner(t, `cut("a")`, `{"a":1,"b":2}`, "{\"a\":1}\n")
+	//assertPipeCmd(t, `cut("a")`, `{"a":1,"b":2}`, "{\"a\":1}\n")
+}
+
 func TestNew(t *testing.T) {
 	assertPipeCmdByTestRunner(t, `add("newfield", "newvalue")`,
 		`{"title":"Test123"}
@@ -106,9 +108,6 @@ func TestNew(t *testing.T) {
 	assertPipeCmdByTestRunner(t, `chart("pie","a")`,
 		`{"value":"Test123","count":10}`,
 		"{\"value\":\"Test123\",\"count\":10}")
-
-	assertPipeCmdByTestRunner(t, `cut("a")`, `{"a":1,"b":2}`, "{\"a\":1}\n")
-	//assertPipeCmd(t, `cut("a")`, `{"a":1,"b":2}`, "{\"a\":1}\n")
 
 	assertPipeCmdByTestRunner(t, `drop("a")`, `{"a":1,"b":2}`, "{\"b\":2}\n")
 	//assertPipeCmd(t, `drop("a")`, `{"a":1,"b":2}`, "{\"b\":2}\n")
@@ -522,32 +521,6 @@ func TestPipeRunner_toMysql(t *testing.T) {
 	assertToSql(t, "to_mysql", dsn, db)
 }
 
-func genFofaFieldData(fieldStr string, size int) string {
-	var res string
-	fields := strings.Split(fieldStr, ",")
-	for i := 0; i < size; i++ {
-		v := `{}`
-		for _, f := range fields {
-			var value interface{}
-			switch f {
-			case "host":
-				value = gofakeit.FirstName() + "." + gofakeit.DomainName()
-			case "domain":
-				value = gofakeit.DomainName()
-			case "ip":
-				value = gofakeit.IPv4Address()
-			case "port":
-				value = gofakeit.IntRange(21, 65534)
-			case "country":
-				value = gofakeit.CountryAbr()
-			}
-			v, _ = sjson.Set(v, f, value)
-		}
-		res += v + "\n"
-	}
-	return res
-}
-
 func TestPipeRunner_Run(t *testing.T) {
 	// callid测试
 	p := New()
@@ -562,17 +535,7 @@ func TestPipeRunner_Run(t *testing.T) {
 	}
 
 	p = New(WithUserFunction([]interface{}{
-		"FetchFofa", func(p *PipeRunner, params map[string]interface{}) *FuncResult {
-			var err error
-			var options fetchFofaParams
-			if err = mapstructure.Decode(params, &options); err != nil {
-				panic(fmt.Errorf("fetchFofa failed: %w", err))
-			}
-
-			return genData(p, map[string]interface{}{
-				"data": genFofaFieldData(options.Fields, options.Size),
-			})
-		},
+		"FetchFofa", gocodefuncs.GenFofaFieldData,
 	}))
 
 	ast = workflowast.NewParser()

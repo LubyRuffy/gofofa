@@ -2,6 +2,7 @@ package goworkflow
 
 import (
 	"fmt"
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/gocodefuncs"
 	"os"
 	"reflect"
 	"time"
@@ -16,16 +17,16 @@ import (
 
 // PipeTask 每一个pipe执行的任务统计信息
 type PipeTask struct {
-	Name         string        // pipe name
-	WorkFlowName string        // workflow name
-	Content      string        // raw content
-	Runner       *PipeRunner   // runner
-	CallID       int           // 调用序列
-	Cost         time.Duration // time costs
-	Result       *FuncResult   // 结果
-	Children     []*PipeRunner // fork children
-	Fields       []string      // fields list 列名
-	Error        error         // 错误信息
+	Name         string                  // pipe name
+	WorkFlowName string                  // workflow name
+	Content      string                  // raw content
+	Runner       *PipeRunner             // runner
+	CallID       int                     // 调用序列
+	Cost         time.Duration           // time costs
+	Result       *gocodefuncs.FuncResult // 结果
+	Children     []*PipeRunner           // fork children
+	Fields       []string                // fields list 列名
+	Error        error                   // 错误信息
 }
 
 // Close remove tmp outfile
@@ -186,8 +187,8 @@ func (p *PipeRunner) fork(pipe string) error {
 func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 	for i := range funcs {
 		funcName := funcs[i][0].(string)
-		funcBody := funcs[i][1].(func(*PipeRunner, map[string]interface{}) *FuncResult)
-		p.gf.Register(funcName, func(p *PipeRunner, params map[string]interface{}) {
+		funcBody := funcs[i][1].(func(gocodefuncs.Runner, map[string]interface{}) *gocodefuncs.FuncResult)
+		p.gf.Register(funcName, func(runner gocodefuncs.Runner, params map[string]interface{}) {
 			callID := 1
 			node := p
 			for {
@@ -255,18 +256,20 @@ func New(options ...RunnerOption) *PipeRunner {
 	}
 
 	innerFuncs := [][]interface{}{
-		{"RemoveField", removeField},
-		{"FetchFofa", fetchFofa},
-		{"GenerateChart", generateChart},
-		{"ZqQuery", zqQuery},
-		{"AddField", addField},
-		{"LoadFile", loadFile},
-		{"FlatArray", flatArray},
-		{"Screenshot", screenShot},
-		{"ToExcel", toExcel},
-		{"ToSql", toSql},
-		{"GenData", genData},
-		{"URLFix", urlFix},
+		{"RemoveField", gocodefuncs.RemoveField},
+		{"FetchFofa", gocodefuncs.FetchFofa},
+		{"GenFofaFieldData", gocodefuncs.GenFofaFieldData},
+		{"GenerateChart", gocodefuncs.GenerateChart},
+		{"ZqQuery", gocodefuncs.ZqQuery},
+		{"AddField", gocodefuncs.AddField},
+		{"LoadFile", gocodefuncs.LoadFile},
+		{"FlatArray", gocodefuncs.FlatArray},
+		{"Screenshot", gocodefuncs.ScreenShot},
+		{"ToExcel", gocodefuncs.ToExcel},
+		{"ToSql", gocodefuncs.ToSql},
+		{"GenData", gocodefuncs.GenData},
+		{"URLFix", gocodefuncs.UrlFix},
+		//{"RenderHtml", renderHtml},
 	}
 	r.registerFunctions(innerFuncs...)
 
