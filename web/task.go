@@ -22,14 +22,17 @@ type taskInfo struct {
 	ended         time.Time
 	html          string
 	callIDRunning int // 当前运行的callID
+	finished      bool
 }
 
 func (t *taskInfo) finish() {
 	t.ended = time.Time{}
+	t.finished = true
 	close(t.msgCh)
+
 	go func() {
 		select {
-		case <-time.After(time.Minute):
+		case <-time.After(1 * time.Minute):
 			// 1分钟后删除
 			t.monitor.del(t.taskId)
 		}
@@ -37,6 +40,9 @@ func (t *taskInfo) finish() {
 }
 
 func (t *taskInfo) addMsg(msg string) {
+	if t.finished {
+		return
+	}
 	t.msgCh <- msg
 }
 

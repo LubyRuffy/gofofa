@@ -43,8 +43,9 @@ func ScanPort(p Runner, params map[string]interface{}) *FuncResult {
 	progress := make(chan float32, 1)
 	// Function to listen and print the progress
 	go func() {
-		for p := range progress {
-			fmt.Printf("Progress: %v %%\n", p)
+		for percent := range progress {
+			p.Debugf("ScanPort Progress: %v %%\n", percent)
+			//fmt.Printf("Progress: %v %%\n", percent)
 		}
 	}()
 
