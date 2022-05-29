@@ -221,6 +221,7 @@ func (p *PipeRunner) registerFunctions(funcs ...[]interface{}) {
 					pt.Error = r.(error)
 					pt.Cost = time.Since(s)
 					p.AddWorkflow(pt)
+					panic(r)
 				}
 			}()
 
@@ -265,7 +266,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"ToExcel", toExcel},
 		{"ToSql", toSql},
 		{"GenData", genData},
-		{"urlfix", urlFix},
+		{"URLFix", urlFix},
 	}
 	r.registerFunctions(innerFuncs...)
 

@@ -324,7 +324,7 @@ func TestPipeRunner_DumpTasks(t *testing.T) {
 	p.Close()
 	_, err = p.Run(workflowast.NewParser().MustParse(`gen("{\"host\":\"` + ts.URL + `\"}") & screenshot("host")`))
 	assert.Nil(t, err)
-	assert.Equal(t, "image/png", p.LastTask.Artifacts[0].FileType)
+	assert.Equal(t, "image/png", p.LastTask.Result.Artifacts[0].FileType)
 	c = p.DumpTasks(true)
 	assert.Contains(t, c, "<img")
 
@@ -348,8 +348,8 @@ func TestPipeRunner_toExcel(t *testing.T) {
 	code := workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\"}") & to_excel()`)
 	_, err := p.Run(code)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(p.LastTask.Artifacts))
-	f, err := excelize.OpenFile(p.LastTask.Artifacts[0].FilePath)
+	assert.Equal(t, 1, len(p.LastTask.Result.Artifacts))
+	f, err := excelize.OpenFile(p.LastTask.Result.Artifacts[0].FilePath)
 	assert.Nil(t, err)
 	v, err := f.GetCellValue("Sheet1", "A1")
 	assert.Nil(t, err)
@@ -371,14 +371,14 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 	assert.Nil(t, err)
 	switch workFlowName {
 	case "to_sqlite":
-		assert.Equal(t, 2, len(p.LastTask.Artifacts))
+		assert.Equal(t, 2, len(p.LastTask.Result.Artifacts))
 	case "to_mysql":
-		assert.Equal(t, 1, len(p.LastTask.Artifacts))
+		assert.Equal(t, 1, len(p.LastTask.Result.Artifacts))
 	default:
 		panic("unknown workFlowName: " + workFlowName)
 	}
 
-	d, err := os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+	d, err := os.ReadFile(p.LastTask.Result.Artifacts[0].FilePath)
 	assert.Nil(t, err)
 	assert.Equal(t, `INSERT INTO tbl (a,b,c) VALUES (1,"2",true)
 `, string(d))
@@ -391,14 +391,14 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 	assert.Equal(t, 2, len(p.LastTask.Children))
 	switch workFlowName {
 	case "to_sqlite":
-		assert.Equal(t, 2, len(p.LastTask.Children[1].LastTask.Artifacts))
+		assert.Equal(t, 2, len(p.LastTask.Children[1].LastTask.Result.Artifacts))
 	case "to_mysql":
-		assert.Equal(t, 1, len(p.LastTask.Children[1].LastTask.Artifacts))
+		assert.Equal(t, 1, len(p.LastTask.Children[1].LastTask.Result.Artifacts))
 	default:
 		panic("unknown workFlowName: " + workFlowName)
 	}
 
-	d, err = os.ReadFile(p.LastTask.Children[1].LastTask.Artifacts[0].FilePath)
+	d, err = os.ReadFile(p.LastTask.Children[1].LastTask.Result.Artifacts[0].FilePath)
 	assert.Nil(t, err)
 	assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
 `, string(d))
@@ -422,7 +422,7 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl","a,b","` + dsn + `")`)
 		_, err = p.Run(code)
 		assert.Nil(t, err)
-		d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+		d, err = os.ReadFile(p.LastTask.Result.Artifacts[0].FilePath)
 		assert.Nil(t, err)
 		assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
 `, string(d))
@@ -443,7 +443,7 @@ func assertToSql(t *testing.T, workFlowName string, dsn string, db *sql.DB) {
 		code = workflowast.NewParser().MustParse(`gen("{\"a\":1,\"b\":\"2\",\"c\":\"3\"}") & ` + workFlowName + `("tbl",` + params + `)`)
 		_, err = p.Run(code)
 		assert.Nil(t, err)
-		d, err = os.ReadFile(p.LastTask.Artifacts[0].FilePath)
+		d, err = os.ReadFile(p.LastTask.Result.Artifacts[0].FilePath)
 		assert.Nil(t, err)
 		assert.Equal(t, `INSERT INTO tbl (a,b) VALUES (1,"2")
 `, string(d))
@@ -562,7 +562,7 @@ func TestPipeRunner_Run(t *testing.T) {
 	}
 
 	p = New(WithUserFunction([]interface{}{
-		"FetchFofa", func(p *PipeRunner, params map[string]interface{}) *funcResult {
+		"FetchFofa", func(p *PipeRunner, params map[string]interface{}) *FuncResult {
 			var err error
 			var options fetchFofaParams
 			if err = mapstructure.Decode(params, &options); err != nil {

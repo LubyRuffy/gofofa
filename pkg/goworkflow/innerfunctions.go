@@ -821,7 +821,7 @@ func urlFix(p *PipeRunner, params map[string]interface{}) *FuncResult {
 	var err error
 	field := "url"
 	if len(params) > 0 {
-		field = params["url"].(string)
+		field = params["urlField"].(string)
 	}
 	if len(field) == 0 {
 		panic(fmt.Errorf("urlFix must has a field"))
