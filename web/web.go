@@ -35,7 +35,7 @@ func genMermaidCode(ast *workflowast.Parser, code string) (s string, err error) 
 	}
 	// 终止
 	finishWorkflow := []string{
-		"chart", "to_excel",
+		"chart", "to_excel", "to_mysql", "to_sqlite",
 	}
 	return ast.ParseToGraph(string(code), func(name string, callId int, s string) string {
 		for _, src := range sourceWorkflow {
