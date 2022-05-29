@@ -2,10 +2,11 @@ package goworkflow
 
 import (
 	"fmt"
-	"github.com/lubyruffy/gofofa/pkg/goworkflow/gocodefuncs"
 	"os"
 	"reflect"
 	"time"
+
+	"github.com/lubyruffy/gofofa/pkg/goworkflow/gocodefuncs"
 
 	"github.com/lubyruffy/gofofa"
 	"github.com/lubyruffy/gofofa/pkg/coderunner"
@@ -269,7 +270,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"ToSql", gocodefuncs.ToSql},
 		{"GenData", gocodefuncs.GenData},
 		{"URLFix", gocodefuncs.UrlFix},
-		//{"RenderHtml", renderHtml},
+		{"RenderDOM", gocodefuncs.RenderDOM},
 	}
 	r.registerFunctions(innerFuncs...)
 

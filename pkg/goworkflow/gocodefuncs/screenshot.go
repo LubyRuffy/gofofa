@@ -2,6 +2,11 @@ package gocodefuncs
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/chromedp/chromedp"
 	"github.com/gammazero/workerpool"
 	"github.com/lubyruffy/gofofa/pkg/utils"
@@ -9,10 +14,6 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"golang.org/x/net/context"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 type screenshotParam struct {
@@ -22,9 +23,8 @@ type screenshotParam struct {
 	SaveField string `json:"saveField"` // 保存截图地址的字段
 }
 
-func screenshotURL(p Runner, u string, options *screenshotParam) (string, int, error) {
-	p.Debugf("screenshot url: %s", u)
-
+//chromeActions 完成chrome的headless操作
+func chromeActions(u string, logf func(string, ...interface{}), timeout int, actions ...chromedp.Action) error {
 	var err error
 	// prepare the chrome options
 	opts := append(chromedp.DefaultExecAllocatorOptions[:],
@@ -42,16 +42,27 @@ func screenshotURL(p Runner, u string, options *screenshotParam) (string, int, e
 	allocCtx, bcancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer bcancel()
 
-	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(p.Debugf))
-	ctx, cancel = context.WithTimeout(ctx, time.Duration(options.Timeout)*time.Second)
+	ctx, cancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(logf))
+	ctx, cancel = context.WithTimeout(ctx, time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	// run task list
-	var buf []byte
-	err = chromedp.Run(ctx,
+	realActions := []chromedp.Action{
 		chromedp.Navigate(u),
-		chromedp.FullScreenshot(&buf, 80),
+	}
+	realActions = append(realActions, actions...)
+	// run task list
+	err = chromedp.Run(ctx,
+		realActions...,
 	)
+
+	return err
+}
+
+func screenshotURL(p Runner, u string, options *screenshotParam) (string, int, error) {
+	p.Debugf("screenshot url: %s", u)
+
+	var buf []byte
+	err := chromeActions(u, p.Debugf, options.Timeout, chromedp.CaptureScreenshot(&buf))
 	if err != nil {
 		return "", 0, fmt.Errorf("screenShot failed(%w): %s", err, u)
 	}

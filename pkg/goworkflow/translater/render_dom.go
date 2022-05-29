@@ -2,14 +2,13 @@ package translater
 
 import (
 	"bytes"
-	"text/template"
-
 	"github.com/lubyruffy/gofofa/pkg/goworkflow/workflowast"
+	"text/template"
 )
 
-// screenshot(<urlField:"url">,[saveField:"screenshot_filepath"],[timeout:30])
-func screenshotHook(fi *workflowast.FuncInfo) string {
-	tmpl, _ := template.New("screenshot").Parse(`Screenshot(GetRunner(), map[string]interface{}{
+// render_dom(<urlField:"url">,[saveField:"dom_html"],[timeout:30])
+func renderdomHook(fi *workflowast.FuncInfo) string {
+	tmpl, _ := template.New("screenshot").Parse(`RenderDOM(GetRunner(), map[string]interface{}{
 	"urlField": "{{.URLField}}",
 	"saveField": "{{.SaveField}}",
 	"timeout": {{.TimeOut}},
@@ -21,7 +20,7 @@ func screenshotHook(fi *workflowast.FuncInfo) string {
 			urlField = v
 		}
 	}
-	saveField := "screenshot_filepath"
+	saveField := "dom_html"
 	if len(fi.Params) > 1 {
 		if v := fi.Params[1].RawString(); len(v) > 0 {
 			saveField = v
@@ -49,5 +48,5 @@ func screenshotHook(fi *workflowast.FuncInfo) string {
 }
 
 func init() {
-	register("screenshot", screenshotHook) // screenshot 网页截图
+	register("render_dom", renderdomHook) // screenshot 网页截图
 }

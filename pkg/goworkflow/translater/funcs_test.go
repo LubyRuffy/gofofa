@@ -1,10 +1,11 @@
 package translater
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRegister(t *testing.T) {
-	assert.Equal(t, 22, len(Translators))
+	assert.Equal(t, 23, len(Translators))
 }
