@@ -271,6 +271,7 @@ func New(options ...RunnerOption) *PipeRunner {
 		{"GenData", gocodefuncs.GenData},
 		{"URLFix", gocodefuncs.UrlFix},
 		{"RenderDOM", gocodefuncs.RenderDOM},
+		{"ScanPort", gocodefuncs.ScanPort},
 	}
 	r.registerFunctions(innerFuncs...)
 

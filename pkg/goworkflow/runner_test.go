@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -548,4 +549,28 @@ func TestPipeRunner_Run(t *testing.T) {
 	for i := range ast.CallList {
 		assert.Equal(t, ast.CallList[i].UUID, p.Tasks[i].CallID)
 	}
+}
+
+func TestPipeRunner_scanPort(t *testing.T) {
+	d, err := utils.ExecCmdWithTimeout(2*time.Second, "nmap", "-v")
+	if err == nil && strings.Contains(string(d), "Starting Nmap") {
+		// 启动服务器
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("hello world"))
+		}))
+		defer ts.Close()
+		u, _ := url.Parse(ts.URL)
+
+		// 扫描
+		p := New()
+		ast := workflowast.NewParser()
+		code := ast.MustParse("scan_port(`" + u.Hostname() + "`,`" + u.Port() + "`)")
+		_, err = p.Run(code)
+		assert.Nil(t, err)
+
+		d, err = utils.ReadFirstLineOfFile(p.LastFile)
+		assert.Nil(t, err)
+		assert.Contains(t, string(d), u.Port())
+	}
+
 }

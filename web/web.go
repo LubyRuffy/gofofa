@@ -31,7 +31,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func genMermaidCode(ast *workflowast.Parser, code string) (s string, err error) {
 	// 输入源
 	sourceWorkflow := []string{
-		"load", "fofa",
+		"load", "fofa", "scan_port",
 	}
 	// 终止
 	finishWorkflow := []string{
