@@ -107,17 +107,6 @@ calc remote homepage icon hash:
 ./fofa icon http://www.baidu.com
 ```
 
-### Utils
-
--   random subcommand
-
-random generate date from fofa, line by line
-```shell
-./fofa random
-./fofa random -f host,ip,port,lastupdatetime,title,header,body --format json
-```
-
-
 ### Host
 
 -   host subcommand
@@ -135,6 +124,16 @@ Protocols:       imaps,mysql,https,imap,pop3s,http,pop3
 Categories:      Server Management
 Products:        cPanel-MGMT-Products
 UpdateTime:      2022-05-30 17:00:00
+```
+
+### Utils
+
+-   random subcommand
+
+random generate date from fofa, line by line
+```shell
+./fofa random
+./fofa random -f host,ip,port,lastupdatetime,title,header,body --format json
 ```
 
 every 500ms generate one line, never stop
