@@ -36,7 +36,7 @@ func FetchFofa(p Runner, params map[string]interface{}) *FuncResult {
 	var res [][]string
 	res, err = p.GetFofaCli().HostSearch(options.Query, options.Size, fields)
 	if err != nil {
-		panic(fmt.Errorf("HostSearch failed: fofa fields cannot be empty"))
+		panic(fmt.Errorf("HostSearch failed: %w", err))
 	}
 
 	var fn string
