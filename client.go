@@ -104,10 +104,12 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	c.httpClient = &http.Client{}
 	c.Account, err = c.AccountInfo()
 	if err != nil {
+		c.logger.Warnf("account invalid")
 		return c, err
 	}
 
 	if c.Account.Error {
+		c.logger.Warnf("auth failed")
 		return c, fmt.Errorf("auth failed: '%s', make sure key is valid", c.Account.ErrMsg)
 	}
 

@@ -1,3 +1,7 @@
+## v0.0.7 host api
+
+-   add host api: ```./fofa host www.fofa.info```
+
 ## v0.0.6 pipeline run
 
 -   add chart workflow at pipeline, visit generated html file: ```./fofa pipeline -t a.html 'fofa(`title="hacked"`,`title,country`, 1000) | stats("country",10) | chart("line","test")'```

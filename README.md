@@ -107,18 +107,6 @@ calc remote homepage icon hash:
 ./fofa icon http://www.baidu.com
 ```
 
-### Pipeline
-
--   pipeline subcommand
-
-do workflow pipeline to process data:
-
-```shell
-./fofa pipeline 'fofa(`title="hacked"`,`host,ip,port,title,server`) & cut(`host,ip,port`) & to_int(`port`) & sort(`port`)'
-```
-
-[PipeLine](doc/PipeLine.md)
-
 ### Utils
 
 -   random subcommand
@@ -205,20 +193,4 @@ every 500ms generate one line, never stop
 
 ```shell
 ./fofa stats -f domain -s 100 'cert.is_valid=true && (cert="google")'
-```
-
-### How to dump link icon datasets?
-
-```shell
-./fofa random -s 10 -sleep 0 -f body 'body=icon && body=link'  | jq .body | grep -Po "(<[Ll][^>]*?rel[^>]*?icon[^>]*?>)"
-```
-
-pipeline mode:
-```shell
-./fofa pipeline 'fofa("body=icon && body=link", "body,host,ip,port") & grep_add("body", "(?is)<link[^>]*?rel[^>]*?icon[^>]*?>", "icon_tag") & cut("body")'
-```
-
-We can check fofa's bug like this:
-```shell
-./fofa.exe random -s 10 -sleep 0 -f body 'body=icon && icon_hash=="0"'
 ```

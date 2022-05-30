@@ -126,3 +126,32 @@ func TestClient_HostSize(t *testing.T) {
 	count, err = cli.HostSize("port=80")
 	assert.Error(t, err)
 }
+
+func TestClient_HostStats(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(queryHander))
+	defer ts.Close()
+
+	var cli *Client
+	var err error
+	var account accountInfo
+	var hostStat HostStatsData
+
+	account = validAccounts[1]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+	assert.Nil(t, err)
+	hostStat, err = cli.HostStats("1.1.1.1")
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(hostStat.Ports))
+	hostStat, err = cli.HostStats("fofa.info")
+	assert.Nil(t, err)
+	assert.Equal(t, 4, len(hostStat.Ports))
+
+	// 请求失败
+	cli = &Client{
+		Server:     "http://fofa.info:66666",
+		httpClient: &http.Client{},
+		logger:     logrus.New(),
+	}
+	hostStat, err = cli.HostStats("1.1.1.1")
+	assert.Error(t, err)
+}

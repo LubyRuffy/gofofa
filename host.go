@@ -19,6 +19,23 @@ type HostResults struct {
 	Results interface{} `json:"results"`
 }
 
+// HostStats /host api results
+type HostStatsData struct {
+	Error       bool     `json:"error"`
+	Errmsg      string   `json:"errmsg"`
+	Host        string   `json:"host"`
+	IP          string   `json:"ip"`
+	ASN         int      `json:"asn"`
+	ORG         string   `json:"org"`
+	Country     string   `json:"country_name"`
+	CountryCode string   `json:"country_code"`
+	Protocols   []string `json:"protocol"`
+	Ports       []int    `json:"port"`
+	Categories  []string `json:"category"`
+	Products    []string `json:"product"`
+	UpdateTime  string   `json:"update_time"`
+}
+
 // HostSearch search fofa host data
 // query fofa query string
 // size data size: -1 means all，0 means just data total info, >0 means actual size
@@ -123,5 +140,14 @@ func (c *Client) HostSize(query string) (count int, err error) {
 		return
 	}
 	count = hr.Size
+	return
+}
+
+// HostStats fetch query matched host count
+func (c *Client) HostStats(host string) (data HostStatsData, err error) {
+	err = c.Fetch("host/"+host, nil, &data)
+	if err != nil {
+		return
+	}
 	return
 }
