@@ -117,6 +117,26 @@ random generate date from fofa, line by line
 ./fofa random -f host,ip,port,lastupdatetime,title,header,body --format json
 ```
 
+
+### Host
+
+-   host subcommand
+
+```shell
+./fofa host demo.cpanel.net
+Host:            demo.cpanel.net
+IP:              208.74.120.133
+ASN:             33522
+ORG:             CPANEL-INC
+Country:         United States of America
+CountryCode:     US
+Ports:           [2078 3306 2079 2082 143 993 2086 2095 2083 2087 110 2080 80 995 2096 2077 443]
+Protocols:       imaps,mysql,https,imap,pop3s,http,pop3
+Categories:      Server Management
+Products:        cPanel-MGMT-Products
+UpdateTime:      2022-05-30 17:00:00
+```
+
 every 500ms generate one line, never stop
 
 ```shell
