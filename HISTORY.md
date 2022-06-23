@@ -1,3 +1,7 @@
+## v0.0.8 change mod url
+
+- change from lubyruffy/gofofa to LubyRuffy/gofofa
+
 ## v0.0.7 host api
 
 -   add host api: ```./fofa host www.fofa.info```
