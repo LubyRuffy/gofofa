@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/lubyruffy/gofofa/cmd/fofa/cmd"
+	"github.com/LubyRuffy/gofofa/cmd/fofa/cmd"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
@@ -26,8 +26,8 @@ func main() {
 		EnableBashCompletion:   true,
 		Authors: []*cli.Author{
 			{
-				Name:  "lubyruffy",
-				Email: "lubyruffy@gmail.com",
+				Name:  "LubyRuffy",
+				Email: "LubyRuffy@gmail.com",
 			},
 		},
 		Flags:    cmd.GlobalOptions,
