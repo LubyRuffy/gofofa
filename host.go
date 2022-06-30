@@ -135,6 +135,8 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 		if len(results) < perPage {
 			break
 		}
+
+		page++ // 翻页
 	}
 
 	return
