@@ -9,6 +9,7 @@ env settings:
 package gofofa
 
 import (
+	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -28,10 +29,13 @@ type Client struct {
 	Key        string // fofa key
 
 	Account    AccountInfo // fofa account info
-	DeductMode DeductMode  // 扣费提醒默认
+	DeductMode DeductMode  // Deduct Mode
 
 	httpClient *http.Client //
 	logger     *logrus.Logger
+	ctx        context.Context // use to cancel requests
+
+	onResults func(results [][]string) // when fetch results callback
 }
 
 // Update merge config from config url
@@ -62,6 +66,16 @@ func (c *Client) URL() string {
 	return fmt.Sprintf("%s/?email=%s&key=%s&version=%s", c.Server, c.Email, c.Key, c.APIVersion)
 }
 
+// GetContext 获取context，用于中止任务
+func (c *Client) GetContext() context.Context {
+	return c.ctx
+}
+
+// SetContext 设置context，用于中止任务
+func (c *Client) SetContext(ctx context.Context) {
+	c.ctx = ctx
+}
+
 type ClientOption func(c *Client) error
 
 // WithURL configURL format: <url>/?email=<email>&key=<key>&version=<v2>&tlsdisabled=false&debuglevel=0
@@ -79,6 +93,14 @@ func WithURL(configURL string) ClientOption {
 func WithLogger(logger *logrus.Logger) ClientOption {
 	return func(c *Client) error {
 		c.logger = logger
+		return nil
+	}
+}
+
+// WithOnResults set on results callback
+func WithOnResults(onResults func(results [][]string)) ClientOption {
+	return func(c *Client) error {
+		c.onResults = onResults
 		return nil
 	}
 }

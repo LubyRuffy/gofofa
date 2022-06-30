@@ -1,6 +1,7 @@
 package gofofa
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"math"
@@ -68,6 +69,16 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 
 	// 分页取数据
 	for {
+		if ctx := c.GetContext(); ctx != nil {
+			// 确认是否需要退出
+			select {
+			case <-c.GetContext().Done():
+				err = context.Canceled
+				return
+			default:
+			}
+		}
+
 		var hr HostResults
 		err = c.Fetch("search/all",
 			map[string]string{
@@ -107,6 +118,10 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 			}
 		} else {
 			break
+		}
+
+		if c.onResults != nil {
+			c.onResults(results)
 		}
 
 		res = append(res, results...)

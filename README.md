@@ -173,6 +173,7 @@ every 500ms generate one line, never stop
         -   ☑ HostSize
         -   ☑ AccountInfo
         -   ☑ IconHash
+        -   ☑ support cancel through SetContext
 -   ☑ As Client
     -   ☑ Sub Commands
         -   ☑ account

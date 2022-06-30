@@ -1,6 +1,7 @@
 package gofofa
 
 import (
+	"context"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -154,4 +155,33 @@ func TestClient_HostStats(t *testing.T) {
 	}
 	hostStat, err = cli.HostStats("1.1.1.1")
 	assert.Error(t, err)
+}
+
+func TestClient_SetContext(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(queryHander))
+	defer ts.Close()
+
+	onDataCh := make(chan struct{}, 1)
+	onResults := func([][]string) {
+		onDataCh <- struct{}{}
+	}
+	account := validAccounts[3]
+	cli, err := NewClient(WithURL(ts.URL+"?email="+account.Email+"&key="+account.Key), WithOnResults(onResults))
+	assert.Nil(t, err)
+	cli.DeductMode = DeductModeFCoin
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cli.SetContext(ctx)
+	stopCh := make(chan struct{}, 1)
+	go func() {
+		defer func() {
+			stopCh <- struct{}{}
+		}()
+		res, err := cli.HostSearch("port=80", 100000000, []string{"ip", "port"})
+		assert.Equal(t, context.Canceled, err)
+		assert.True(t, len(res) > 0)
+	}()
+	<-onDataCh
+	cancel()
+	<-stopCh
 }
