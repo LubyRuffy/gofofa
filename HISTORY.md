@@ -1,3 +1,7 @@
+## v0.0.9 support cancel
+
+- support cancel through SetContext
+
 ## v0.0.8 change mod url
 
 - change from lubyruffy/gofofa to LubyRuffy/gofofa
