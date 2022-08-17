@@ -1,3 +1,8 @@
+## v0.1.11 add fixUrl/urlPrefix
+
+- add fixUrl/urlPrefix: ```./fofa --size 1 --fields "host" --urlPrefix "redis://" protocol=redis```
+- add accountDebug option, it doesn't print account information at console when error by default, can be opened by set ```./fofa -accountDebug account```
+
 ## v0.1.10 fix page
 
 - fix page issue

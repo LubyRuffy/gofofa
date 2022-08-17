@@ -20,7 +20,7 @@ type HostResults struct {
 	Results interface{} `json:"results"`
 }
 
-// HostStats /host api results
+// HostStatsData /host api results
 type HostStatsData struct {
 	Error       bool     `json:"error"`
 	Errmsg      string   `json:"errmsg"`
@@ -37,11 +37,35 @@ type HostStatsData struct {
 	UpdateTime  string   `json:"update_time"`
 }
 
+// SearchOptions options of search, for post processors
+type SearchOptions struct {
+	FixUrl    bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1, https://1.1.1.1:8443 will no change
+	UrlPrefix string // default is http://
+}
+
+// fixHostToUrl 替换host为url
+func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix string) [][]string {
+	newRes := make([][]string, 0, len(res))
+	for _, row := range res {
+		newRow := make([]string, 0, len(fields))
+		for j, r := range row {
+			if j == hostIndex {
+				if !strings.Contains(r, "://") {
+					r = urlPrefix + r
+				}
+			}
+			newRow = append(newRow, r)
+		}
+		newRes = append(newRes, newRow)
+	}
+	return newRes
+}
+
 // HostSearch search fofa host data
 // query fofa query string
 // size data size: -1 means all，0 means just data total info, >0 means actual size
 // fields field of fofa host struct
-func (c *Client) HostSearch(query string, size int, fields []string) (res [][]string, err error) {
+func (c *Client) HostSearch(query string, size int, fields []string, options ...SearchOptions) (res [][]string, err error) {
 	// check level
 	if c.freeSize() == 0 {
 		// 不是会员
@@ -137,6 +161,20 @@ func (c *Client) HostSearch(query string, size int, fields []string) (res [][]st
 		}
 
 		page++ // 翻页
+	}
+
+	// 后处理
+	if len(options) > 0 && options[0].FixUrl {
+		urlPrefix := options[0].UrlPrefix
+		if urlPrefix == "" {
+			urlPrefix = "http://"
+		}
+		for i, f := range fields {
+			if f == "host" {
+				res = fixHostToUrl(res, fields, i, urlPrefix)
+				break
+			}
+		}
 	}
 
 	return

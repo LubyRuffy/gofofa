@@ -70,6 +70,10 @@ var GlobalOptions = []cli.Flag{
 		Name:  "verbose",
 		Usage: "print more information",
 	},
+	&cli.BoolFlag{
+		Name:  "accountDebug",
+		Usage: "print account in error log",
+	},
 }
 
 //// isSubCmd 判断是否指定的子命令
@@ -104,13 +108,17 @@ func BeforAction(context *cli.Context) error {
 	if context.Bool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
+	var accountDebug bool
+	if context.Bool("accountDebug") {
+		accountDebug = true
+	}
 
 	//// icon no need client
 	//if isSubCmd(os.Args[1:], "icon") {
 	//	return nil
 	//}
 
-	fofaCli, err = gofofa.NewClient(gofofa.WithURL(fofaURL))
+	fofaCli, err = gofofa.NewClient(gofofa.WithURL(fofaURL), gofofa.WithAccountDebug(accountDebug))
 	if err != nil {
 		return err
 	}

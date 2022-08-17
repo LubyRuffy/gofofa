@@ -35,7 +35,8 @@ type Client struct {
 	logger     *logrus.Logger
 	ctx        context.Context // use to cancel requests
 
-	onResults func(results [][]string) // when fetch results callback
+	onResults    func(results [][]string) // when fetch results callback
+	accountDebug bool                     // 调试账号明文信息
 }
 
 // Update merge config from config url
@@ -101,6 +102,14 @@ func WithLogger(logger *logrus.Logger) ClientOption {
 func WithOnResults(onResults func(results [][]string)) ClientOption {
 	return func(c *Client) error {
 		c.onResults = onResults
+		return nil
+	}
+}
+
+// WithAccountDebug 是否错误里面显示账号密码原始信息
+func WithAccountDebug(v bool) ClientOption {
+	return func(c *Client) error {
+		c.accountDebug = v
 		return nil
 	}
 }

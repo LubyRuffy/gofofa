@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/LubyRuffy/gofofa"
 	"github.com/LubyRuffy/gofofa/pkg/outformats"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -17,6 +18,8 @@ var (
 	format      string // out format
 	outFile     string // out file
 	deductMode  string // deduct Mode
+	fixUrl      bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
+	urlPrefix   string // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
 )
 
 // search subcommand
@@ -56,6 +59,18 @@ var searchCmd = &cli.Command{
 			Value:       "DeductModeFree",
 			Usage:       "DeductModeFree or DeductModeFCoin",
 			Destination: &deductMode,
+		},
+		&cli.BoolFlag{
+			Name:        "fixUrl",
+			Value:       false,
+			Usage:       "each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1",
+			Destination: &fixUrl,
+		},
+		&cli.StringFlag{
+			Name:        "urlPrefix",
+			Value:       "http://",
+			Usage:       "prefix of url, default is http://, can be redis:// and so on ",
+			Destination: &urlPrefix,
 		},
 	},
 	Action: SearchAction,
@@ -128,7 +143,10 @@ func SearchAction(ctx *cli.Context) error {
 	}
 
 	// do search
-	res, err := fofaCli.HostSearch(query, size, fields)
+	res, err := fofaCli.HostSearch(query, size, fields, gofofa.SearchOptions{
+		FixUrl:    fixUrl,
+		UrlPrefix: urlPrefix,
+	})
 	if err != nil {
 		return err
 	}

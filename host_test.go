@@ -87,6 +87,22 @@ func TestClient_HostSearch(t *testing.T) {
 	res, err = cli.HostSearch("aaa=bbb", 10, nil)
 	assert.Contains(t, err.Error(), "[820000] FOFA Query Syntax Incorrect")
 
+	// 带有fixurl
+	res, err = cli.HostSearch("port=80", 10, []string{"host"}, SearchOptions{
+		FixUrl:    true,
+		UrlPrefix: "",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 10, len(res))
+	assert.Contains(t, res[0][0], "http://")
+	res, err = cli.HostSearch("port=80", 10, []string{"host"}, SearchOptions{
+		FixUrl:    true,
+		UrlPrefix: "redis://",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 10, len(res))
+	assert.Contains(t, res[0][0], "redis://")
+
 	// 请求失败
 	cli = &Client{
 		Server:     "http://fofa.info:66666",

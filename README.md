@@ -62,6 +62,23 @@ if size is larger than your account free limit, you can set `-deductMode` to dec
 ./fofa search -o a.txt 'port=6379'
 ```
 
+-   fix host to url:
+
+```shell
+./fofa --size 2 --fields "host" title=Gitblit
+47.92.145.232:8998
+https://114.55.35.145:8443
+./fofa --size 2 --fields "host" --fixUrl title=Gitblit
+http://47.92.145.232:8998
+https://114.55.35.145:8443
+./fofa --size 2 --fields "host" --fixUrl title=Gitblit
+```
+use another url prefix:
+```shell
+./fofa --size 1 --fields "host" --fixUrl --urlPrefix "redis://" protocol=redis
+redis://152.136.145.87:6379
+```
+
 -   verbose mode
 
 ```shell

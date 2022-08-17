@@ -52,6 +52,16 @@ func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte
 
 	resp, err = c.httpClient.Do(req)
 	if err != nil {
+		if !c.accountDebug {
+			// 替换账号明文信息
+			if e, ok := err.(*url.Error); ok {
+				newClient := c
+				newClient.Email = "<email>"
+				newClient.Key = "<key>"
+				e.URL = newClient.buildURL(apiURI, params)
+				err = e
+			}
+		}
 		return
 	}
 	defer resp.Body.Close()

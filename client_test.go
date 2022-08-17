@@ -6,8 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -228,4 +230,17 @@ func TestNewClient(t *testing.T) {
 	}})
 	cli, err = NewClient(WithURL(ts.URL+"/?email="+account.Email+"&key=1&version=v1"), WithLogger(logger))
 	assert.True(t, len(logs) > 0)
+
+	// 账号调试信息
+	account = validAccounts[2]
+	invalidUrl := "https://" + strings.Split(ts.URL, "://")[1] + "/?email=" + account.Email + "&key=" + account.Key + "&version=v1"
+	cli, err = NewClient(WithURL(invalidUrl), WithAccountDebug(true))
+	var u string
+	u, err = url.QueryUnescape(err.Error())
+	assert.Nil(t, err)
+	assert.Contains(t, u, account.Email)
+	cli, err = NewClient(WithURL(invalidUrl))
+	u, err = url.QueryUnescape(err.Error())
+	assert.Nil(t, err)
+	assert.NotContains(t, u, account.Email)
 }
