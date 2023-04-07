@@ -143,7 +143,7 @@ func SearchAction(ctx *cli.Context) error {
 	}
 
 	// do search
-	res, err := fofaCli.HostSearch(query, size, fields, gofofa.SearchOptions{
+	res, err := fofaCli.HostSearch(query, size, fields, nil, gofofa.SearchOptions{
 		FixUrl:    fixUrl,
 		UrlPrefix: urlPrefix,
 	})

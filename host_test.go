@@ -98,6 +98,10 @@ func TestClient_HostSearch(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Greater(t, len(res2), len(res))
 
+	// 没有权限
+	res, err = cli.HostSearch("port=1231", 10, []string{"fid"}, nil)
+	assert.Contains(t, err.Error(), "没有权限搜索fid字段")
+
 	// 带有fixurl
 	res, err = cli.HostSearch("port=80", 10, []string{"host"}, nil, SearchOptions{
 		FixUrl:    true,

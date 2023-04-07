@@ -14,20 +14,49 @@ import (
 )
 
 type accountInfo struct {
-	Email    string `json:"email"`
-	Key      string `json:"key"`
-	VIP      bool   `json:"isvip"`
-	VIPLevel int    `json:"vip_level"` // vip level
-	FCoin    int    `json:"fcoin"`     // fcoin count
+	Email    string   `json:"email"`
+	Key      string   `json:"key"`
+	VIP      bool     `json:"isvip"`
+	VIPLevel VipLevel `json:"vip_level"` // vip level
+	FCoin    int      `json:"fcoin"`     // fcoin count
 }
+
+type VipLevel int
+
+const VipLevelGuest VipLevel = -1 // 访客
+
+const (
+	VipLevelNone       VipLevel = 0 // 注册用户
+	VipLevelNormal     VipLevel = 1 // 普通会员
+	VipLevelAdvanced   VipLevel = 2 // 高级会员
+	VipLevelEnterprise VipLevel = 3 // 企业版
+)
+
+const (
+	VipLevelSubPersonal VipLevel = 11 // 订阅个人
+	VipLevelSubPro      VipLevel = 12 // 订阅专业
+	VipLevelSubBuss     VipLevel = 13 // 订阅商业版
+)
+
+const (
+	VipLevelRed     VipLevel = 20 // 红队版
+	VipLevelStudent VipLevel = 22 // 教育账户
+)
 
 var (
 	validAccounts = []accountInfo{
-		{"a@a.com", "11111", false, 0, 0}, // 注册用户
-		{"b@b.com", "22222", true, 1, 10}, // 普通会员
-		{"c@c.com", "33333", true, 2, 0},  // 高级会员
-		{"d@d.com", "44444", true, 3, 0},  // 企业会员
-		{"e@e.com", "55555", true, 0, 10}, // 注册用户有F币
+		{"a@a.com", "11111", false, VipLevelNone, 0},      // 注册用户
+		{"b@b.com", "22222", true, VipLevelNormal, 10},    // 普通会员
+		{"c@c.com", "33333", true, VipLevelAdvanced, 0},   // 高级会员
+		{"d@d.com", "44444", true, VipLevelEnterprise, 0}, // 企业会员
+		{"e@e.com", "55555", true, VipLevelNone, 10},      // 注册用户有F币
+
+		{"g@g.com", "77777", true, VipLevelSubPersonal, 0}, // 订阅个人
+		{"h@h.com", "88888", true, VipLevelSubPro, 0},      // 订阅专业
+		{"i@i.com", "99999", true, VipLevelSubBuss, 0},     // 订阅商业
+
+		{"red@fofa.info", "10001", true, VipLevelRed, 0},     // 红队
+		{"sub@fofa.info", "10001", true, VipLevelStudent, 0}, // 教育
 	}
 
 	queryHander = func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +68,7 @@ var (
 				return
 			}
 
-			w.Write([]byte(`{"error":false,"email":"` + account.Email + `","fcoin":` + strconv.Itoa(account.FCoin) + `,"isvip":` + strconv.FormatBool(account.VIP) + `,"vip_level":` + strconv.Itoa(account.VIPLevel) + `}`))
+			w.Write([]byte(`{"error":false,"email":"` + account.Email + `","fcoin":` + strconv.Itoa(account.FCoin) + `,"isvip":` + strconv.FormatBool(account.VIP) + `,"vip_level":` + strconv.Itoa(int(account.VIPLevel)) + `}`))
 
 		case "/api/v1/search/all":
 			account := checkAccount(r.FormValue("email"), r.FormValue("key"))
@@ -48,12 +77,16 @@ var (
 				return
 			}
 
-			// todo: 补充注册会员权限不够的错误返回
-
 			// 参数错误
 			q, err := base64.StdEncoding.DecodeString(r.FormValue("qbase64"))
 			if err != nil || len(q) == 0 {
 				w.Write([]byte(`{"error":true,"errmsg":"[-4] Params Error"}`))
+				return
+			}
+
+			// 注册会员权限不够的错误返回
+			if account.VIPLevel != VipLevelEnterprise && strings.Contains(r.FormValue("fields"), "fid") {
+				w.Write([]byte(`{"error":true,"errmsg":"[820001] 没有权限搜索fid字段"}`))
 				return
 			}
 
