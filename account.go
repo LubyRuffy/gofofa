@@ -46,12 +46,14 @@ const (
 
 // AccountInfo fofa account info
 type AccountInfo struct {
-	Error     bool     `json:"error"`            // error or not
-	ErrMsg    string   `json:"errmsg,omitempty"` // error string message
-	FCoin     int      `json:"fcoin"`            // fcoin count
-	FofaPoint int64    `json:"fofa_point"`       // fofa point
-	IsVIP     bool     `json:"isvip"`            // is vip
-	VIPLevel  VipLevel `json:"vip_level"`        // vip level
+	Error          bool     `json:"error"`            // error or not
+	ErrMsg         string   `json:"errmsg,omitempty"` // error string message
+	FCoin          int      `json:"fcoin"`            // fcoin count
+	FofaPoint      int64    `json:"fofa_point"`       // fofa point
+	IsVIP          bool     `json:"isvip"`            // is vip
+	VIPLevel       VipLevel `json:"vip_level"`        // vip level
+	RemainApiQuery int      `json:"remain_api_query"` // available query
+	RemainApiData  int      `json:"remain_api_data"`  // available data amount
 }
 
 func (ai AccountInfo) String() string {
@@ -85,8 +87,22 @@ func (c *Client) freeSize() int {
 		return 10000
 	case VipLevelStudent:
 		return 10000
+	// 订阅用户：通过 api 查询余额
+	case VipLevelSubPersonal:
+		fallthrough
+	case VipLevelSubPro:
+		fallthrough
+	case VipLevelSubBuss:
+		info, err := c.AccountInfo()
+		if err != nil {
+			info = c.Account
+		}
+		if info.RemainApiQuery > 0 {
+			return info.RemainApiData
+		}
 	default:
 		// other level, ignore free limit check
 		return -1
 	}
+	return 0
 }
