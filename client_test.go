@@ -102,6 +102,13 @@ var (
 
 					return
 				}
+			case "port=5354":
+				switch r.FormValue("full") {
+				case "false":
+					w.Write([]byte(`{"error":false,"size":12345678,"page":1,"mode":"extended","query":"port=\"5453\"","results":[["94.130.128.248","5453"]]}`))
+				case "true":
+					w.Write([]byte(`{"error":false,"size":12345678,"page":1,"mode":"extended","query":"port=\"5453\"","results":[["94.130.128.248","5453"], ["94.130.128.124","5453"]]}`))
+				}
 			}
 		case "/api/v1/search/stats":
 			account := checkAccount(r.FormValue("email"), r.FormValue("key"))
