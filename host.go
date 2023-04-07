@@ -86,6 +86,8 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 		if c.DeductMode != DeductModeFCoin {
 			return nil, errors.New("insufficient privileges, try to set mode to 1(DeductModeFCoin)") // 等级不够，fcoin也不够
 		}
+	} else if size == -1 {
+		// unknown vip level, skip mode check
 	} else if size > c.freeSize() {
 		// 是会员，但是取的数量比免费的大
 		switch c.DeductMode {

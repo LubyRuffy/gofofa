@@ -24,13 +24,34 @@ func ParseDeductMode(v string) DeductMode {
 	}
 }
 
+type VipLevel int
+
+const (
+	VipLevelNone       VipLevel = 0 // 注册用户
+	VipLevelNormal     VipLevel = 1 // 普通会员
+	VipLevelAdvanced   VipLevel = 2 // 高级会员
+	VipLevelEnterprise VipLevel = 3 // 企业版
+)
+
+const (
+	VipLevelSubPersonal VipLevel = 11 // 订阅个人
+	VipLevelSubPro      VipLevel = 12 // 订阅专业
+	VipLevelSubBuss     VipLevel = 13 // 订阅商业版
+)
+
+const (
+	VipLevelRed     VipLevel = 20 // 红队版
+	VipLevelStudent VipLevel = 22 // 教育账户
+)
+
 // AccountInfo fofa account info
 type AccountInfo struct {
-	Error    bool   `json:"error"`            // error or not
-	ErrMsg   string `json:"errmsg,omitempty"` // error string message
-	FCoin    int    `json:"fcoin"`            // fcoin count
-	IsVIP    bool   `json:"isvip"`            // is vip
-	VIPLevel int    `json:"vip_level"`        // vip level
+	Error     bool     `json:"error"`            // error or not
+	ErrMsg    string   `json:"errmsg,omitempty"` // error string message
+	FCoin     int      `json:"fcoin"`            // fcoin count
+	FofaPoint int64    `json:"fofa_point"`       // fofa point
+	IsVIP     bool     `json:"isvip"`            // is vip
+	VIPLevel  VipLevel `json:"vip_level"`        // vip level
 }
 
 func (ai AccountInfo) String() string {
@@ -54,12 +75,18 @@ func (c *Client) freeSize() int {
 	switch c.Account.VIPLevel {
 	//case 0: // 上面已经退出了
 	//	return 0
-	case 1:
+	case VipLevelNormal:
 		return 100
-	case 2:
+	case VipLevelAdvanced:
 		return 10000
-	case 3:
+	case VipLevelEnterprise:
 		return 100000
+	case VipLevelRed:
+		return 10000
+	case VipLevelStudent:
+		return 10000
+	default:
+		// other level, ignore free limit check
+		return -1
 	}
-	return 0
 }

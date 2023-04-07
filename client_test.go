@@ -21,35 +21,13 @@ type accountInfo struct {
 	FCoin    int      `json:"fcoin"`     // fcoin count
 }
 
-type VipLevel int
-
-const VipLevelGuest VipLevel = -1 // 访客
-
-const (
-	VipLevelNone       VipLevel = 0 // 注册用户
-	VipLevelNormal     VipLevel = 1 // 普通会员
-	VipLevelAdvanced   VipLevel = 2 // 高级会员
-	VipLevelEnterprise VipLevel = 3 // 企业版
-)
-
-const (
-	VipLevelSubPersonal VipLevel = 11 // 订阅个人
-	VipLevelSubPro      VipLevel = 12 // 订阅专业
-	VipLevelSubBuss     VipLevel = 13 // 订阅商业版
-)
-
-const (
-	VipLevelRed     VipLevel = 20 // 红队版
-	VipLevelStudent VipLevel = 22 // 教育账户
-)
-
 var (
 	validAccounts = []accountInfo{
 		{"a@a.com", "11111", false, VipLevelNone, 0},      // 注册用户
 		{"b@b.com", "22222", true, VipLevelNormal, 10},    // 普通会员
 		{"c@c.com", "33333", true, VipLevelAdvanced, 0},   // 高级会员
 		{"d@d.com", "44444", true, VipLevelEnterprise, 0}, // 企业会员
-		{"e@e.com", "55555", true, VipLevelNone, 10},      // 注册用户有F币
+		{"e@e.com", "55555", false, VipLevelNone, 10},     // 注册用户有F币
 
 		{"g@g.com", "77777", true, VipLevelSubPersonal, 0}, // 订阅个人
 		{"h@h.com", "88888", true, VipLevelSubPro, 0},      // 订阅专业
