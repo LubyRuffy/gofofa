@@ -43,6 +43,11 @@ type SearchOptions struct {
 	UrlPrefix string // default is http://
 }
 
+// SecondaryOptions options used while searching, use default option for empty input
+type SecondaryOptions struct {
+	Full bool // search result for over a year
+}
+
 // fixHostToUrl 替换host为url
 func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix string) [][]string {
 	newRes := make([][]string, 0, len(res))
@@ -64,8 +69,14 @@ func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix stri
 // HostSearch search fofa host data
 // query fofa query string
 // size data size: -1 means all，0 means just data total info, >0 means actual size
-// fields field of fofa host struct
-func (c *Client) HostSearch(query string, size int, fields []string, options ...SearchOptions) (res [][]string, err error) {
+// fields of fofa host search
+// sOptions - Full: fetch result over a year, default false
+func (c *Client) HostSearch(query string, size int, fields []string, sOptions *SecondaryOptions, options ...SearchOptions) (res [][]string, err error) {
+	// assign default value for secondary options
+	if sOptions == nil {
+		sOptions = &SecondaryOptions{Full: false}
+	}
+
 	// check level
 	if c.freeSize() == 0 {
 		// 不是会员
@@ -75,6 +86,8 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 		if c.DeductMode != DeductModeFCoin {
 			return nil, errors.New("insufficient privileges, try to set mode to 1(DeductModeFCoin)") // 等级不够，fcoin也不够
 		}
+	} else if size == -1 {
+		// unknown vip level, skip mode check
 	} else if size > c.freeSize() {
 		// 是会员，但是取的数量比免费的大
 		switch c.DeductMode {
@@ -110,7 +123,7 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 				"size":    strconv.Itoa(perPage),
 				"page":    strconv.Itoa(page),
 				"fields":  strings.Join(fields, ","),
-				"full":    "false", // 是否全部数据，非一年内
+				"full":    strconv.FormatBool(sOptions.Full), // 是否全部数据，非一年内
 			},
 			&hr)
 		if err != nil {
