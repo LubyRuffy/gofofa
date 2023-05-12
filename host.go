@@ -93,7 +93,12 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 		// 是会员，但是取的数量比免费的大
 		switch c.DeductMode {
 		case DeductModeFree:
-			size = freeSize
+			// 防止 freesize = -1，取 size 和 freesize 的最大值
+			if freeSize <= 0 {
+				size = int(math.Max(float64(freeSize), float64(size)))
+			} else {
+				size = freeSize
+			}
 			c.logger.Warnf("size is larger than your account free limit, "+
 				"just fetch %d instead, if you want deduct fcoin automatically, set mode to 1(DeductModeFCoin) manually", size)
 		}
