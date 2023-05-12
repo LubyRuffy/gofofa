@@ -131,6 +131,16 @@ func TestClient_HostSearch(t *testing.T) {
 	}
 	res, err = cli.HostSearch("port=80", 10, []string{"host"}, nil)
 	assert.Error(t, err)
+
+	// search all data
+	account = validAccounts[3]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+
+	res, err = cli.HostSearch("port=80", -1, []string{"host"}, nil, SearchOptions{
+		FixUrl: true,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 10, len(res))
 }
 
 func TestClient_HostSize(t *testing.T) {

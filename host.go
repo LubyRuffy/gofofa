@@ -77,8 +77,9 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 		sOptions = &SecondaryOptions{Full: false}
 	}
 
+	freeSize := c.freeSize()
 	// check level
-	if c.freeSize() == 0 {
+	if freeSize == 0 {
 		// 不是会员
 		if c.Account.FCoin < 1 {
 			return nil, errors.New("insufficient privileges") // 等级不够，fcoin也不够
@@ -86,13 +87,18 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 		if c.DeductMode != DeductModeFCoin {
 			return nil, errors.New("insufficient privileges, try to set mode to 1(DeductModeFCoin)") // 等级不够，fcoin也不够
 		}
-	} else if size == -1 {
+	} else if freeSize == -1 {
 		// unknown vip level, skip mode check
 	} else if size > c.freeSize() {
 		// 是会员，但是取的数量比免费的大
 		switch c.DeductMode {
 		case DeductModeFree:
-			size = c.freeSize()
+			// 防止 freesize = -1，取 size 和 freesize 的最大值
+			if freeSize <= 0 {
+				size = int(math.Max(float64(freeSize), float64(size)))
+			} else {
+				size = freeSize
+			}
 			c.logger.Warnf("size is larger than your account free limit, "+
 				"just fetch %d instead, if you want deduct fcoin automatically, set mode to 1(DeductModeFCoin) manually", size)
 		}
@@ -100,6 +106,12 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 
 	page := 1
 	perPage := int(math.Min(float64(size), 1000)) // 最多一次取1000
+
+	// 一次取所有数据，perPage 默认给 1000
+	if size == -1 {
+		perPage = 1000
+	}
+
 	if len(fields) == 0 {
 		fields = []string{"ip", "port"}
 	}
@@ -164,7 +176,7 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 		res = append(res, results...)
 
 		// 数据填满了，完成
-		if size <= len(res) {
+		if size != -1 && size <= len(res) {
 			break
 		}
 
