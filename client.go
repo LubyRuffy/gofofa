@@ -1,4 +1,5 @@
-/*Package gofofa fofa client in Go
+/*
+Package gofofa fofa client in Go
 
 env settings:
 - FOFA_CLIENT_URL full fofa connnection string, format: <url>/?email=<email>&key=<key>&version=<v2>
@@ -35,7 +36,7 @@ type Client struct {
 	logger     *logrus.Logger
 	ctx        context.Context // use to cancel requests
 
-	onResults    func(results [][]string) // when fetch results callback
+	OnResults    func(results [][]string) // when fetch results callback
 	accountDebug bool                     // 调试账号明文信息
 }
 
@@ -101,7 +102,7 @@ func WithLogger(logger *logrus.Logger) ClientOption {
 // WithOnResults set on results callback
 func WithOnResults(onResults func(results [][]string)) ClientOption {
 	return func(c *Client) error {
-		c.onResults = onResults
+		c.OnResults = onResults
 		return nil
 	}
 }

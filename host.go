@@ -169,8 +169,8 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 			break
 		}
 
-		if c.onResults != nil {
-			c.onResults(results)
+		if c.OnResults != nil {
+			c.OnResults(results)
 		}
 
 		res = append(res, results...)
