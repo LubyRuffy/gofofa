@@ -34,15 +34,15 @@ func TestAccountInfo_String(t *testing.T) {
 		VIPLevel: 3,
 		FCoin:    0,
 	}
-	assert.Equal(t, `{
-  "error": false,
-  "fcoin": 0,
-  "fofa_point": 0,
-  "isvip": true,
-  "vip_level": 3,
-  "remain_api_query": 0,
-  "remain_api_data": 0
-}`, ai.String())
+	assert.EqualValues(t, AccountInfo{
+		Error:          false,
+		FCoin:          0,
+		FofaPoint:      0,
+		IsVIP:          true,
+		VIPLevel:       3,
+		RemainApiQuery: 0,
+		RemainApiData:  0,
+	}, ai)
 }
 
 func TestClient_AccountInfo(t *testing.T) {
