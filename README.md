@@ -154,6 +154,14 @@ Products:        cPanel-MGMT-Products
 UpdateTime:      2022-05-30 17:00:00
 ```
 
+### Dump
+
+-   dump large-scale data
+
+```shell
+./fofa dump --format json -fixUrl -outFile a.json -batchSize 10000 'title=phpinfo'
+```
+
 ### Utils
 
 -   random subcommand

@@ -136,7 +136,7 @@ func TestClient_HostSearch(t *testing.T) {
 	account = validAccounts[3]
 	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 
-	res, err = cli.HostSearch("port=80", -1, []string{"host"}, nil, SearchOptions{
+	res, err = cli.HostSearch("port=80", -1, []string{"host"}, SearchOptions{
 		FixUrl: true,
 	})
 	assert.Nil(t, err)
