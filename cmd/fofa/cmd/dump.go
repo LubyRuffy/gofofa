@@ -8,32 +8,21 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"io"
+	"log"
 	"os"
 	"strings"
 )
 
-var (
-	fieldString string // fieldString
-	size        int    // fetch size
-	format      string // out format
-	outFile     string // out file
-	deductMode  string // deduct Mode
-	fixUrl      bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
-	urlPrefix   string // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
-	full        bool   // search result for over a year
-	batchSize   int    // amount of data contained in each batch, only for dump
-)
-
-// search subcommand
-var searchCmd = &cli.Command{
-	Name:                   "search",
-	Usage:                  "fofa host search",
+// dump subcommand
+var dumpCmd = &cli.Command{
+	Name:                   "dump",
+	Usage:                  "fofa dump data",
 	UseShortOptionHandling: true,
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:        "fields",
 			Aliases:     []string{"f"},
-			Value:       "ip,port",
+			Value:       "host,ip,port",
 			Usage:       "visit fofa website for more info",
 			Destination: &fieldString,
 		},
@@ -52,15 +41,9 @@ var searchCmd = &cli.Command{
 		&cli.IntFlag{
 			Name:        "size",
 			Aliases:     []string{"s"},
-			Value:       100,
-			Usage:       "if DeductModeFree set, select free limit size automatically",
+			Value:       -1,
+			Usage:       "-1 means all",
 			Destination: &size,
-		},
-		&cli.StringFlag{
-			Name:        "deductMode",
-			Value:       "DeductModeFree",
-			Usage:       "DeductModeFree or DeductModeFCoin",
-			Destination: &deductMode,
 		},
 		&cli.BoolFlag{
 			Name:        "fixUrl",
@@ -80,34 +63,19 @@ var searchCmd = &cli.Command{
 			Usage:       "search result for over a year",
 			Destination: &full,
 		},
+		&cli.IntFlag{
+			Name:        "batchSize",
+			Aliases:     []string{"bs"},
+			Value:       1000,
+			Usage:       "the amount of data contained in each batch",
+			Destination: &batchSize,
+		},
 	},
-	Action: SearchAction,
+	Action: DumpAction,
 }
 
-func fieldIndex(fields []string, fieldName string) int {
-	for i, f := range fields {
-		if f == fieldName {
-			return i
-		}
-	}
-	return -1
-}
-
-func hashField(fields []string, fieldName string) bool {
-	for _, f := range fields {
-		if f == fieldName {
-			return true
-		}
-	}
-	return false
-}
-
-func hasBodyField(fields []string) bool {
-	return hashField(fields, "body")
-}
-
-// SearchAction search action
-func SearchAction(ctx *cli.Context) error {
+// DumpAction search action
+func DumpAction(ctx *cli.Context) error {
 	// valid same config
 	query := ctx.Args().First()
 	if len(query) == 0 {
@@ -151,7 +119,14 @@ func SearchAction(ctx *cli.Context) error {
 	}
 
 	// do search
-	res, err := fofaCli.HostSearch(query, size, fields, gofofa.SearchOptions{
+	fetchedSize := 0
+	err := fofaCli.DumpSearch(query, size, batchSize, fields, func(res [][]string, allSize int) (err error) {
+		fetchedSize += len(res)
+		log.Printf("size: %d/%d, %.2f%%", fetchedSize, allSize, 100*float32(fetchedSize)/float32(allSize))
+		// output
+		err = writer.WriteAll(res)
+		return err
+	}, gofofa.SearchOptions{
 		FixUrl:    fixUrl,
 		UrlPrefix: urlPrefix,
 		Full:      full,
@@ -160,9 +135,5 @@ func SearchAction(ctx *cli.Context) error {
 		return err
 	}
 
-	// output
-	if err = writer.WriteAll(res); err != nil {
-		return err
-	}
 	return nil
 }

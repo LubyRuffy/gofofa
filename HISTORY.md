@@ -1,3 +1,7 @@
+## v0.1.12 dump
+
+- dump is used to perform large-scale data retrieval for the same search query, https://en.fofa.info/api/batches_pages
+
 ## v0.1.11 add fixUrl/urlPrefix
 
 - add fixUrl/urlPrefix: ```./fofa --size 1 --fields "host" --urlPrefix "redis://" protocol=redis```

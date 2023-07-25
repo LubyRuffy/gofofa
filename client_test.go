@@ -2,6 +2,8 @@ package gofofa
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -14,27 +16,29 @@ import (
 )
 
 type accountInfo struct {
-	Email    string   `json:"email"`
-	Key      string   `json:"key"`
-	VIP      bool     `json:"isvip"`
-	VIPLevel VipLevel `json:"vip_level"` // vip level
-	FCoin    int      `json:"fcoin"`     // fcoin count
+	Email          string   `json:"email"`
+	Key            string   `json:"key"`
+	VIP            bool     `json:"isvip"`
+	VIPLevel       VipLevel `json:"vip_level"`        // vip level
+	FCoin          int      `json:"fcoin"`            // fcoin count
+	RemainApiQuery int      `json:"remain_api_query"` // available query
+	RemainApiData  int      `json:"remain_api_data"`  // available data amount
 }
 
 var (
 	validAccounts = []accountInfo{
-		{"a@a.com", "11111", false, VipLevelNone, 0},      // 注册用户
-		{"b@b.com", "22222", true, VipLevelNormal, 10},    // 普通会员
-		{"c@c.com", "33333", true, VipLevelAdvanced, 0},   // 高级会员
-		{"d@d.com", "44444", true, VipLevelEnterprise, 0}, // 企业会员
-		{"e@e.com", "55555", false, VipLevelNone, 10},     // 注册用户有F币
+		{"a@a.com", "11111", false, VipLevelNone, 0, 0, 0},      // 注册用户
+		{"b@b.com", "22222", true, VipLevelNormal, 10, 0, 0},    // 普通会员
+		{"c@c.com", "33333", true, VipLevelAdvanced, 0, 0, 0},   // 高级会员
+		{"d@d.com", "44444", true, VipLevelEnterprise, 0, 0, 0}, // 企业会员
+		{"e@e.com", "55555", false, VipLevelNone, 10, 0, 0},     // 注册用户有F币
 
-		{"g@g.com", "77777", true, VipLevelSubPersonal, 0}, // 订阅个人
-		{"h@h.com", "88888", true, VipLevelSubPro, 0},      // 订阅专业
-		{"i@i.com", "99999", true, VipLevelSubBuss, 0},     // 订阅商业
+		{"g@g.com", "77777", true, VipLevelSubPersonal, 10, 10, 100}, // 订阅个人
+		{"h@h.com", "88888", true, VipLevelSubPro, 0, 0, 0},          // 订阅专业
+		{"i@i.com", "99999", true, VipLevelSubBuss, 0, 0, 0},         // 订阅商业
 
-		{"red@fofa.info", "10001", true, VipLevelRed, 0},     // 红队
-		{"sub@fofa.info", "10001", true, VipLevelStudent, 0}, // 教育
+		{"red@fofa.info", "10001", true, VipLevelRed, 0, 0, 0},     // 红队
+		{"sub@fofa.info", "10001", true, VipLevelStudent, 0, 0, 0}, // 教育
 	}
 
 	queryHander = func(w http.ResponseWriter, r *http.Request) {
@@ -45,8 +49,9 @@ var (
 				w.Write([]byte(`{"error":true,"errmsg":"[-700] Account Invalid"}`))
 				return
 			}
-
-			w.Write([]byte(`{"error":false,"email":"` + account.Email + `","fcoin":` + strconv.Itoa(account.FCoin) + `,"isvip":` + strconv.FormatBool(account.VIP) + `,"vip_level":` + strconv.Itoa(int(account.VIPLevel)) + `}`))
+			b, _ := json.Marshal(account)
+			w.Write(b)
+			//w.Write([]byte(`{"error":false,"email":"` + account.Email + `","fcoin":` + strconv.Itoa(account.FCoin) + `,"isvip":` + strconv.FormatBool(account.VIP) + `,"vip_level":` + strconv.Itoa(int(account.VIPLevel)) + `}`))
 
 		case "/api/v1/search/all":
 			account := checkAccount(r.FormValue("email"), r.FormValue("key"))
@@ -170,6 +175,39 @@ var (
   ],
   "update_time": "2022-05-24 12:00:00"
 }`))
+			return
+		case "/api/v1/search/next":
+			next := "1"
+			if id := r.URL.Query().Get("next"); id != "" {
+				next = id
+			}
+			i, _ := strconv.Atoi(next)
+			var results [][]string
+			for j := 0; j < 10; j++ {
+				data := []string{
+					fmt.Sprintf("%d.%d.%d.%d", i, i, i, i),
+					strconv.Itoa(80 + i + j),
+				}
+				if r.URL.Query().Get("fields") == "host,ip,port" {
+					data = append([]string{fmt.Sprintf("http://%d.%d.%d.%d", i, i, i, i)}, data...)
+				}
+				results = append(results, data)
+			}
+
+			ret := map[string]interface{}{
+				"error":   false,
+				"size":    100,
+				"mode":    "extended",
+				"query":   "title=\"百度\"", // 查询语句
+				"results": results,
+			}
+			if i == 10 {
+				ret["next"] = ""
+			} else {
+				ret["next"] = strconv.Itoa(i + 1) // 下一次查询的id，翻页需要带上
+			}
+			b, _ := json.Marshal(ret)
+			w.Write(b)
 			return
 		}
 	}

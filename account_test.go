@@ -37,8 +37,11 @@ func TestAccountInfo_String(t *testing.T) {
 	assert.Equal(t, `{
   "error": false,
   "fcoin": 0,
+  "fofa_point": 0,
   "isvip": true,
-  "vip_level": 3
+  "vip_level": 3,
+  "remain_api_query": 0,
+  "remain_api_data": 0
 }`, ai.String())
 }
 
@@ -65,7 +68,7 @@ func TestClient_AccountInfo(t *testing.T) {
 	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
-	assert.Equal(t, 1, cli.Account.VIPLevel)
+	assert.Equal(t, VipLevelNormal, cli.Account.VIPLevel)
 	assert.Equal(t, 10, cli.Account.FCoin)
 	assert.Equal(t, 100, cli.freeSize())
 
@@ -74,7 +77,7 @@ func TestClient_AccountInfo(t *testing.T) {
 	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
-	assert.Equal(t, 2, cli.Account.VIPLevel)
+	assert.Equal(t, VipLevelAdvanced, cli.Account.VIPLevel)
 	assert.Equal(t, 0, cli.Account.FCoin)
 	assert.Equal(t, 10000, cli.freeSize())
 
@@ -83,7 +86,16 @@ func TestClient_AccountInfo(t *testing.T) {
 	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
 	assert.Nil(t, err)
 	assert.True(t, cli.Account.IsVIP)
-	assert.Equal(t, 3, cli.Account.VIPLevel)
+	assert.Equal(t, VipLevelEnterprise, cli.Account.VIPLevel)
 	assert.Equal(t, 0, cli.Account.FCoin)
 	assert.Equal(t, 100000, cli.freeSize())
+
+	// 订阅个人
+	account = validAccounts[5]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+	assert.Nil(t, err)
+	assert.True(t, cli.Account.IsVIP)
+	assert.Equal(t, VipLevelSubPersonal, cli.Account.VIPLevel)
+	assert.Equal(t, 10, cli.Account.FCoin)
+	assert.Equal(t, 100, cli.freeSize())
 }

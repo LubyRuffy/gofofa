@@ -209,6 +209,10 @@ every 500ms generate one line, never stop
             -   ☑ query
             -   ☑ fields/f
             -   ☑ size/s
+            - group/g 根据字段聚合：group by ip 根据ip合并，比如查询一个app会有很多域名，其中多个域名对应一个ip，这时只测试其中一个就好了
+            -   ☑ fixUrl 构建完整的url，默认的字段如果是http的话前面没有http://前缀，导致命令行一些工具不能使用，通过这个参数进行修复
+              -   ☑ 可以配合urlPrefix使用，比如不用http://而用redis://
+            -   ☑ full 匹配所有，而不只是一年内的
             -   ☑ format
                 -   ☑ csv
                 -   ☑ json
@@ -219,6 +223,7 @@ every 500ms generate one line, never stop
         -   ☑ stats
         -   ☑ icon
         -   ☐ web
+        - dump https://en.fofa.info/api/batches_pages large-scale data retrieval
     -   ☑ Terminal color 
     -   ☑ Global Config
         -   ☑ fofaURL
