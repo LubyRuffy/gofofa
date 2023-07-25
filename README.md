@@ -96,6 +96,12 @@ redis://152.136.145.87:6379
 ./fofa --verbose search port=80
 ```
 
+-   pipeline to nuclei
+
+```shell
+./fofa -fields "host" -fixUrl 'app="Aspera-Faspex"' | nuclei -t http/cves/2022/CVE-2022-47986.yaml
+```
+
 ### Stats
 
 -   stats subcommand
