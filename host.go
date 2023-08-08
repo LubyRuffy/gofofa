@@ -317,8 +317,8 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 			}
 		}
 
-		if c.onResults != nil {
-			c.onResults(results)
+		if c.OnResults != nil {
+			c.OnResults(results)
 		}
 		if err := onResults(results, hr.Size); err != nil {
 			return err
