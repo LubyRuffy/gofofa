@@ -48,9 +48,11 @@ func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte
 	req, err = http.NewRequest("GET", fullURL, nil)
 	req.Header.Set("Accept-Encoding", "gzip")
 	//requestDump, _ := httputil.DumpRequestOut(req, false)
-	//logrus.Debugln(string(requestDump))
+	//log.Println(string(requestDump))
 
 	resp, err = c.httpClient.Do(req)
+	//responseDump, _ := httputil.DumpResponse(resp, false)
+	//log.Println(string(responseDump))
 	if err != nil {
 		if !c.accountDebug {
 			// 替换账号明文信息

@@ -104,7 +104,7 @@ func randomAction(ctx *cli.Context) error {
 			newQuery = newQuery + ` && before="` + ts + `"`
 		}
 
-		res, err := fofaCli.HostSearch(newQuery, 1, fields, nil)
+		res, err := fofaCli.HostSearch(newQuery, 1, fields)
 		if err != nil {
 			return err
 		}

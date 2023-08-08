@@ -89,4 +89,13 @@ func TestClient_AccountInfo(t *testing.T) {
 	assert.Equal(t, VipLevelEnterprise, cli.Account.VIPLevel)
 	assert.Equal(t, 0, cli.Account.FCoin)
 	assert.Equal(t, 100000, cli.freeSize())
+
+	// 订阅个人
+	account = validAccounts[5]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+	assert.Nil(t, err)
+	assert.True(t, cli.Account.IsVIP)
+	assert.Equal(t, VipLevelSubPersonal, cli.Account.VIPLevel)
+	assert.Equal(t, 10, cli.Account.FCoin)
+	assert.Equal(t, 100, cli.freeSize())
 }

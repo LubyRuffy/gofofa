@@ -27,10 +27,11 @@ func ParseDeductMode(v string) DeductMode {
 type VipLevel int
 
 const (
-	VipLevelNone       VipLevel = 0 // 注册用户
-	VipLevelNormal     VipLevel = 1 // 普通会员
-	VipLevelAdvanced   VipLevel = 2 // 高级会员
-	VipLevelEnterprise VipLevel = 3 // 企业版
+	VipLevelNone        VipLevel = 0 // 注册用户
+	VipLevelNormal      VipLevel = 1 // 普通会员
+	VipLevelAdvanced    VipLevel = 2 // 高级会员
+	VipLevelEnterprise  VipLevel = 3 // 企业版
+	VipLevelEnterprise2 VipLevel = 5 // 企业版
 )
 
 const (
@@ -81,7 +82,7 @@ func (c *Client) freeSize() int {
 		return 100
 	case VipLevelAdvanced:
 		return 10000
-	case VipLevelEnterprise:
+	case VipLevelEnterprise, VipLevelEnterprise2:
 		return 100000
 	case VipLevelRed:
 		return 10000

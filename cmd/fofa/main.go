@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	version = "dev"
+	version = "v0.1.12"
 	commit  = "none"
 	date    = "unknown"
 	builtBy = "unknown" // goreleaser fill

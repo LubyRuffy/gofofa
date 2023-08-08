@@ -1,19 +1,23 @@
+## v0.1.12 dump
+
+-   dump is used to perform large-scale data retrieval for the same search query, https://en.fofa.info/api/batches_pages
+
 ## v0.1.11 add fixUrl/urlPrefix
 
-- add fixUrl/urlPrefix: ```./fofa --size 1 --fields "host" --urlPrefix "redis://" protocol=redis```
-- add accountDebug option, it doesn't print account information at console when error by default, can be opened by set ```./fofa -accountDebug account```
+-   add fixUrl/urlPrefix: ```./fofa --size 1 --fields "host" --urlPrefix "redis://" protocol=redis```
+-   add accountDebug option, it doesn't print account information at console when error by default, can be opened by set ```./fofa -accountDebug account```
 
 ## v0.1.10 fix page
 
-- fix page issue
+-   fix page issue
 
 ## v0.0.9 support cancel
 
-- support cancel through SetContext
+-   support cancel through SetContext
 
 ## v0.0.8 change mod url
 
-- change from lubyruffy/gofofa to LubyRuffy/gofofa
+-   change from lubyruffy/gofofa to LubyRuffy/gofofa
 
 ## v0.0.7 host api
 

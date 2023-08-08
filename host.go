@@ -18,6 +18,7 @@ type HostResults struct {
 	Page    int         `json:"page"`
 	Size    int         `json:"size"` // 总数
 	Results interface{} `json:"results"`
+	Next    string      `json:"next"`
 }
 
 // HostStatsData /host api results
@@ -41,11 +42,7 @@ type HostStatsData struct {
 type SearchOptions struct {
 	FixUrl    bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1, https://1.1.1.1:8443 will no change
 	UrlPrefix string // default is http://
-}
-
-// SecondaryOptions options used while searching, use default option for empty input
-type SecondaryOptions struct {
-	Full bool // search result for over a year
+	Full      bool   // search result for over a year
 }
 
 // fixHostToUrl 替换host为url
@@ -70,11 +67,11 @@ func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix stri
 // query fofa query string
 // size data size: -1 means all，0 means just data total info, >0 means actual size
 // fields of fofa host search
-// sOptions - Full: fetch result over a year, default false
-func (c *Client) HostSearch(query string, size int, fields []string, sOptions *SecondaryOptions, options ...SearchOptions) (res [][]string, err error) {
-	// assign default value for secondary options
-	if sOptions == nil {
-		sOptions = &SecondaryOptions{Full: false}
+// options for search
+func (c *Client) HostSearch(query string, size int, fields []string, options ...SearchOptions) (res [][]string, err error) {
+	var full bool
+	if len(options) > 0 {
+		full = options[0].Full
 	}
 
 	freeSize := c.freeSize()
@@ -135,7 +132,7 @@ func (c *Client) HostSearch(query string, size int, fields []string, sOptions *S
 				"size":    strconv.Itoa(perPage),
 				"page":    strconv.Itoa(page),
 				"fields":  strings.Join(fields, ","),
-				"full":    strconv.FormatBool(sOptions.Full), // 是否全部数据，非一年内
+				"full":    strconv.FormatBool(full), // 是否全部数据，非一年内
 			},
 			&hr)
 		if err != nil {
@@ -229,5 +226,123 @@ func (c *Client) HostStats(host string) (data HostStatsData, err error) {
 	if err != nil {
 		return
 	}
+	return
+}
+
+// DumpSearch search fofa host data
+// query fofa query string
+// size data size: -1 means all，0 means just data total info, >0 means actual size
+// fields of fofa host search
+// options for search
+func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []string, onResults func([][]string, int) error, options ...SearchOptions) (err error) {
+	var full bool
+	if len(options) > 0 {
+		full = options[0].Full
+	}
+
+	next := ""
+	perPage := batchSize
+	if perPage < 1 || perPage > 100000 {
+		return errors.New("batchSize must between 1 and 100000")
+	}
+	if len(fields) == 0 {
+		fields = []string{"host", "ip", "port"}
+	}
+
+	// 分页取数据
+	fetchedSize := 0
+	for {
+		if ctx := c.GetContext(); ctx != nil {
+			// 确认是否需要退出
+			select {
+			case <-c.GetContext().Done():
+				err = context.Canceled
+				return
+			default:
+			}
+		}
+
+		var hr HostResults
+		err = c.Fetch("search/next",
+			map[string]string{
+				"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
+				"size":    strconv.Itoa(perPage),
+				"fields":  strings.Join(fields, ","),
+				"full":    strconv.FormatBool(full), // 是否全部数据，非一年内
+				"next":    next,                     // 偏移
+			},
+			&hr)
+		if err != nil {
+			return
+		}
+
+		// 报错，退出
+		if len(hr.Errmsg) > 0 {
+			err = errors.New(hr.Errmsg)
+			break
+		}
+
+		var results [][]string
+		if v, ok := hr.Results.([]interface{}); ok {
+			// 无数据
+			if len(v) == 0 {
+				break
+			}
+			for _, result := range v {
+				if vStrSlice, ok := result.([]interface{}); ok {
+					var newSlice []string
+					for _, vStr := range vStrSlice {
+						newSlice = append(newSlice, vStr.(string))
+					}
+					results = append(results, newSlice)
+				} else if vStr, ok := result.(string); ok {
+					results = append(results, []string{vStr})
+				}
+			}
+		} else {
+			break
+		}
+
+		// 后处理
+		if len(options) > 0 && options[0].FixUrl {
+			urlPrefix := options[0].UrlPrefix
+			if urlPrefix == "" {
+				urlPrefix = "http://"
+			}
+			for i, f := range fields {
+				if f == "host" {
+					results = fixHostToUrl(results, fields, i, urlPrefix)
+					break
+				}
+			}
+		}
+
+		if c.onResults != nil {
+			c.onResults(results)
+		}
+		if err := onResults(results, hr.Size); err != nil {
+			return err
+		}
+
+		fetchedSize += len(results)
+
+		// 数据填满了，完成
+		if allSize > 0 && allSize <= fetchedSize {
+			break
+		}
+
+		// 数据已经没有了
+		if len(results) < perPage {
+			break
+		}
+
+		// 结束
+		if hr.Next == "" {
+			break
+		}
+
+		next = hr.Next // 偏移
+	}
+
 	return
 }
