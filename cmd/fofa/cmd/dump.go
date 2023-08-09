@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"github.com/LubyRuffy/gofofa"
@@ -32,11 +33,23 @@ var dumpCmd = &cli.Command{
 			Usage:       "can be csv/json/xml",
 			Destination: &format,
 		},
+		&cli.BoolFlag{
+			Name:        "json",
+			Aliases:     []string{"j"},
+			Usage:       "output use json format",
+			Destination: &json,
+		},
 		&cli.StringFlag{
 			Name:        "outFile",
 			Aliases:     []string{"o"},
 			Usage:       "if not set, wirte to stdout",
 			Destination: &outFile,
+		},
+		&cli.StringFlag{
+			Name:        "inFile",
+			Aliases:     []string{"i"},
+			Usage:       "queries line by line",
+			Destination: &inFile,
 		},
 		&cli.IntFlag{
 			Name:        "size",
@@ -77,9 +90,35 @@ var dumpCmd = &cli.Command{
 // DumpAction search action
 func DumpAction(ctx *cli.Context) error {
 	// valid same config
+	var queries []string
 	query := ctx.Args().First()
-	if len(query) == 0 {
-		return errors.New("fofa query cannot be empty")
+	if len(query) > 0 {
+		queries = append(queries, query)
+	}
+	if len(inFile) > 0 {
+		// 打开文件
+		file, err := os.Open(inFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		// 创建一个 Scanner 对象来逐行读取文件
+		scanner := bufio.NewScanner(file)
+
+		// 逐行读取并打印
+		for scanner.Scan() {
+			queries = append(queries, scanner.Text())
+		}
+
+		// 检查是否有读取错误
+		if err = scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if len(queries) == 0 {
+		return errors.New("fofa query cannot be empty, use args or -inFile")
 	}
 	fields := strings.Split(fieldString, ",")
 	if len(fields) == 0 {
@@ -100,6 +139,9 @@ func DumpAction(ctx *cli.Context) error {
 		outTo = os.Stdout
 	}
 
+	if json {
+		format = "json"
+	}
 	// gen writer
 	var writer outformats.OutWriter
 	if hasBodyField(fields) && format == "csv" {
@@ -119,20 +161,25 @@ func DumpAction(ctx *cli.Context) error {
 	}
 
 	// do search
-	fetchedSize := 0
-	err := fofaCli.DumpSearch(query, size, batchSize, fields, func(res [][]string, allSize int) (err error) {
-		fetchedSize += len(res)
-		log.Printf("size: %d/%d, %.2f%%", fetchedSize, allSize, 100*float32(fetchedSize)/float32(allSize))
-		// output
-		err = writer.WriteAll(res)
-		return err
-	}, gofofa.SearchOptions{
-		FixUrl:    fixUrl,
-		UrlPrefix: urlPrefix,
-		Full:      full,
-	})
-	if err != nil {
-		return err
+	for _, query := range queries {
+		log.Println("dump data of query:", query)
+
+		fetchedSize := 0
+		err := fofaCli.DumpSearch(query, size, batchSize, fields, func(res [][]string, allSize int) (err error) {
+			fetchedSize += len(res)
+			log.Printf("size: %d/%d, %.2f%%", fetchedSize, allSize, 100*float32(fetchedSize)/float32(allSize))
+			// output
+			err = writer.WriteAll(res)
+			return err
+		}, gofofa.SearchOptions{
+			FixUrl:    fixUrl,
+			UrlPrefix: urlPrefix,
+			Full:      full,
+		})
+		if err != nil {
+			log.Println("fetch error:", err)
+			//return err
+		}
 	}
 
 	return nil

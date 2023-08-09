@@ -41,8 +41,9 @@ const (
 )
 
 const (
-	VipLevelRed     VipLevel = 20 // 红队版
-	VipLevelStudent VipLevel = 22 // 教育账户
+	VipLevelRed     VipLevel = 20  // 红队版
+	VipLevelStudent VipLevel = 22  // 教育账户
+	VipLevelNever   VipLevel = 100 // 不可能的等级
 )
 
 // AccountInfo fofa account info

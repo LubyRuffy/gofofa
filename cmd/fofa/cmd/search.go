@@ -17,11 +17,13 @@ var (
 	size        int    // fetch size
 	format      string // out format
 	outFile     string // out file
+	inFile      string // in file
 	deductMode  string // deduct Mode
 	fixUrl      bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
 	urlPrefix   string // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
 	full        bool   // search result for over a year
 	batchSize   int    // amount of data contained in each batch, only for dump
+	json        bool   // out format as json for short
 )
 
 // search subcommand

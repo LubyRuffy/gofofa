@@ -168,6 +168,25 @@ UpdateTime:      2022-05-30 17:00:00
 ./fofa dump --format json -fixUrl -outFile a.json -batchSize 10000 'title=phpinfo'
 ```
 
+-   dump large-scale data by queries file (line by line)
+
+```shell
+
+cat queries.txt
+port=13344
+port=23455
+
+# csv
+./fofa dump -outFile out.csv -inFile queries.txt
+
+# json
+./fofa dump -inFile queries.txt -outFile out.json -j
+2023/08/09 10:05:33 dump data of query: port=13344
+2023/08/09 10:05:35 size: 11/11, 100.00%
+2023/08/09 10:05:35 dump data of query: port=23455
+2023/08/09 10:05:37 size: 499/499, 100.00%
+```
+
 ### Utils
 
 -   random subcommand
