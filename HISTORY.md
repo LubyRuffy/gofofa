@@ -1,3 +1,7 @@
+## v0.1.13 dump add inFile
+
+-   dump add inFile/json argument, which can be used to dump data from queries file. ```./fofa dump -inFile a.txt -outFile out.json -j```
+
 ## v0.1.12 dump
 
 -   dump is used to perform large-scale data retrieval for the same search query, https://en.fofa.info/api/batches_pages

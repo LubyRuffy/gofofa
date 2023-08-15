@@ -38,7 +38,9 @@ var (
 		{"i@i.com", "99999", true, VipLevelSubBuss, 0, 0, 0},         // 订阅商业
 
 		{"red@fofa.info", "10001", true, VipLevelRed, 0, 0, 0},     // 红队
-		{"sub@fofa.info", "10001", true, VipLevelStudent, 0, 0, 0}, // 教育
+		{"sub@fofa.info", "10002", true, VipLevelStudent, 0, 0, 0}, // 教育
+
+		{"never@fofa.info", "10003", true, VipLevelNever, 0, 0, 0}, // 不可能的等级
 	}
 
 	queryHander = func(w http.ResponseWriter, r *http.Request) {
