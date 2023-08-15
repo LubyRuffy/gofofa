@@ -36,7 +36,7 @@ type Client struct {
 	logger     *logrus.Logger
 	ctx        context.Context // use to cancel requests
 
-	OnResults    func(results [][]string) // when fetch results callback
+	onResults    func(results [][]string) // when fetch results callback
 	accountDebug bool                     // 调试账号明文信息
 }
 
@@ -102,7 +102,7 @@ func WithLogger(logger *logrus.Logger) ClientOption {
 // WithOnResults set on results callback
 func WithOnResults(onResults func(results [][]string)) ClientOption {
 	return func(c *Client) error {
-		c.OnResults = onResults
+		c.onResults = onResults
 		return nil
 	}
 }

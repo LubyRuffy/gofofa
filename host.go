@@ -166,8 +166,8 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 			break
 		}
 
-		if c.OnResults != nil {
-			c.OnResults(results)
+		if c.onResults != nil {
+			c.onResults(results)
 		}
 
 		res = append(res, results...)
@@ -317,8 +317,8 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 			}
 		}
 
-		if c.OnResults != nil {
-			c.OnResults(results)
+		if c.onResults != nil {
+			c.onResults(results)
 		}
 		if err := onResults(results, hr.Size); err != nil {
 			return err
