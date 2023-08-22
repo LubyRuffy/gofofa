@@ -24,6 +24,7 @@ var (
 	full        bool   // search result for over a year
 	batchSize   int    // amount of data contained in each batch, only for dump
 	json        bool   // out format as json for short
+	uniqByIP    bool   // group by ip
 )
 
 // search subcommand
@@ -81,6 +82,12 @@ var searchCmd = &cli.Command{
 			Value:       false,
 			Usage:       "search result for over a year",
 			Destination: &full,
+		},
+		&cli.BoolFlag{
+			Name:        "uniqByIP",
+			Value:       false,
+			Usage:       "uniq by ip",
+			Destination: &uniqByIP,
 		},
 	},
 	Action: SearchAction,
@@ -157,6 +164,7 @@ func SearchAction(ctx *cli.Context) error {
 		FixUrl:    fixUrl,
 		UrlPrefix: urlPrefix,
 		Full:      full,
+		UniqByIP:  uniqByIP,
 	})
 	if err != nil {
 		return err
