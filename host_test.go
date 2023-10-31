@@ -141,6 +141,19 @@ func TestClient_HostSearch(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 10, len(res))
+
+	// 过滤UniqByIP
+	res, err = cli.HostSearch("port=80", 500, []string{"ip", "port"}, SearchOptions{
+		FixUrl: true,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1000, len(res))
+	res, err = cli.HostSearch("port=80", 500, []string{"ip", "port"}, SearchOptions{
+		FixUrl:   true,
+		UniqByIP: true,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 986, len(res))
 }
 
 func TestClient_HostSize(t *testing.T) {

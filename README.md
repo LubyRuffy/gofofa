@@ -20,11 +20,8 @@ The official library doesn't has unittests,  之前官方的库功能不全，�
 
 ```
 ~ go install github.com/LubyRuffy/gofofa/cmd/fofa@latest
-~ $GOPATH/bin/fofa
-~ $GOPATH/bin/fofa search port=80
-WARN[0000] auth failed
-2022/08/07 14:38:29 auth failed: '[-700] Account Invalid', make sure key is valid
-~ FOFA_CLIENT_URL='https://fofa.info/?email=xxx@gmail.com&key=xxx' $GOPATH/bin/fofa search port=80
+~ fofa
+~ FOFA_CLIENT_URL='https://fofa.info/?email=xxx@gmail.com&key=xxx' fofa search port=80
 ```
 
 ### Search
@@ -100,6 +97,12 @@ redis://152.136.145.87:6379
 
 ```shell
 ./fofa -fields "host" -fixUrl 'app="Aspera-Faspex"' | nuclei -t http/cves/2022/CVE-2022-47986.yaml
+```
+
+-   uniq by ip
+
+```shell
+./fofa --fixUrl --size 1000 --fields host --uniqByIP 'host="edu.cn"'
 ```
 
 ### Stats
