@@ -149,15 +149,26 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 		}
 
 		var hr HostResults
-		err = c.Fetch("search/all",
-			map[string]string{
-				"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
-				"size":    strconv.Itoa(perPage),
-				"page":    strconv.Itoa(page),
-				"fields":  strings.Join(fields, ","),
-				"full":    strconv.FormatBool(full), // 是否全部数据，非一年内
+		err = retry.Do(
+			func() error {
+				err = c.Fetch("search/all",
+					map[string]string{
+						"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
+						"size":    strconv.Itoa(perPage),
+						"page":    strconv.Itoa(page),
+						"fields":  strings.Join(fields, ","),
+						"full":    strconv.FormatBool(full), // 是否全部数据，非一年内
+					},
+					&hr)
+				if err != nil {
+					return err
+				}
+				return nil
 			},
-			&hr)
+			retry.Attempts(3),
+			retry.Delay(3*time.Second),
+			retry.DelayType(retry.RandomDelay),
+		)
 		if err != nil {
 			return
 		}
