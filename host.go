@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"github.com/avast/retry-go"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // HostResults /search/all api results
@@ -262,18 +264,30 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 			}
 		}
 
+		// 添加默认三次重试，防止大数据量拉取时的报错
 		var hr HostResults
-		err = c.Fetch("search/next",
-			map[string]string{
-				"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
-				"size":    strconv.Itoa(perPage),
-				"fields":  strings.Join(fields, ","),
-				"full":    strconv.FormatBool(full), // 是否全部数据，非一年内
-				"next":    next,                     // 偏移
+		err = retry.Do(
+			func() error {
+				err = c.Fetch("search/next",
+					map[string]string{
+						"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
+						"size":    strconv.Itoa(perPage),
+						"fields":  strings.Join(fields, ","),
+						"full":    strconv.FormatBool(full), // 是否全部数据，非一年内
+						"next":    next,                     // 偏移
+					},
+					&hr)
+				if err != nil {
+					return err
+				}
+				return nil
 			},
-			&hr)
+			retry.Attempts(3),
+			retry.Delay(3*time.Second),
+			retry.DelayType(retry.RandomDelay),
+		)
 		if err != nil {
-			return
+			return err
 		}
 
 		// 报错，退出

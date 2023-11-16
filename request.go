@@ -114,7 +114,7 @@ func (c *Client) Fetch(apiURI string, params map[string]string, v interface{}) (
 	}
 
 	if err = json.Unmarshal(content, v); err != nil {
-		return
+		return fmt.Errorf("fail search fofa content %s error %s", content, err.Error())
 	}
 	return
 }
