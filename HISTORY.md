@@ -1,3 +1,7 @@
+## v0.1.14 search add uniqByIP
+
+-   search add uniqByIP argument, which can be used to filter data as group by ip. ```./fofa --fixUrl --size 1000 --fields host --uniqByIP 'host="edu.cn"'```
+
 ## v0.1.13 dump add inFile
 
 -   dump add inFile/json argument, which can be used to dump data from queries file. ```./fofa dump -inFile a.txt -outFile out.json -j```

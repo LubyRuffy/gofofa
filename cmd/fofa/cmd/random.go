@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/LubyRuffy/gofofa"
 	"github.com/LubyRuffy/gofofa/pkg/outformats"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -47,6 +48,24 @@ var randomCmd = &cli.Command{
 			Value:       1000,
 			Usage:       "ms",
 			Destination: &sleepMS,
+		},
+		&cli.BoolFlag{
+			Name:        "fixUrl",
+			Value:       false,
+			Usage:       "each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1",
+			Destination: &fixUrl,
+		},
+		&cli.StringFlag{
+			Name:        "urlPrefix",
+			Value:       "http://",
+			Usage:       "prefix of url, default is http://, can be redis:// and so on ",
+			Destination: &urlPrefix,
+		},
+		&cli.BoolFlag{
+			Name:        "full",
+			Value:       false,
+			Usage:       "search result for over a year",
+			Destination: &full,
 		},
 	},
 	Action: randomAction,
@@ -104,7 +123,11 @@ func randomAction(ctx *cli.Context) error {
 			newQuery = newQuery + ` && before="` + ts + `"`
 		}
 
-		res, err := fofaCli.HostSearch(newQuery, 1, fields)
+		res, err := fofaCli.HostSearch(newQuery, 1, fields, gofofa.SearchOptions{
+			FixUrl:    fixUrl,
+			UrlPrefix: urlPrefix,
+			Full:      full,
+		})
 		if err != nil {
 			return err
 		}

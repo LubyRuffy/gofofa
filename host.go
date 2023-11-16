@@ -45,6 +45,7 @@ type SearchOptions struct {
 	FixUrl    bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1, https://1.1.1.1:8443 will no change
 	UrlPrefix string // default is http://
 	Full      bool   // search result for over a year
+	UniqByIP  bool   // uniq by ip
 }
 
 // fixHostToUrl 替换host为url
@@ -72,8 +73,10 @@ func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix stri
 // options for search
 func (c *Client) HostSearch(query string, size int, fields []string, options ...SearchOptions) (res [][]string, err error) {
 	var full bool
+	var uniqByIP bool
 	if len(options) > 0 {
 		full = options[0].Full
+		uniqByIP = options[0].UniqByIP
 	}
 
 	freeSize := c.freeSize()
@@ -113,6 +116,24 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 
 	if len(fields) == 0 {
 		fields = []string{"ip", "port"}
+	}
+
+	// 确认fields包含ip
+	ipIndex := -1
+	uniqIPMap := make(map[string]bool)
+	if uniqByIP {
+		ipExists := false
+		for index, f := range fields {
+			if f == "ip" {
+				ipIndex = index
+				ipExists = true
+				break
+			}
+		}
+		if !ipExists {
+			fields = append(fields, "ip")
+			ipIndex = len(fields) - 1
+		}
 	}
 
 	// 分页取数据
@@ -159,6 +180,12 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 					for _, vStr := range vStrSlice {
 						newSlice = append(newSlice, vStr.(string))
 					}
+					if uniqByIP {
+						if _, ok := uniqIPMap[newSlice[ipIndex]]; ok {
+							continue
+						}
+						uniqIPMap[newSlice[ipIndex]] = true
+					}
 					results = append(results, newSlice)
 				} else if vStr, ok := result.(string); ok {
 					results = append(results, []string{vStr})
@@ -180,7 +207,7 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 		}
 
 		// 数据已经没有了
-		if len(results) < perPage {
+		if len(hr.Results.([]interface{})) < perPage {
 			break
 		}
 
