@@ -1,3 +1,7 @@
+## v0.1.15 update fixUrl
+
+-   support redis/socks5/mysql ```./fofa --fixUrl --size 1000 --fields host 'protocol=socks5 || protocol=redis'```
+
 ## v0.1.14 search add uniqByIP
 
 -   search add uniqByIP argument, which can be used to filter data as group by ip. ```./fofa --fixUrl --size 1000 --fields host --uniqByIP 'host="edu.cn"'```

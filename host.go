@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	NoHostWithFixURL = "host field must included when fixUrl option set"
+)
+
 // HostResults /search/all api results
 type HostResults struct {
 	Mode    string      `json:"mode"`
@@ -49,14 +53,24 @@ type SearchOptions struct {
 }
 
 // fixHostToUrl 替换host为url
-func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix string) [][]string {
+func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix string, protocolIndex int) [][]string {
+
 	newRes := make([][]string, 0, len(res))
 	for _, row := range res {
 		newRow := make([]string, 0, len(fields))
 		for j, r := range row {
 			if j == hostIndex {
 				if !strings.Contains(r, "://") {
-					r = urlPrefix + r
+					if urlPrefix != "" {
+						r = urlPrefix + r
+					} else if protocolIndex != -1 &&
+						(row[protocolIndex] == "socks5" || row[protocolIndex] == "redis" ||
+							row[protocolIndex] == "http" || row[protocolIndex] == "https" ||
+							row[protocolIndex] == "mongodb" || row[protocolIndex] == "mysql") {
+						r = row[protocolIndex] + "://" + r
+					} else {
+						r = "http://" + r
+					}
 				}
 			}
 			newRow = append(newRow, r)
@@ -64,6 +78,71 @@ func fixHostToUrl(res [][]string, fields []string, hostIndex int, urlPrefix stri
 		newRes = append(newRes, newRow)
 	}
 	return newRes
+}
+
+// fixUrlCheck 检查参数，构建新的field和记录相关字段的偏移
+// 返回hostIndex, protocolIndex, fields, rawFieldSize, err
+func (c *Client) fixUrlCheck(fields []string, options ...SearchOptions) (int, int, []string, int, error) {
+	noSetFields := false
+	if len(fields) == 0 {
+		noSetFields = true
+		fields = []string{"host", "ip", "port"}
+	}
+	rawFieldSize := len(fields)
+
+	// 确保urlfix开启后带上了protocol字段
+	protocolIndex := -1
+	hostIndex := -1
+	if len(options) > 0 && options[0].FixUrl {
+		if noSetFields {
+			fields = []string{"host", "ip", "port", "protocol"}
+			rawFieldSize = len(fields)
+			hostIndex = 0
+			protocolIndex = 3
+		} else {
+			// 检查host字段存在
+			for index, f := range fields {
+				switch f {
+				case "host":
+					hostIndex = index
+					break
+				}
+			}
+			if hostIndex == -1 {
+				err := errors.New(NoHostWithFixURL)
+				return hostIndex, protocolIndex, fields, rawFieldSize, err
+			}
+			for index, f := range fields {
+				switch f {
+				case "protocol":
+					protocolIndex = index
+					break
+				}
+			}
+			if protocolIndex == -1 {
+				fields = append(fields, "protocol")
+				protocolIndex = len(fields) - 1
+			}
+		}
+	}
+	return hostIndex, protocolIndex, fields, rawFieldSize, nil
+}
+
+func (c *Client) postProcess(res [][]string, fields []string,
+	hostIndex int, protocolIndex int, rawFieldSize int, options ...SearchOptions) [][]string {
+	if len(options) > 0 && options[0].FixUrl {
+		res = fixHostToUrl(res, fields, hostIndex, options[0].UrlPrefix, protocolIndex)
+	}
+
+	// 返回用户指定的字段
+	if rawFieldSize != len(fields) {
+		var newRes [][]string
+		for _, r := range res {
+			newRes = append(newRes, r[0:rawFieldSize])
+		}
+		return newRes
+	}
+	return res
 }
 
 // HostSearch search fofa host data
@@ -114,23 +193,22 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 		perPage = 1000
 	}
 
-	if len(fields) == 0 {
-		fields = []string{"ip", "port"}
+	hostIndex, protocolIndex, fields, rawFieldSize, err := c.fixUrlCheck(fields, options...)
+	if err != nil {
+		return nil, err
 	}
 
+	uniqIPMap := make(map[string]bool)
 	// 确认fields包含ip
 	ipIndex := -1
-	uniqIPMap := make(map[string]bool)
 	if uniqByIP {
-		ipExists := false
 		for index, f := range fields {
 			if f == "ip" {
 				ipIndex = index
-				ipExists = true
 				break
 			}
 		}
-		if !ipExists {
+		if ipIndex == -1 {
 			fields = append(fields, "ip")
 			ipIndex = len(fields) - 1
 		}
@@ -226,18 +304,7 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 	}
 
 	// 后处理
-	if len(options) > 0 && options[0].FixUrl {
-		urlPrefix := options[0].UrlPrefix
-		if urlPrefix == "" {
-			urlPrefix = "http://"
-		}
-		for i, f := range fields {
-			if f == "host" {
-				res = fixHostToUrl(res, fields, i, urlPrefix)
-				break
-			}
-		}
-	}
+	res = c.postProcess(res, fields, hostIndex, protocolIndex, rawFieldSize, options...)
 
 	return
 }
@@ -285,8 +352,11 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 	if perPage < 1 || perPage > 100000 {
 		return errors.New("batchSize must between 1 and 100000")
 	}
-	if len(fields) == 0 {
-		fields = []string{"host", "ip", "port"}
+
+	// 确保urlfix开启后带上了protocol字段
+	hostIndex, protocolIndex, fields, rawFieldSize, err := c.fixUrlCheck(fields, options...)
+	if err != nil {
+		return err
 	}
 
 	// 分页取数据
@@ -356,18 +426,7 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 		}
 
 		// 后处理
-		if len(options) > 0 && options[0].FixUrl {
-			urlPrefix := options[0].UrlPrefix
-			if urlPrefix == "" {
-				urlPrefix = "http://"
-			}
-			for i, f := range fields {
-				if f == "host" {
-					results = fixHostToUrl(results, fields, i, urlPrefix)
-					break
-				}
-			}
-		}
+		results = c.postProcess(results, fields, hostIndex, protocolIndex, rawFieldSize, options...)
 
 		if c.onResults != nil {
 			c.onResults(results)
