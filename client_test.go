@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -33,9 +34,9 @@ var (
 		{"d@d.com", "44444", true, VipLevelEnterprise, 0, 0, 0}, // 企业会员
 		{"e@e.com", "55555", false, VipLevelNone, 10, 0, 0},     // 注册用户有F币
 
-		{"g@g.com", "77777", true, VipLevelSubPersonal, 10, 10, 100}, // 订阅个人
-		{"h@h.com", "88888", true, VipLevelSubPro, 0, 0, 0},          // 订阅专业
-		{"i@i.com", "99999", true, VipLevelSubBuss, 0, 0, 0},         // 订阅商业
+		{"g@g.com", "77777", true, VipLevelSubPersonal, 10, 10, 100},   // 订阅个人
+		{"h@h.com", "88888", true, VipLevelSubPro, 0, 0, 0},            // 订阅专业
+		{"i@i.com", "99999", true, VipLevelSubBuss, 0, 100000, 100000}, // 订阅商业
 
 		{"red@fofa.info", "10001", true, VipLevelRed, 0, 0, 0},     // 红队
 		{"sub@fofa.info", "10002", true, VipLevelStudent, 0, 0, 0}, // 教育
@@ -99,12 +100,17 @@ var (
 				w.Write([]byte(`{"error":false,"size":9,"page":1,"mode":"extended","query":"port=\"50000\"","results":["118.190.75.134","34.83.32.116","117.4.67.26",":0",":0",":0","176.198.13.22","81.174.169.62","23.42.6.133"]}`))
 				return
 			case "port=80":
+				log.Println(r.FormValue("fields"))
 				switch r.FormValue("fields") {
 				case "host":
 					// 测试单个字段
 					w.Write([]byte(`{"error":false,"size":470262270,"page":1,"mode":"extended","query":"port=\"80\"","results":["118.190.75.134","34.83.32.116","117.4.67.26",":0",":0",":0","176.198.13.22","81.174.169.62","23.42.6.133","webdisk.dutadamaijawatengah.id"]}`))
 					return
-				case "ip,port", "":
+				case "host,protocol":
+					// 测试fixurl
+					w.Write([]byte(`{"error":false,"size":470262270,"page":1,"mode":"extended","query":"port=\"80\"","results":[["118.190.75.134", "https"],["34.83.32.116", "https"],["117.4.67.26", "https"],[":0", "https"],[":0", "https"],[":0", "https"],["176.198.13.22", "https"],["81.174.169.62", "https"],["23.42.6.133", "https"],["webdisk.dutadamaijawatengah.id", "https"]]}`))
+					return
+				case "ip,port":
 					if page := r.FormValue("page"); page != "" && r.FormValue("size") == "500" {
 						if v, err := strconv.Atoi(page); err == nil && v > 1 {
 							w.Write([]byte(`{"error":false,"size":0,"page":1,"mode":"extended","query":"port=\"80\"","results":[]}`))
@@ -127,6 +133,23 @@ var (
 					}
 
 					return
+				case "host,ip,port", "":
+					if page := r.FormValue("page"); page != "" && r.FormValue("size") == "500" {
+						if v, err := strconv.Atoi(page); err == nil && v > 1 {
+							w.Write([]byte(`{"error":false,"size":0,"page":1,"mode":"extended","query":"port=\"80\"","results":[]}`))
+							return
+						}
+					}
+					// 多字段测试
+					switch r.FormValue("size") {
+					case "1":
+						// 主要用于取数据量
+						w.Write([]byte(`{"error":false,"size":12345678,"page":1,"mode":"extended","query":"port=\"80\"","results":[["94.130.128.248:80","94.130.128.248","80"]]}`))
+					case "10":
+						w.Write([]byte(`{"error":false,"size":470293950,"page":1,"mode":"extended","query":"port=\"80\"","results":[["1.1.1.1:81","1.1.1.1","81"],["1.1.1.1:82","1.1.1.1","82"],["1.1.1.1:83","1.1.1.1","83"],["1.1.1.1:84","1.1.1.1","84"],["1.1.1.1:85","1.1.1.1","85"],["1.1.1.1:86","1.1.1.1","86"],["1.1.1.1:87","1.1.1.1","87"],["1.1.1.1:88","1.1.1.1","88"],["1.1.1.1:89","1.1.1.1","89"],["1.1.1.1:90","1.1.1.1","90"]]}`))
+					}
+
+					return
 				}
 			case "port=5354":
 				switch r.FormValue("full") {
@@ -134,6 +157,15 @@ var (
 					w.Write([]byte(`{"error":false,"size":12345678,"page":1,"mode":"extended","query":"port=\"5453\"","results":[["94.130.128.248","5453"]]}`))
 				case "true":
 					w.Write([]byte(`{"error":false,"size":12345678,"page":1,"mode":"extended","query":"port=\"5453\"","results":[["94.130.128.248","5453"], ["94.130.128.124","5453"]]}`))
+				}
+			case "port=1080":
+				switch r.FormValue("fields") {
+				case "ip,port":
+					w.Write([]byte(`{"error":false,"size":1,"page":1,"mode":"extended","query":"port=\"1080\"","results":[["1.1.1.1","1080"]]}`))
+				case "ip,port,protocol":
+					w.Write([]byte(`{"error":false,"size":1,"page":1,"mode":"extended","query":"port=\"1080\"","results":[["1.1.1.1","1080","socks5"]]}`))
+				case "host,ip,port,protocol":
+					w.Write([]byte(`{"error":false,"size":2,"page":1,"mode":"extended","query":"port=\"1080\"","results":[["1.1.1.1:1080","1.1.1.1","1080","socks5"],["2.2.2.2:1080","2.2.2.2","1080","redis"],["3.3.3.3:1080","3.3.3.3","1080","https"]]}`))
 				}
 			}
 		case "/api/v1/search/stats":
@@ -198,9 +230,15 @@ var (
 					fmt.Sprintf("%d.%d.%d.%d", i, i, i, i),
 					strconv.Itoa(80 + i + j),
 				}
-				if r.URL.Query().Get("fields") == "host,ip,port" {
+				fields := r.URL.Query().Get("fields")
+				switch fields {
+				case "host,ip,port":
 					data = append([]string{fmt.Sprintf("http://%d.%d.%d.%d", i, i, i, i)}, data...)
+				case "host,ip,port,protocol":
+					data = append([]string{fmt.Sprintf("http://%d.%d.%d.%d", i, i, i, i)}, data...)
+					data = append(data, "http")
 				}
+
 				results = append(results, data)
 			}
 
@@ -222,6 +260,36 @@ var (
 		}
 	}
 )
+
+// bindQueryHandle 绑定单个uri和处理函数用于快速测试
+func bindQueryHandle(uri string, p func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == uri {
+			p(w, r)
+			return
+		}
+		queryHander(w, r)
+	}
+}
+
+// bindSearchAllQueryHandle 绑定单个uri和处理函数用于快速测试
+// query是fofa查询语句
+// fields是字段列表
+// result对应返回的数据
+func bindSearchAllQueryHandle(query string, fields string, result string) func(w http.ResponseWriter, r *http.Request) {
+	return bindQueryHandle("/api/v1/search/all", func(w http.ResponseWriter, r *http.Request) {
+		q, err := base64.StdEncoding.DecodeString(r.FormValue("qbase64"))
+		if err != nil || len(q) == 0 {
+			w.Write([]byte(`{"error":true,"errmsg":"[-4] Params Error"}`))
+			return
+		}
+		fieldsString := r.FormValue("fields")
+		if string(q) == query && fieldsString == fields {
+			w.Write([]byte(result))
+			return
+		}
+	})
+}
 
 func checkAccount(email, key string) *accountInfo {
 	for _, validAccount := range validAccounts {

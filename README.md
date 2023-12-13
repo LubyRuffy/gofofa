@@ -246,8 +246,10 @@ every 500ms generate one line, never stop
             -   ☑ fields/f
             -   ☑ size/s
             - group/g 根据字段聚合：group by ip 根据ip合并，比如查询一个app会有很多域名，其中多个域名对应一个ip，这时只测试其中一个就好了
-            -   ☑ fixUrl 构建完整的url，默认的字段如果是http的话前面没有http://前缀，导致命令行一些工具不能使用，通过这个参数进行修复
-              -   ☑ 可以配合urlPrefix使用，比如不用http://而用redis://
+            -   ☑ fixUrl build valid url，默认的字段如果是http的话前面没有http://前缀，导致命令行一些工具不能使用，通过这个参数进行修复
+              -   ☑ can use with urlPrefix, such as use `app://` instead of `http://`
+              -   ☑ support socks5
+              -   ☑ support redis
             -   ☑ full 匹配所有，而不只是一年内的
             -   ☑ format
                 -   ☑ csv
