@@ -55,10 +55,11 @@ func TestClient_HostSearch(t *testing.T) {
 	assert.Equal(t, 10, len(res))
 	assert.Equal(t, "94.130.128.248", res[0][0])
 	assert.Equal(t, "80", res[0][1])
-	// 没有字段，跟ip，port一样
+	// 没有字段，跟host, ip，port一样
 	res, err = cli.HostSearch("port=80", 10, nil)
-	assert.Equal(t, "94.130.128.248", res[0][0])
-	assert.Equal(t, "80", res[0][1])
+	assert.Equal(t, "1.1.1.1:81", res[0][0])
+	assert.Equal(t, "1.1.1.1", res[0][1])
+	assert.Equal(t, "81", res[0][2])
 
 	// 单字段
 	res, err = cli.HostSearch("port=80", 10, []string{"host"})
@@ -109,7 +110,7 @@ func TestClient_HostSearch(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 10, len(res))
-	assert.Contains(t, res[0][0], "http://")
+	assert.Contains(t, res[0][0], "https://")
 	res, err = cli.HostSearch("port=80", 10, []string{"host"}, SearchOptions{
 		FixUrl:    true,
 		UrlPrefix: "redis://",
@@ -143,17 +144,106 @@ func TestClient_HostSearch(t *testing.T) {
 	assert.Equal(t, 10, len(res))
 
 	// 过滤UniqByIP
-	res, err = cli.HostSearch("port=80", 500, []string{"ip", "port"}, SearchOptions{
-		FixUrl: true,
-	})
+	res, err = cli.HostSearch("port=80", 500, []string{"ip", "port"}, SearchOptions{})
 	assert.Nil(t, err)
 	assert.Equal(t, 1000, len(res))
 	res, err = cli.HostSearch("port=80", 500, []string{"ip", "port"}, SearchOptions{
-		FixUrl:   true,
 		UniqByIP: true,
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, 986, len(res))
+}
+
+func TestClient_HostSearch_UniqIP(t *testing.T) {
+	fofaQueryTest := `title=test`
+	ts := httptest.NewServer(http.HandlerFunc(bindSearchAllQueryHandle(fofaQueryTest, "ip,port",
+		`{"error":false,"size":3,"page":1,"mode":"extended","query":"title=\"test\"","results":[["1.1.1.1","80"],["1.1.1.1","81"],["2.2.2.2","81"]]}`,
+	)))
+	defer ts.Close()
+	var cli *Client
+	var err error
+	var account accountInfo
+	var res [][]string
+
+	account = validAccounts[3]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+
+	// fixUrl support socks5/redis
+	res, err = cli.HostSearch(fofaQueryTest, 10, []string{"ip", "port"}, SearchOptions{
+		UniqByIP: true,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(res))
+	assert.Equal(t, "1.1.1.1", res[0][0])
+	assert.Equal(t, "2.2.2.2", res[1][0])
+}
+
+func TestClient_HostSearch_FixUrl(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(queryHander))
+	defer ts.Close()
+	var cli *Client
+	var err error
+	var account accountInfo
+	var res [][]string
+
+	account = validAccounts[3]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+
+	// fixUrl support socks5/redis
+	res, err = cli.HostSearch("port=1080", 10, []string{"ip", "port"}, SearchOptions{
+		FixUrl: true,
+	})
+	assert.EqualError(t, err, NoHostWithFixURL)
+
+	// fixUrl support socks5/redis
+	res, err = cli.HostSearch("port=1080", 10, []string{"host", "ip", "port"}, SearchOptions{
+		FixUrl: true,
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(res))
+	assert.Equal(t, "socks5://1.1.1.1:1080", res[0][0])
+	assert.Equal(t, "redis://2.2.2.2:1080", res[1][0])
+	assert.Equal(t, "https://3.3.3.3:1080", res[2][0])
+
+	// fixUrl support socks5/redis
+	res, err = cli.HostSearch("port=1080", 10, []string{"host", "ip", "port"}, SearchOptions{
+		FixUrl:    true,
+		UrlPrefix: "",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(res))
+	assert.Equal(t, "socks5://1.1.1.1:1080", res[0][0])
+	assert.Equal(t, "redis://2.2.2.2:1080", res[1][0])
+	assert.Equal(t, "https://3.3.3.3:1080", res[2][0])
+
+	// no fields
+	res, err = cli.HostSearch("port=1080", 10, nil, SearchOptions{
+		FixUrl:    true,
+		UrlPrefix: "",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(res))
+	assert.Equal(t, "socks5://1.1.1.1:1080", res[0][0])
+	assert.Equal(t, "redis://2.2.2.2:1080", res[1][0])
+	assert.Equal(t, "https://3.3.3.3:1080", res[2][0])
+
+	// has protocol
+	res, err = cli.HostSearch("port=1080", 10, []string{"host", "ip", "port", "protocol"}, SearchOptions{
+		FixUrl:    true,
+		UrlPrefix: "",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(res))
+	assert.Equal(t, "socks5://1.1.1.1:1080", res[0][0])
+	assert.Equal(t, "redis://2.2.2.2:1080", res[1][0])
+	assert.Equal(t, "https://3.3.3.3:1080", res[2][0])
+
+	// no url prefix and no protocol
+	hosts := fixHostToUrl([][]string{{"1.1.1.1:80", "1.1.1.1", "80"}}, []string{"host", "ip", "port"}, 0, "", -1)
+	assert.Equal(t, "http://1.1.1.1:80", hosts[0][0])
+
+	// todo：确保返回的字段数跟用户要求的一致
+
 }
 
 func TestClient_HostSize(t *testing.T) {

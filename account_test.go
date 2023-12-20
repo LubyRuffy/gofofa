@@ -61,6 +61,16 @@ func TestClient_AccountInfo(t *testing.T) {
 
 	var cli *Client
 	var err error
+
+	// 请求失败
+	errTs := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	}))
+	defer ts.Close()
+	_, err = NewClient(WithURL(errTs.URL + "?email=a@a.com&key=wrong"))
+	assert.EqualError(t, err, "unexpected end of JSON input")
+
+	// 账号无效
 	_, err = NewClient(WithURL(ts.URL + "?email=a@a.com&key=wrong"))
 	assert.Contains(t, err.Error(), "[-700] Account Invalid")
 
@@ -108,6 +118,18 @@ func TestClient_AccountInfo(t *testing.T) {
 	assert.Equal(t, VipLevelSubPersonal, cli.Account.VIPLevel)
 	assert.Equal(t, 10, cli.Account.FCoin)
 	assert.Equal(t, 100, cli.freeSize())
+
+	// 订阅商业版
+	account = validAccounts[7]
+	cli, err = NewClient(WithURL(ts.URL + "?email=" + account.Email + "&key=" + account.Key))
+	assert.Nil(t, err)
+	assert.True(t, cli.Account.IsVIP)
+	assert.Equal(t, VipLevelSubBuss, cli.Account.VIPLevel)
+	assert.Equal(t, 0, cli.Account.FCoin)
+	assert.Equal(t, 100000, cli.freeSize())
+	// 构造异常
+	cli.Server = errTs.URL
+	assert.Equal(t, 100000, cli.freeSize())
 
 	// 红队？
 	account = validAccounts[8]

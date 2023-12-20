@@ -107,9 +107,7 @@ func (c *Client) freeSize() int {
 		if info.RemainApiQuery > 0 {
 			return info.RemainApiData
 		}
-	default:
-		// other level, ignore free limit check
-		return -1
 	}
-	return 0
+	// other level, ignore free limit check
+	return -1
 }

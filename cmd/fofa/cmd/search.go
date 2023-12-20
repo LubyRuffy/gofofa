@@ -73,7 +73,7 @@ var searchCmd = &cli.Command{
 		},
 		&cli.StringFlag{
 			Name:        "urlPrefix",
-			Value:       "http://",
+			Value:       "",
 			Usage:       "prefix of url, default is http://, can be redis:// and so on ",
 			Destination: &urlPrefix,
 		},
@@ -118,6 +118,12 @@ func hasBodyField(fields []string) bool {
 // SearchAction search action
 func SearchAction(ctx *cli.Context) error {
 	// valid same config
+	for _, arg := range ctx.Args().Slice() {
+		if arg[0] == '-' {
+			return errors.New(fmt.Sprintln("there is args after fofa query:", arg))
+		}
+	}
+
 	query := ctx.Args().First()
 	if len(query) == 0 {
 		return errors.New("fofa query cannot be empty")
