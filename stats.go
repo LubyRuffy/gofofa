@@ -3,6 +3,7 @@ package gofofa
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -11,9 +12,14 @@ import (
 type StatsResults struct {
 	Error          bool                   `json:"error"`
 	Errmsg         string                 `json:"errmsg"`
+	TraceId        string                 `json:"trace_id"`
 	Distinct       map[string]interface{} `json:"distinct"`
 	Aggs           map[string]interface{} `json:"aggs"`
 	LastUpdateTime string                 `json:"lastupdatetime"`
+}
+
+func (s StatsResults) SetTraceId(traceId string) {
+	s.TraceId = traceId
 }
 
 // StatsItem one stats item
@@ -47,10 +53,19 @@ func (c *Client) Stats(query string, size int, fields []string) (res []StatsObje
 		},
 		&sr)
 	if err != nil {
+		if c.traceId {
+			err = fmt.Errorf("[%s]%s", sr.TraceId, err.Error())
+		}
 		return
 	}
+
+	// 报错，退出
 	if len(sr.Errmsg) > 0 {
-		err = errors.New(sr.Errmsg)
+		if c.traceId {
+			err = errors.New(sr.Errmsg + " trace id: " + sr.TraceId)
+		} else {
+			err = errors.New(sr.Errmsg)
+		}
 		return
 	}
 

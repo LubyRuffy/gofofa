@@ -4,12 +4,17 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/avast/retry-go"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type CommonResp interface {
+	SetTraceId(string)
+}
 
 // HostResults /search/all api results
 type HostResults struct {
@@ -21,12 +26,18 @@ type HostResults struct {
 	Size    int         `json:"size"` // 总数
 	Results interface{} `json:"results"`
 	Next    string      `json:"next"`
+	TraceId string      `json:"trace_id"`
+}
+
+func (h HostResults) SetTraceId(traceId string) {
+	h.TraceId = traceId
 }
 
 // HostStatsData /host api results
 type HostStatsData struct {
 	Error       bool     `json:"error"`
 	Errmsg      string   `json:"errmsg"`
+	TraceId     string   `json:"trace_id"`
 	Host        string   `json:"host"`
 	IP          string   `json:"ip"`
 	ASN         int      `json:"asn"`
@@ -38,6 +49,10 @@ type HostStatsData struct {
 	Categories  []string `json:"category"`
 	Products    []string `json:"product"`
 	UpdateTime  string   `json:"update_time"`
+}
+
+func (s HostStatsData) SetTraceId(traceId string) {
+	s.TraceId = traceId
 }
 
 // SearchOptions options of search, for post processors
@@ -168,14 +183,22 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 			retry.Attempts(3),
 			retry.Delay(3*time.Second),
 			retry.DelayType(retry.RandomDelay),
+			retry.LastErrorOnly(true),
 		)
 		if err != nil {
+			if c.traceId {
+				err = fmt.Errorf("[%s]%s", hr.TraceId, err.Error())
+			}
 			return
 		}
 
 		// 报错，退出
 		if len(hr.Errmsg) > 0 {
-			err = errors.New(hr.Errmsg)
+			if c.traceId {
+				err = errors.New(hr.Errmsg + " trace id: " + hr.TraceId)
+			} else {
+				err = errors.New(hr.Errmsg)
+			}
 			break
 		}
 
@@ -254,8 +277,12 @@ func (c *Client) HostSize(query string) (count int, err error) {
 		},
 		&hr)
 	if err != nil {
+		if c.traceId {
+			err = fmt.Errorf("[%s]%s", hr.TraceId, err.Error())
+		}
 		return
 	}
+
 	count = hr.Size
 	return
 }
@@ -323,14 +350,22 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 			retry.Attempts(3),
 			retry.Delay(3*time.Second),
 			retry.DelayType(retry.RandomDelay),
+			retry.LastErrorOnly(true),
 		)
 		if err != nil {
+			if c.traceId {
+				err = fmt.Errorf("[%s]%s", hr.TraceId, err.Error())
+			}
 			return err
 		}
 
 		// 报错，退出
 		if len(hr.Errmsg) > 0 {
-			err = errors.New(hr.Errmsg)
+			if c.traceId {
+				err = errors.New(hr.Errmsg + " trace id: " + hr.TraceId)
+			} else {
+				err = errors.New(hr.Errmsg)
+			}
 			break
 		}
 

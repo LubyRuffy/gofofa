@@ -82,6 +82,17 @@ func newTcpTestServer(handler func(conn net.Conn, data []byte) error) *tcpTestSe
 	return ts
 }
 
+type resp struct {
+	Error   bool   `json:"error"`
+	Errmsg  string `json:"errmsg"`
+	TraceId string `json:"trace_id"`
+	Text    string `json:"text"`
+}
+
+func (r resp) SetTraceId(traceId string) {
+	r.TraceId = traceId
+}
+
 func TestClient_Fetch(t *testing.T) {
 	_, err := NewClient(WithURL("http://127.0.0.1:55"))
 	assert.Error(t, err)
@@ -97,14 +108,14 @@ func TestClient_Fetch(t *testing.T) {
 	}
 
 	// 解析异常
-	var a map[string]interface{}
+	var a = resp{}
 	err = cli.Fetch("", nil, &a)
 	assert.Error(t, err)
 
 	// gzip
 	err = cli.Fetch("gzip.json", nil, &a)
 	assert.Nil(t, err)
-	assert.Equal(t, "hello world", a["text"].(string))
+	assert.Equal(t, "hello world", a.Text)
 
 	// content Length Error
 	err = cli.Fetch("contentLengthError.json", nil, &a)
