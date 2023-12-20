@@ -18,7 +18,7 @@ type StatsResults struct {
 	LastUpdateTime string                 `json:"lastupdatetime"`
 }
 
-func (s StatsResults) SetTraceId(traceId string) {
+func (s *StatsResults) SetTraceId(traceId string) {
 	s.TraceId = traceId
 }
 

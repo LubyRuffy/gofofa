@@ -89,7 +89,7 @@ type resp struct {
 	Text    string `json:"text"`
 }
 
-func (r resp) SetTraceId(traceId string) {
+func (r *resp) SetTraceId(traceId string) {
 	r.TraceId = traceId
 }
 

@@ -29,7 +29,7 @@ type HostResults struct {
 	TraceId string      `json:"trace_id"`
 }
 
-func (h HostResults) SetTraceId(traceId string) {
+func (h *HostResults) SetTraceId(traceId string) {
 	h.TraceId = traceId
 }
 
@@ -51,7 +51,7 @@ type HostStatsData struct {
 	UpdateTime  string   `json:"update_time"`
 }
 
-func (s HostStatsData) SetTraceId(traceId string) {
+func (s *HostStatsData) SetTraceId(traceId string) {
 	s.TraceId = traceId
 }
 

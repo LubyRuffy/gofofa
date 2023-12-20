@@ -59,7 +59,7 @@ type AccountInfo struct {
 	RemainApiData  int      `json:"remain_api_data"`  // available data amount
 }
 
-func (ai AccountInfo) SetTraceId(traceId string) {
+func (ai *AccountInfo) SetTraceId(traceId string) {
 	ai.TraceId = traceId
 }
 
