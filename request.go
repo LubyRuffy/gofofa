@@ -37,7 +37,7 @@ func readAll(reader io.Reader, size int) ([]byte, error) {
 }
 
 // just fetch fofa body, no need to unmarshal
-func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte, err error) {
+func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte, traceId string, err error) {
 	var req *http.Request
 	var resp *http.Response
 
@@ -53,6 +53,13 @@ func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte
 	resp, err = c.httpClient.Do(req)
 	//responseDump, _ := httputil.DumpResponse(resp, false)
 	//log.Println(string(responseDump))
+
+	// 获取 traceId
+	if c.traceId {
+		// 获取请求头中的 trace id
+		traceId = resp.Header.Get("Trace-Id")
+	}
+
 	if err != nil {
 		if !c.accountDebug {
 			// 替换账号明文信息
@@ -107,14 +114,15 @@ func (c *Client) fetchBody(apiURI string, params map[string]string) (body []byte
 }
 
 // Fetch http request and parse as json return to v
-func (c *Client) Fetch(apiURI string, params map[string]string, v interface{}) (err error) {
-	content, err := c.fetchBody(apiURI, params)
+func (c *Client) Fetch(apiURI string, params map[string]string, v CommonResp) (err error) {
+	content, traceId, err := c.fetchBody(apiURI, params)
 	if err != nil {
 		return
 	}
 
-	if err = json.Unmarshal(content, v); err != nil {
-		return
+	if err = json.Unmarshal(content, &v); err != nil {
+		return fmt.Errorf("fail search fofa content %s error %s", content, err.Error())
 	}
+	v.SetTraceId(traceId)
 	return
 }
