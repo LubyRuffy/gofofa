@@ -26,7 +26,7 @@ const (
 type Client struct {
 	Server     string // can set local server for debugging, format: <scheme>://<host>
 	APIVersion string // api version
-	Email      string // fofa email
+	Email      string // Deprecated: As of gofofa 1.16, email will no longer be required
 	Key        string // fofa key
 
 	Account    AccountInfo // fofa account info
