@@ -1,3 +1,7 @@
+## v0.1.16 add domains mode
+
+-   add domains mode to extend domains from domain, through certs ```./fofa domains -s 1000 -withCount baidu.com```
+
 ## v0.1.15 update fixUrl
 
 -   support redis/socks5/mysql ```./fofa --fixUrl --size 1000 --fields host 'protocol=socks5 || protocol=redis'```
