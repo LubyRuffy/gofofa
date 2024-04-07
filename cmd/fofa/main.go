@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	version = "v0.1.15"
+	version = "v0.2.17"
 	commit  = "none"
 	date    = "unknown"
 	builtBy = "unknown" // goreleaser fill
@@ -27,7 +27,7 @@ func main() {
 		Authors: []*cli.Author{
 			{
 				Name:  "LubyRuffy",
-				Email: "LubyRuffy@gmail.com",
+				Email: "lubyruffy@gmail.com",
 			},
 		},
 		Flags:    cmd.GlobalOptions,

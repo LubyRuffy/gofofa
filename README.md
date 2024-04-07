@@ -105,6 +105,13 @@ redis://152.136.145.87:6379
 ./fofa --fixUrl --size 1000 --fields host --uniqByIP 'host="edu.cn"'
 ```
 
+-   pipeline with parallel mode
+
+```shell
+fofa -f ip "is_ipv6=false && port=22" | fofa -f ip -uniqByIP -template "port=8443 && ip={}" 
+```
+can use `-rate 3` to increase rate limit, default is 2
+
 ### Stats
 
 -   stats subcommand
@@ -190,6 +197,31 @@ port=23455
 2023/08/09 10:05:37 size: 499/499, 100.00%
 ```
 
+### Domains
+
+-   domain subcommand 主要用于最简单的拓线
+
+add domains mode to extend domains from domain, through certs
+```shell
+fofa domains -s 1000 -withCount baidu.com
+baidu.com       660
+dwz.cn  620
+dlnel.com       614
+bcehost.com     614
+bdstatic.com    614
+......
+......
+```
+
+withCount mean with domain count value, you can also use `-uniqByIP` to uniq by ip:
+```shell
+fofa domains -s 1000 -withCount -uniqByIP baidu.com 
+baidu.com       448
+dwz.cn  410
+aipage.cn       406
+
+```
+
 ### Utils
 
 -   random subcommand
@@ -261,7 +293,8 @@ every 500ms generate one line, never stop
         -   ☑ stats
         -   ☑ icon
         -   ☐ web
-        - dump https://en.fofa.info/api/batches_pages large-scale data retrieval
+        -   ☑ dump https://en.fofa.info/api/batches_pages large-scale data retrieval
+        -   ☑ domains
     -   ☑ Terminal color 
     -   ☑ Global Config
         -   ☑ fofaURL

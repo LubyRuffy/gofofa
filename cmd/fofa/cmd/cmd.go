@@ -26,6 +26,7 @@ var GlobalCommands = []*cli.Command{
 	randomCmd,
 	hostCmd,
 	dumpCmd,
+	domainsCmd,
 }
 
 // IsValidCommand valid command name
