@@ -105,6 +105,13 @@ redis://152.136.145.87:6379
 ./fofa --fixUrl --size 1000 --fields host --uniqByIP 'host="edu.cn"'
 ```
 
+-   pipeline with parallel mode
+
+```shell
+fofa -f ip "is_ipv6=false && port=22" | fofa -f ip -uniqByIP -template "port=8443 && ip={}" 
+```
+can use `-rate 3` to increase rate limit, default is 2
+
 ### Stats
 
 -   stats subcommand

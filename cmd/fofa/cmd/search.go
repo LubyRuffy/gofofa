@@ -1,30 +1,39 @@
 package cmd
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/LubyRuffy/gofofa"
 	"github.com/LubyRuffy/gofofa/pkg/outformats"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/time/rate"
 	"io"
+	"log"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
-	fieldString string // fieldString
-	size        int    // fetch size
-	format      string // out format
-	outFile     string // out file
-	inFile      string // in file
-	deductMode  string // deduct Mode
-	fixUrl      bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
-	urlPrefix   string // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
-	full        bool   // search result for over a year
-	batchSize   int    // amount of data contained in each batch, only for dump
-	json        bool   // out format as json for short
-	uniqByIP    bool   // group by ip
+	fieldString   string // fieldString
+	size          int    // fetch size
+	format        string // out format
+	outFile       string // out file
+	inFile        string // in file
+	deductMode    string // deduct Mode
+	fixUrl        bool   // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
+	urlPrefix     string // each host fix as url, like 1.1.1.1,80 will change to http://1.1.1.1
+	full          bool   // search result for over a year
+	batchSize     int    // amount of data contained in each batch, only for dump
+	json          bool   // out format as json for short
+	uniqByIP      bool   // group by ip
+	workers       int    // number of workers
+	ratePerSecond int    // fofa request per second
+	template      string // template in pipeline mode
 )
 
 // search subcommand
@@ -89,6 +98,24 @@ var searchCmd = &cli.Command{
 			Usage:       "uniq by ip",
 			Destination: &uniqByIP,
 		},
+		&cli.IntFlag{
+			Name:        "workers",
+			Value:       10,
+			Usage:       "number of workers",
+			Destination: &workers,
+		},
+		&cli.IntFlag{
+			Name:        "rate",
+			Value:       2,
+			Usage:       "fofa query per second",
+			Destination: &ratePerSecond,
+		},
+		&cli.StringFlag{
+			Name:        "template",
+			Value:       "ip={}",
+			Usage:       "template in pipeline mode",
+			Destination: &template,
+		},
 	},
 	Action: SearchAction,
 }
@@ -126,8 +153,10 @@ func SearchAction(ctx *cli.Context) error {
 
 	query := ctx.Args().First()
 	if len(query) == 0 {
-		return errors.New("fofa query cannot be empty")
+		//return errors.New("fofa query cannot be empty")
+		log.Println("not set fofa query, now in pipeline mode....")
 	}
+
 	fields := strings.Split(fieldString, ",")
 	if len(fields) == 0 {
 		return errors.New("fofa fields cannot be empty")
@@ -165,20 +194,65 @@ func SearchAction(ctx *cli.Context) error {
 		}
 	}
 
-	// do search
-	res, err := fofaCli.HostSearch(query, size, fields, gofofa.SearchOptions{
-		FixUrl:    fixUrl,
-		UrlPrefix: urlPrefix,
-		Full:      full,
-		UniqByIP:  uniqByIP,
-	})
-	if err != nil {
-		return err
+	writeQuery := func(query string) error {
+		log.Println("query fofa of:", query)
+		// do search
+		res, err := fofaCli.HostSearch(query, size, fields, gofofa.SearchOptions{
+			FixUrl:    fixUrl,
+			UrlPrefix: urlPrefix,
+			Full:      full,
+			UniqByIP:  uniqByIP,
+		})
+		if err != nil {
+			return err
+		}
+
+		// output
+		if err = writer.WriteAll(res); err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	// output
-	if err = writer.WriteAll(res); err != nil {
-		return err
+	if query != "" {
+		return writeQuery(query)
+	} else {
+		// 并发模式
+		wg := sync.WaitGroup{}
+		queries := make(chan string, workers)
+		limiter := rate.NewLimiter(rate.Limit(ratePerSecond), 5)
+
+		worker := func(queries <-chan string, wg *sync.WaitGroup) {
+			for q := range queries {
+				tmpQuery := strings.ReplaceAll(template, "{}",
+					strconv.Quote(q))
+				if err := limiter.Wait(context.Background()); err != nil {
+					fmt.Println("Error: ", err)
+				}
+				if err := writeQuery(tmpQuery); err != nil {
+					log.Println(err)
+				}
+				wg.Done()
+			}
+		}
+		for w := 0; w < workers; w++ {
+			go worker(queries, &wg)
+		}
+
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() { // internally, it advances token based on sperator
+			line := scanner.Text()
+			wg.Add(1)
+			queries <- line
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Println(err)
+		}
+
+		wg.Wait()
 	}
+
 	return nil
 }

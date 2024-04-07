@@ -1,3 +1,9 @@
+## v0.2.17 add parallel mode
+
+-   such as ```fofa -f ip "is_ipv6=false && port=22" | fofa -f ip -uniqByIP -template "port=8443 && ip={}"```
+-   host mode raise error if data.error is true
+-   fixed bug of: ```fofa -f ip -uniqByIP 'port=22 && ip=154.19.247.29'``` return multiple lines of ip even if set uniqByIP
+
 ## v0.1.16 add domains mode
 
 -   add domains mode to extend domains from domain, through certs ```./fofa domains -s 1000 -withCount baidu.com```

@@ -264,6 +264,13 @@ func (c *Client) HostSearch(query string, size int, fields []string, options ...
 					}
 					results = append(results, newSlice)
 				} else if vStr, ok := result.(string); ok {
+					// 确定第一个就是ip
+					if uniqByIP && ipIndex == 0 {
+						if _, ok := uniqIPMap[vStr]; ok {
+							continue
+						}
+						uniqIPMap[vStr] = true
+					}
 					results = append(results, []string{vStr})
 				}
 			}
@@ -319,6 +326,9 @@ func (c *Client) HostStats(host string) (data HostStatsData, err error) {
 	err = c.Fetch("host/"+host, nil, &data)
 	if err != nil {
 		return
+	}
+	if data.Error {
+		err = errors.New(data.Errmsg)
 	}
 	return
 }
