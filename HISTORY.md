@@ -1,3 +1,7 @@
+## v0.2.18 add clue param in domains mode
+
+-   ```fofa domains -size 10000 -clue huawei.com```
+    
 ## v0.2.17 add parallel mode
 
 -   such as ```fofa -f ip "is_ipv6=false && port=22" | fofa -f ip -uniqByIP -template "port=8443 && ip={}"```

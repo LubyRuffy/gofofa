@@ -16,6 +16,7 @@ import (
 
 var (
 	withCount = false
+	clueMode  = false
 )
 
 // domains subcommand
@@ -60,6 +61,12 @@ var domainsCmd = &cli.Command{
 			Value:       false,
 			Usage:       "domain with count",
 			Destination: &withCount,
+		},
+		&cli.BoolFlag{
+			Name:        "clue",
+			Value:       false,
+			Usage:       "clue output",
+			Destination: &clueMode,
 		},
 	},
 	Action: DomainsAction,
@@ -109,8 +116,10 @@ func DomainsAction(ctx *cli.Context) error {
 		outTo = os.Stdout
 	}
 
+	validCertQuery := `cert.is_valid=true && cert.is_match=true`
+
 	// do search
-	res, err := fofaCli.HostSearch(`domain="`+domain+`" && status_code="200" && cert.is_valid=true && cert.is_match=true`, size, []string{"certs_domains"}, gofofa.SearchOptions{
+	res, err := fofaCli.HostSearch(`domain="`+domain+`" && status_code="200" && `+validCertQuery, size, []string{"certs_domains", "certs_subject_org"}, gofofa.SearchOptions{
 		Full:     full,
 		UniqByIP: uniqByIP,
 	})
@@ -119,6 +128,7 @@ func DomainsAction(ctx *cli.Context) error {
 	}
 
 	domainMap := make(map[string]int)
+	orgMap := make(map[string]int)
 	for _, hosts := range res {
 		if hosts[0] == "" {
 			continue
@@ -143,16 +153,36 @@ func DomainsAction(ctx *cli.Context) error {
 				domainMap[domain]++
 			}
 		}
+
+		if len(hosts[1]) > 0 {
+			//certs_subject_org
+			org := hosts[1]
+			orgMap[org]++
+		}
 	}
 
 	// output
-	for _, kv := range sortByValue(domainMap) {
-		if withCount {
-			outTo.Write([]byte(fmt.Sprintf("%s\t%d\n", kv.Key, kv.Value)))
-		} else {
-			outTo.Write([]byte(kv.Key + "\n"))
+	if clueMode {
+		var clues []string
+		for k, _ := range domainMap {
+			clues = append(clues, fmt.Sprintf(`domain="%s"`, k))
 		}
+		var orgClues []string
+		for k, _ := range orgMap {
+			orgClues = append(orgClues, fmt.Sprintf(`cert.subject.org="%s"`, k))
+		}
+		clues = append(clues, `( (`+strings.Join(orgClues, " || ")+`) && `+validCertQuery+`)`)
 
+		outTo.Write([]byte(strings.Join(clues, " || ")))
+	} else {
+		for _, kv := range sortByValue(domainMap) {
+			if withCount {
+				outTo.Write([]byte(fmt.Sprintf("%s\t%d\n", kv.Key, kv.Value)))
+			} else {
+				outTo.Write([]byte(kv.Key + "\n"))
+			}
+		}
 	}
+
 	return nil
 }
