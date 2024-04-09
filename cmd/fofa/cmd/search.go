@@ -116,6 +116,12 @@ var searchCmd = &cli.Command{
 			Usage:       "template in pipeline mode",
 			Destination: &template,
 		},
+		&cli.StringFlag{
+			Name:        "inFile",
+			Aliases:     []string{"i"},
+			Usage:       "input file to build template if not use pipeline mode",
+			Destination: &inFile,
+		},
 	},
 	Action: SearchAction,
 }
@@ -142,6 +148,43 @@ func hasBodyField(fields []string) bool {
 	return hashField(fields, "body")
 }
 
+func pipelineProcess(writeQuery func(query string) error, in io.Reader) {
+	// 并发模式
+	wg := sync.WaitGroup{}
+	queries := make(chan string, workers)
+	limiter := rate.NewLimiter(rate.Limit(ratePerSecond), 5)
+
+	worker := func(queries <-chan string, wg *sync.WaitGroup) {
+		for q := range queries {
+			tmpQuery := strings.ReplaceAll(template, "{}",
+				strconv.Quote(q))
+			if err := limiter.Wait(context.Background()); err != nil {
+				fmt.Println("Error: ", err)
+			}
+			if err := writeQuery(tmpQuery); err != nil {
+				log.Println("[WARNING]", err)
+			}
+			wg.Done()
+		}
+	}
+	for w := 0; w < workers; w++ {
+		go worker(queries, &wg)
+	}
+
+	scanner := bufio.NewScanner(in)
+	for scanner.Scan() { // internally, it advances token based on sperator
+		line := scanner.Text()
+		wg.Add(1)
+		queries <- line
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Println(err)
+	}
+
+	wg.Wait()
+}
+
 // SearchAction search action
 func SearchAction(ctx *cli.Context) error {
 	// valid same config
@@ -155,6 +198,9 @@ func SearchAction(ctx *cli.Context) error {
 	if len(query) == 0 {
 		//return errors.New("fofa query cannot be empty")
 		log.Println("not set fofa query, now in pipeline mode....")
+		if template == "" {
+			return errors.New("template cannot be empty in pipeline mode")
+		}
 	}
 
 	fields := strings.Split(fieldString, ",")
@@ -194,6 +240,8 @@ func SearchAction(ctx *cli.Context) error {
 		}
 	}
 
+	var locker sync.Mutex
+
 	writeQuery := func(query string) error {
 		log.Println("query fofa of:", query)
 		// do search
@@ -208,9 +256,12 @@ func SearchAction(ctx *cli.Context) error {
 		}
 
 		// output
+		locker.Lock()
+		defer locker.Unlock()
 		if err = writer.WriteAll(res); err != nil {
 			return err
 		}
+		writer.Flush()
 
 		return nil
 	}
@@ -218,40 +269,18 @@ func SearchAction(ctx *cli.Context) error {
 	if query != "" {
 		return writeQuery(query)
 	} else {
-		// 并发模式
-		wg := sync.WaitGroup{}
-		queries := make(chan string, workers)
-		limiter := rate.NewLimiter(rate.Limit(ratePerSecond), 5)
-
-		worker := func(queries <-chan string, wg *sync.WaitGroup) {
-			for q := range queries {
-				tmpQuery := strings.ReplaceAll(template, "{}",
-					strconv.Quote(q))
-				if err := limiter.Wait(context.Background()); err != nil {
-					fmt.Println("Error: ", err)
-				}
-				if err := writeQuery(tmpQuery); err != nil {
-					log.Println(err)
-				}
-				wg.Done()
+		var inf io.Reader
+		if inFile != "" {
+			f, err := os.Open(inFile)
+			if err != nil {
+				return err
 			}
+			defer f.Close()
+			inf = f
+		} else {
+			inf = os.Stdin
 		}
-		for w := 0; w < workers; w++ {
-			go worker(queries, &wg)
-		}
-
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() { // internally, it advances token based on sperator
-			line := scanner.Text()
-			wg.Add(1)
-			queries <- line
-		}
-
-		if err := scanner.Err(); err != nil {
-			log.Println(err)
-		}
-
-		wg.Wait()
+		pipelineProcess(writeQuery, inf)
 	}
 
 	return nil

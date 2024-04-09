@@ -1,3 +1,8 @@
+## v0.2.19 add inFile in search command
+
+-   use as: ```fofa -f host -uniqByIP -outFile b.cvs -rate 5 -inFile a.cvs```
+-   fixed bug in pipeline mode raise `short write` error，support parallel write
+    
 ## v0.2.18 add clue param in domains mode
 
 -   ```fofa domains -size 10000 -clue huawei.com```

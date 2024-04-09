@@ -53,6 +53,10 @@ func (w *XMLWriter) WriteAll(records [][]string) error {
 	return w.w.Flush()
 }
 
+func (w *XMLWriter) Flush() {
+	w.w.Flush()
+}
+
 // StringMap is a map[string]string.
 type result map[string]string
 

@@ -53,6 +53,10 @@ func (w *JSONWriter) WriteAll(records [][]string) error {
 	return w.w.Flush()
 }
 
+func (w *JSONWriter) Flush() {
+	w.w.Flush()
+}
+
 // NewJSONWriter generate json writer
 // fields are key field
 func NewJSONWriter(w io.Writer, fields []string) *JSONWriter {
