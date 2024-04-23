@@ -3,6 +3,7 @@ module github.com/LubyRuffy/gofofa
 go 1.18
 
 require (
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/fatih/color v1.13.0
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/sirupsen/logrus v1.8.1

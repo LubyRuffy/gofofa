@@ -50,12 +50,17 @@ const (
 type AccountInfo struct {
 	Error          bool     `json:"error"`            // error or not
 	ErrMsg         string   `json:"errmsg,omitempty"` // error string message
+	TraceId        string   `json:"trace_id"`
 	FCoin          int      `json:"fcoin"`            // fcoin count
 	FofaPoint      int64    `json:"fofa_point"`       // fofa point
 	IsVIP          bool     `json:"isvip"`            // is vip
 	VIPLevel       VipLevel `json:"vip_level"`        // vip level
 	RemainApiQuery int      `json:"remain_api_query"` // available query
 	RemainApiData  int      `json:"remain_api_data"`  // available data amount
+}
+
+func (ai *AccountInfo) SetTraceId(traceId string) {
+	ai.TraceId = traceId
 }
 
 func (ai AccountInfo) String() string {

@@ -1,4 +1,5 @@
-/*Package gofofa fofa client in Go
+/*
+Package gofofa fofa client in Go
 
 env settings:
 - FOFA_CLIENT_URL full fofa connnection string, format: <url>/?email=<email>&key=<key>&version=<v2>
@@ -25,7 +26,7 @@ const (
 type Client struct {
 	Server     string // can set local server for debugging, format: <scheme>://<host>
 	APIVersion string // api version
-	Email      string // fofa email
+	Email      string // Deprecated: As of gofofa 1.16, email will no longer be required
 	Key        string // fofa key
 
 	Account    AccountInfo // fofa account info
@@ -37,6 +38,7 @@ type Client struct {
 
 	onResults    func(results [][]string) // when fetch results callback
 	accountDebug bool                     // 调试账号明文信息
+	traceId      bool                     // 报错信息返回 trace id
 }
 
 // Update merge config from config url
@@ -110,6 +112,14 @@ func WithOnResults(onResults func(results [][]string)) ClientOption {
 func WithAccountDebug(v bool) ClientOption {
 	return func(c *Client) error {
 		c.accountDebug = v
+		return nil
+	}
+}
+
+// WithTraceId 报错信息中返回 trace id
+func WithTraceId(v bool) ClientOption {
+	return func(c *Client) error {
+		c.traceId = v
 		return nil
 	}
 }

@@ -45,6 +45,7 @@ func TestAccountInfo_String(t *testing.T) {
 	}, ai)
 	assert.Equal(t, `{
   "error": false,
+  "trace_id": "",
   "fcoin": 0,
   "fofa_point": 0,
   "isvip": true,
