@@ -1,3 +1,7 @@
+## v0.2.20 add `detail` && `uniq_count` field in stats mode
+
+- ```fofa stats -f cert.sn 'domain="fofa.info"'```
+
 ## v0.2.19 add inFile in search command
 
 -   use as: ```fofa -f host -uniqByIP -outFile b.cvs -rate 5 -inFile a.cvs```

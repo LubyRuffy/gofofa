@@ -121,6 +121,48 @@ can use `-rate 3` to increase rate limit, default is 2
 ```
 ![fofa stats](./data/fofa_stats.png)
 
+-   cert.sn with detail
+
+```shell
+./fofa stats -f cert.sn 'domain=fofa.info'
+```
+
+response like below:
+
+```text
+===  cert.sn
+2685875099059809389019875560888281013   assets(16)      ip(12)
+        valid:  true
+        expired:  false
+        not_before:  2024-08-19 00:00:00
+        organization:  
+        root_domains:  fofa.info
+106776008363609665167674504083577007174 assets(1)       ip(1)
+        valid:  true
+        expired:  false
+        not_before:  2025-02-11 05:53:12
+        organization:  
+        root_domains:  fofa.info
+18188111735873196410686859430087482807  assets(1)       ip(1)
+        valid:  true
+        expired:  true
+        not_before:  2023-11-29 00:00:00
+        organization:  Sina.com Technology(China)Co.,ltd
+        root_domains:  sina.com.cn,weibo.com,sina.net,t.cn,weipan.cn,sina.com,sinaimg.cn,sina.cn,sinajs.cn,weibo.cn
+231526393573365645767615725694212547312 assets(1)       ip(1)
+        valid:  true
+        expired:  false
+        not_before:  2025-02-11 05:57:42
+        organization:  
+        root_domains:  fofa.info
+330239683942509455538597560579056264013 assets(1)       ip(1)
+        valid:  true
+        expired:  false
+        not_before:  2024-04-01 00:00:00
+        organization:  
+        root_domains:  fofa.vip
+```
+
 ### Icon
 
 -   icon subcommand

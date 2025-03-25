@@ -7,25 +7,46 @@ import (
 	"strings"
 )
 
+var (
+	ErrInvalidQuery = errors.New("query is not valid")
+)
+
 // StatsResults /search/stats api results
 type StatsResults struct {
-	Error          bool                   `json:"error"`
-	Errmsg         string                 `json:"errmsg"`
-	Distinct       map[string]interface{} `json:"distinct"`
-	Aggs           map[string]interface{} `json:"aggs"`
-	LastUpdateTime string                 `json:"lastupdatetime"`
+	Error          bool                    `json:"error"`
+	Errmsg         string                  `json:"errmsg"`
+	Distinct       map[string]interface{}  `json:"distinct"`
+	Aggs           map[string][]*StatsItem `json:"aggs"`
+	LastUpdateTime string                  `json:"lastupdatetime"`
+}
+
+type CertObject struct {
+	CN            string   `json:"cn"`
+	Organizations []string `json:"org"`
+}
+
+type CertDetail struct {
+	Subject     CertObject `json:"subject"`
+	Issuer      CertObject `json:"issuer"`
+	RootDomains []string   `json:"domain"`
+	IsExpired   bool       `json:"is_expired"`
+	IsValid     bool       `json:"is_valid"`
+	NotAfter    string     `json:"not_after"`
+	NotBefore   string     `json:"not_before"`
 }
 
 // StatsItem one stats item
 type StatsItem struct {
-	Name  string
-	Count int
+	Name   string         `json:"name"`
+	Count  int            `json:"count"`
+	Uniq   map[string]int `json:"uniq,omitempty"`
+	Detail *CertDetail    `json:"detail,omitempty"`
 }
 
 // StatsObject one stats object
 type StatsObject struct {
 	Name  string
-	Items []StatsItem
+	Items []*StatsItem
 }
 
 // Stats aggs fofa host data
@@ -37,13 +58,19 @@ func (c *Client) Stats(query string, size int, fields []string) (res []StatsObje
 		fields = []string{"title", "country"}
 	}
 
+	if query == "" {
+		return nil, ErrInvalidQuery
+	}
+
 	var sr StatsResults
 	err = c.Fetch("search/stats",
 		map[string]string{
-			"qbase64": base64.StdEncoding.EncodeToString([]byte(query)),
-			"size":    strconv.Itoa(size),
-			"fields":  strings.Join(fields, ","),
-			"full":    "false", // 是否全部数据，非一年内
+			"qbase64":    base64.StdEncoding.EncodeToString([]byte(query)),
+			"size":       strconv.Itoa(size),
+			"fields":     strings.Join(fields, ","),
+			"full":       "false", // 是否全部数据，非一年内
+			"uniq_count": "ip",    // uniq 统计的字段，默认为ip
+			"detail":     "true",  // 是否显示详情？目前仅仅在cert.sn的场景下有效
 		},
 		&sr)
 	if err != nil {
@@ -63,19 +90,11 @@ func (c *Client) Stats(query string, size int, fields []string) (res []StatsObje
 		}
 
 		if v, ok := sr.Aggs[field]; ok {
-			if objArray, ok := v.([]interface{}); ok && len(objArray) > 0 {
-				so := StatsObject{
-					Name: rawField,
-				}
-				for _, obj := range objArray {
-					obj := obj.(map[string]interface{})
-					so.Items = append(so.Items, StatsItem{
-						Name:  obj["name"].(string),
-						Count: int(obj["count"].(float64)),
-					})
-				}
-				res = append(res, so)
+			so := StatsObject{
+				Name:  rawField,
+				Items: v,
 			}
+			res = append(res, so)
 		}
 	}
 

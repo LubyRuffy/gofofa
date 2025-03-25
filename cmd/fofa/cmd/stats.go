@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
 	"os"
@@ -54,9 +53,21 @@ func statsAction(ctx *cli.Context) error {
 	for _, obj := range res {
 		color.New(color.FgBlue).Fprintln(os.Stdout, "=== ", obj.Name)
 		for _, item := range obj.Items {
-			color.New(color.FgHiGreen).Fprint(os.Stdout, item.Name)
-			fmt.Print("\t")
-			color.New(color.FgHiYellow).Fprintln(os.Stdout, item.Count)
+			color.New(color.FgHiGreen).Fprintf(os.Stdout, "%s\tassets(%d)", item.Name, item.Count)
+			if item.Uniq != nil {
+				for k, v := range item.Uniq {
+					color.New(color.FgHiGreen).Fprintf(os.Stdout, "\t%s(%d)", k, v)
+				}
+				color.New(color.FgHiYellow).Fprintln(os.Stdout)
+			}
+
+			if item.Detail != nil {
+				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\tvalid: ", item.Detail.IsValid)
+				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\texpired: ", item.Detail.IsExpired)
+				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\tnot_before: ", item.Detail.NotBefore)
+				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\torganization: ", strings.Join(item.Detail.Subject.Organizations, ","))
+				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\troot_domains: ", strings.Join(item.Detail.RootDomains, ","))
+			}
 		}
 	}
 
