@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"github.com/fatih/color"
 	"github.com/urfave/cli/v2"
+	"github.com/weppos/publicsuffix-go/publicsuffix"
 	"os"
 	"strings"
+	"sync"
 )
 
 // stats subcommand
@@ -62,11 +65,36 @@ func statsAction(ctx *cli.Context) error {
 			}
 
 			if item.Detail != nil {
-				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\tvalid: ", item.Detail.IsValid)
-				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\texpired: ", item.Detail.IsExpired)
-				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\tnot_before: ", item.Detail.NotBefore)
-				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\torganization: ", strings.Join(item.Detail.Subject.Organizations, ","))
-				color.New(color.FgHiGreen).Fprintln(os.Stdout, "\troot_domains: ", strings.Join(item.Detail.RootDomains, ","))
+				if len(item.Detail.IPDetail.Domains) > 0 {
+					// 去重打印
+					var rootDomains []string
+					var uniqMap sync.Map
+					for _, domain := range item.Detail.IPDetail.Domains {
+						rootDomain, err := publicsuffix.Domain(domain)
+						if err != nil {
+							continue
+						}
+						if _, ok := uniqMap.LoadOrStore(rootDomain, true); ok {
+							continue
+						}
+						rootDomains = append(rootDomains, rootDomain)
+					}
+					color.New(color.FgHiGreen).Fprintln(os.Stdout,
+						fmt.Sprintf("\tdomains(%d): %s", len(rootDomains), strings.Join(rootDomains, ",")))
+				}
+
+				if item.Detail.CertDetail.Issuer != nil {
+					color.New(color.FgHiGreen).Fprintln(os.Stdout, "\tvalid: ", item.Detail.CertDetail.IsValid)
+					color.New(color.FgHiGreen).Fprintln(os.Stdout, "\texpired: ", item.Detail.CertDetail.IsExpired)
+					color.New(color.FgHiGreen).Fprintln(os.Stdout, "\tnot_before: ", item.Detail.CertDetail.NotBefore)
+					color.New(color.FgHiGreen).Fprintln(os.Stdout, "\torganization: ", strings.Join(item.Detail.CertDetail.Subject.Organizations, ","))
+					color.New(color.FgHiGreen).Fprintln(os.Stdout, "\troot_domains: ", strings.Join(item.Detail.CertDetail.RootDomains, ","))
+				}
+
+				if item.Detail.ASNDetail.Org != nil {
+					color.New(color.FgHiGreen).Fprintln(os.Stdout,
+						fmt.Sprintf("\torg: %s", *item.Detail.ASNDetail.Org))
+				}
 			}
 		}
 	}

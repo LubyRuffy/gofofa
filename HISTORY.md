@@ -1,3 +1,7 @@
+## v0.2.21 add asn/ip details in stats mode
+
+- ```fofa stats -f asn 'ip=1.1.1.1'```
+
 ## v0.2.20 add `detail` && `uniq_count` field in stats mode
 
 - ```fofa stats -f cert.sn 'domain="fofa.info"'```

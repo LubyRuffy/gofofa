@@ -26,13 +26,27 @@ type CertObject struct {
 }
 
 type CertDetail struct {
-	Subject     CertObject `json:"subject"`
-	Issuer      CertObject `json:"issuer"`
-	RootDomains []string   `json:"domain"`
-	IsExpired   bool       `json:"is_expired"`
-	IsValid     bool       `json:"is_valid"`
-	NotAfter    string     `json:"not_after"`
-	NotBefore   string     `json:"not_before"`
+	Subject     CertObject  `json:"subject"`
+	Issuer      *CertObject `json:"issuer"`
+	RootDomains []string    `json:"domain"`
+	IsExpired   bool        `json:"is_expired"`
+	IsValid     bool        `json:"is_valid"`
+	NotAfter    string      `json:"not_after"`
+	NotBefore   string      `json:"not_before"`
+}
+
+type IPDetail struct {
+	Domains []string `json:"domains"`
+}
+
+type ASNDetail struct {
+	Org *string `json:"org"`
+}
+
+type Detail struct {
+	CertDetail
+	IPDetail
+	ASNDetail
 }
 
 // StatsItem one stats item
@@ -40,7 +54,7 @@ type StatsItem struct {
 	Name   string         `json:"name"`
 	Count  int            `json:"count"`
 	Uniq   map[string]int `json:"uniq,omitempty"`
-	Detail *CertDetail    `json:"detail,omitempty"`
+	Detail *Detail        `json:"detail,omitempty"`
 }
 
 // StatsObject one stats object
