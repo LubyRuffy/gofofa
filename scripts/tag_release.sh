@@ -31,4 +31,4 @@ fi
 
 git tag -a "$VERSION" -m "$COMMENT"
 git push origin "$VERSION"
-goreleaser release --clean --debug
+goreleaser release --clean --fail-fast --verbose
