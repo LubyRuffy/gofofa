@@ -42,11 +42,15 @@ type IPDetail struct {
 type ASNDetail struct {
 	Org *string `json:"org"`
 }
+type IconDetail struct {
+	IconBase64 *string `json:"icon_base64"`
+}
 
 type Detail struct {
 	CertDetail
 	IPDetail
 	ASNDetail
+	IconDetail
 }
 
 // StatsItem one stats item

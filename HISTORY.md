@@ -1,3 +1,7 @@
+## v0.2.22 add icon details in stats mode
+
+- ```fofa stats -f icon 'domain="fofa.info"'```
+
 ## v0.2.21 add asn/ip details in stats mode
 
 - ```fofa stats -f asn 'ip=1.1.1.1'```

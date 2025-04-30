@@ -95,6 +95,11 @@ func statsAction(ctx *cli.Context) error {
 					color.New(color.FgHiGreen).Fprintln(os.Stdout,
 						fmt.Sprintf("\torg: %s", *item.Detail.ASNDetail.Org))
 				}
+
+				if item.Detail.IconDetail.IconBase64 != nil {
+					color.New(color.FgHiGreen).Fprintln(os.Stdout,
+						fmt.Sprintf("\ticon_base64: %s", *item.Detail.IconDetail.IconBase64))
+				}
 			}
 		}
 	}
