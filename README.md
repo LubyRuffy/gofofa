@@ -21,7 +21,7 @@ The official library doesn't has unittests,  之前官方的库功能不全，�
 ```
 ~ go install github.com/LubyRuffy/gofofa/cmd/fofa@latest
 ~ fofa
-~ FOFA_CLIENT_URL='https://fofa.info/?email=xxx@gmail.com&key=xxx' fofa search port=80
+~ FOFA_CLIENT_URL='https://fofa.info/?key=xxx' fofa search port=80
 ```
 
 ### Search
@@ -342,9 +342,8 @@ every 500ms generate one line, never stop
         -   ☑ fofaURL
         -   ☑ deductMode
     -   ☑ Envirement
-        -   ☑ FOFA_CLIENT_URL format: <url>/?email=\<email\>&key=\<key\>&version=\<v1\>
+        -   ☑ FOFA_CLIENT_URL format: <url>/?key=\<key\>&version=\<v1\> (email optional)
         -   ☑ FOFA_SERVER
-        -   ☑ FOFA_EMAIL
         -   ☑ FOFA_KEY
 -   ☐ Publish
     -   ☑ github
@@ -360,3 +359,20 @@ every 500ms generate one line, never stop
 ```shell
 ./fofa stats -f domain -s 100 'cert.is_valid=true && (cert="google")'
 ```
+
+### Query rate limiting and full search
+
+Advanced-member `search/*` requests are spaced by at least one second. HTTP
+429 and structured `[45012]` rate-limit responses are retried with bounded
+backoff; exhausted retries return an error.
+
+`--full` requests all historical data, including data older than one year. It
+is not a full-text mode: full-text matching still uses FOFA query syntax, for
+example:
+
+```shell
+./fofa search --full -s 100 'body="admin"'
+./fofa dump --full -s -1 --batchSize 10000 'title="dashboard"'
+```
+
+Responses with `error=true` are returned as errors even when `errmsg` is empty.

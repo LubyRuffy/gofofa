@@ -1,9 +1,10 @@
-/*Package gofofa fofa client in Go
+/*
+Package gofofa fofa client in Go
 
 env settings:
-- FOFA_CLIENT_URL full fofa connnection string, format: <url>/?email=<email>&key=<key>&version=<v2>
+- FOFA_CLIENT_URL full fofa connection string, format: <url>/?key=<key>&version=<v2>
 - FOFA_SERVER fofa server
-- FOFA_EMAIL fofa account email
+- FOFA_EMAIL optional legacy account email
 - FOFA_KEY fofa account key
 */
 package gofofa
@@ -14,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 const (
@@ -35,8 +37,12 @@ type Client struct {
 	logger     *logrus.Logger
 	ctx        context.Context // use to cancel requests
 
-	onResults    func(results [][]string) // when fetch results callback
-	accountDebug bool                     // 调试账号明文信息
+	onResults           func(results [][]string) // when fetch results callback
+	accountDebug        bool                     // 调试账号明文信息
+	queryLimiter        *queryRateLimiter
+	rateLimitRetries    int
+	rateLimitRetryDelay time.Duration
+	sharedRateLimit     bool
 }
 
 // Update merge config from config url
@@ -64,7 +70,13 @@ func (c *Client) Update(configURL string) error {
 
 // URL generate fofa connection url string
 func (c *Client) URL() string {
-	return fmt.Sprintf("%s/?email=%s&key=%s&version=%s", c.Server, c.Email, c.Key, c.APIVersion)
+	params := url.Values{}
+	if c.Email != "" {
+		params.Set("email", c.Email)
+	}
+	params.Set("key", c.Key)
+	params.Set("version", c.APIVersion)
+	return fmt.Sprintf("%s/?%s", c.Server, params.Encode())
 }
 
 // GetContext 获取context，用于中止任务
@@ -79,7 +91,8 @@ func (c *Client) SetContext(ctx context.Context) {
 
 type ClientOption func(c *Client) error
 
-// WithURL configURL format: <url>/?email=<email>&key=<key>&version=<v2>&tlsdisabled=false&debuglevel=0
+// WithURL configURL format: <url>/?key=<key>&version=<v2>&tlsdisabled=false&debuglevel=0
+// The legacy email parameter is optional.
 func WithURL(configURL string) ClientOption {
 	return func(c *Client) error {
 		// merge from config
@@ -114,6 +127,31 @@ func WithAccountDebug(v bool) ClientOption {
 	}
 }
 
+// WithRateLimitRetry configures retries for FOFA rate-limit responses.
+// maxRetries is the number of attempts after the initial request.
+func WithRateLimitRetry(maxRetries int, retryDelay time.Duration) ClientOption {
+	return func(c *Client) error {
+		if maxRetries < 0 {
+			return fmt.Errorf("maxRetries must be non-negative")
+		}
+		if retryDelay < 0 {
+			return fmt.Errorf("retryDelay must be non-negative")
+		}
+		c.rateLimitRetries = maxRetries
+		c.rateLimitRetryDelay = retryDelay
+		return nil
+	}
+}
+
+// WithSharedRateLimit enables a process-shared query rate limit for CLI-style
+// clients. The state file contains only the next send time, not credentials.
+func WithSharedRateLimit(enabled bool) ClientOption {
+	return func(c *Client) error {
+		c.sharedRateLimit = enabled
+		return nil
+	}
+}
+
 // NewClient from fofa connection string to config
 // and with env config merge
 func NewClient(options ...ClientOption) (*Client, error) {
@@ -142,6 +180,10 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	if c.Account.Error {
 		c.logger.Warnf("auth failed")
 		return c, fmt.Errorf("auth failed: '%s', make sure key is valid", c.Account.ErrMsg)
+	}
+	c.queryLimiter = newQueryRateLimiter(queryInterval(c.Account))
+	if c.sharedRateLimit && c.queryLimiter.interval > 0 {
+		c.queryLimiter.sharedPath = sharedRateLimitPath(c.Server, c.Key)
 	}
 
 	return c, nil

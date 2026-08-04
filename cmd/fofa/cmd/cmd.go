@@ -65,7 +65,7 @@ var GlobalOptions = []cli.Flag{
 		Name:        "fofaURL",
 		Aliases:     []string{"u"},
 		Value:       gofofa.FofaURLFromEnv(),
-		Usage:       "format: <url>/?email=<email>&key=<key>&version=<v2>",
+		Usage:       "format: <url>/?key=<key>&version=<v2> (email optional)",
 		Destination: &fofaURL,
 	},
 	&cli.BoolFlag{
@@ -120,7 +120,12 @@ func BeforAction(context *cli.Context) error {
 	//	return nil
 	//}
 
-	fofaCli, err = gofofa.NewClient(gofofa.WithURL(fofaURL), gofofa.WithAccountDebug(accountDebug))
+	fofaCli, err = gofofa.NewClient(
+		gofofa.WithURL(fofaURL),
+		gofofa.WithAccountDebug(accountDebug),
+		gofofa.WithLogger(logrus.StandardLogger()),
+		gofofa.WithSharedRateLimit(true),
+	)
 	if err != nil {
 		return err
 	}

@@ -178,7 +178,7 @@ func DumpAction(ctx *cli.Context) error {
 		})
 		if err != nil {
 			log.Println("fetch error:", err)
-			//return err
+			return err
 		}
 	}
 
