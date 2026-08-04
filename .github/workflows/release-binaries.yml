@@ -58,8 +58,12 @@ jobs:
           if [[ "${GOOS}" == "windows" ]]; then
             binary_name="${binary_name}.exe"
           fi
+          version="dev-${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF_NAME}" == v* ]]; then
+            version="${GITHUB_REF_NAME}"
+          fi
           mkdir -p package dist
-          CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o "package/${binary_name}" ./cmd/fofa
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=${version}" -o "package/${binary_name}" ./cmd/fofa
           cp README.md LICENSE package/
           if [[ "${{ matrix.archive }}" == "zip" ]]; then
             (cd package && zip -q -r "../dist/${versioned_name}.zip" .)
