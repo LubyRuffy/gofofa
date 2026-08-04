@@ -360,3 +360,20 @@ every 500ms generate one line, never stop
 ```shell
 ./fofa stats -f domain -s 100 'cert.is_valid=true && (cert="google")'
 ```
+
+### Query rate limiting and full search
+
+Advanced-member `search/*` requests are spaced by at least one second. HTTP
+429 and structured `[45012]` rate-limit responses are retried with bounded
+backoff; exhausted retries return an error.
+
+`--full` requests all historical data, including data older than one year. It
+is not a full-text mode: full-text matching still uses FOFA query syntax, for
+example:
+
+```shell
+./fofa search --full -s 100 'body="admin"'
+./fofa dump --full -s -1 --batchSize 10000 'title="dashboard"'
+```
+
+Responses with `error=true` are returned as errors even when `errmsg` is empty.
