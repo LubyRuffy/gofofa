@@ -30,5 +30,5 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
         file: ./coverage.txt
         flags: unittests # optional
-        fail_ci_if_error: true # optional (default = false)
+        fail_ci_if_error: false # Codecov availability must not mask Go test results
         verbose: true # optional (default = false)

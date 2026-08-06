@@ -436,6 +436,9 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 
 		reachesLimit := allSize > 0 && allSize <= fetchedSize+len(results)
 		cursorStalled := !reachesLimit && hr.Next != "" && hr.Next == next
+		if cursorStalled {
+			return errors.New("fofa search cursor did not advance")
+		}
 
 		// 后处理
 		results = c.postProcess(results, fields, hostIndex, protocolIndex, rawFieldSize, options...)
@@ -448,9 +451,6 @@ func (c *Client) DumpSearch(query string, allSize int, batchSize int, fields []s
 		}
 
 		fetchedSize += len(results)
-		if cursorStalled {
-			return errors.New("fofa search cursor did not advance")
-		}
 
 		// 数据填满了，完成
 		if allSize > 0 && allSize <= fetchedSize {
